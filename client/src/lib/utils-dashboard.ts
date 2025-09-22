@@ -63,9 +63,16 @@ export function runAgentQuery(query: string, clients: Client[]): AIQueryResult {
   const askedScope = scopeKeys.find((k) => contains(text, [k]));
 
   let rows = clients;
+  
+  // Check if this is a specific client name search
+  const isSpecificSearch = !wantPhones && !wantFbLink && !wantBalance && !wantScopes && !wantDeposited && !wantSpent && !askedScope;
+  
   if (askedScope) {
     const needle = scopeMap[askedScope];
     rows = rows.filter((c) => (c.scopes || []).some((s) => s.toLowerCase() === needle.toLowerCase()));
+  } else if (isSpecificSearch) {
+    // Filter by client name if it's not asking for specific data fields
+    rows = rows.filter((c) => c.name.toLowerCase().includes(text.toLowerCase()));
   }
 
   const columns: { key: string; label: string }[] = [{ key: "name", label: "নাম" }];
@@ -87,7 +94,10 @@ export function runAgentQuery(query: string, clients: Client[]): AIQueryResult {
     scopes: (c.scopes || []).join(", "),
   }));
 
-  const summary = `${results.length} টি ফলাফল পাওয়া গেছে` + (askedScope ? ` • Scope = ${scopeMap[askedScope]}` : "");
+  const summary = results.length === 0 
+    ? "কোন ফলাফল পাওয়া যায়নি" 
+    : `${results.length} টি ফলাফল পাওয়া গেছে` + (askedScope ? ` • Scope = ${scopeMap[askedScope]}` : "");
+  
   return { columns, results, summary };
 }
 
