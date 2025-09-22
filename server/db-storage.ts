@@ -1,5 +1,5 @@
 import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type DashboardMetrics, clients, spendLogs, meetings } from "@shared/schema";
-import { eq, desc, sum, count } from "drizzle-orm";
+import { eq, desc, sum, count, sql } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
 
@@ -49,8 +49,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteClient(id: string): Promise<boolean> {
-    const result = await db.delete(clients).where(eq(clients.id, id));
-    return result.rowCount > 0;
+    try {
+      // Check if client has dependent records first
+      const [spendLogsCount, meetingsCount] = await Promise.all([
+        db.select({ count: sql<number>`count(*)` }).from(spendLogs).where(eq(spendLogs.clientId, id)),
+        db.select({ count: sql<number>`count(*)` }).from(meetings).where(eq(meetings.clientId, id))
+      ]);
+
+      if (spendLogsCount[0].count > 0 || meetingsCount[0].count > 0) {
+        throw new Error("Cannot delete client with existing spend logs or meetings. Please remove them first.");
+      }
+
+      const result = await db.delete(clients).where(eq(clients.id, id));
+      return result.rowCount > 0;
+    } catch (error) {
+      throw error; // Re-throw to be handled by the route
+    }
   }
 
   async getSpendLogs(clientId: string): Promise<SpendLog[]> {
@@ -61,24 +75,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSpendLog(insertSpendLog: InsertSpendLog): Promise<SpendLog> {
-    const [spendLog] = await db.insert(spendLogs).values({
-      clientId: insertSpendLog.clientId,
-      date: insertSpendLog.date,
-      amount: insertSpendLog.amount,
-      note: insertSpendLog.note || null,
-    }).returning();
+    // Use a transaction to ensure atomicity
+    return await db.transaction(async (tx) => {
+      // Insert the spend log first
+      const [spendLog] = await tx.insert(spendLogs).values({
+        clientId: insertSpendLog.clientId,
+        date: insertSpendLog.date,
+        amount: insertSpendLog.amount,
+        note: insertSpendLog.note || null,
+      }).returning();
 
-    // Update client's spent amount - increment existing amount
-    const client = await this.getClient(insertSpendLog.clientId);
-    if (client) {
-      await db.update(clients)
+      // Atomically increment the client's spent amount
+      await tx.update(clients)
         .set({
-          walletSpent: client.walletSpent + insertSpendLog.amount,
+          walletSpent: sql`${clients.walletSpent} + ${insertSpendLog.amount}`,
         })
         .where(eq(clients.id, insertSpendLog.clientId));
-    }
 
-    return spendLog;
+      return spendLog;
+    });
   }
 
   async getMeetings(): Promise<Meeting[]> {

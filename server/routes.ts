@@ -72,11 +72,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/spend-logs", async (req, res) => {
     try {
-      const validatedData = insertSpendLogSchema.parse(req.body);
+      // Convert amount to integer if it's a string
+      const requestData = {
+        ...req.body,
+        amount: parseInt(req.body.amount)
+      };
+      
+      const validatedData = insertSpendLogSchema.parse(requestData);
       const spendLog = await storage.createSpendLog(validatedData);
       res.status(201).json(spendLog);
     } catch (error) {
-      res.status(400).json({ error: "Invalid spend log data" });
+      console.error("Spend log validation error:", error);
+      if (error instanceof Error) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(400).json({ error: "Invalid spend log data" });
+      }
     }
   });
 
