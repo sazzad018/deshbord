@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Invoice, type InsertInvoice, type InvoiceLineItem, type InsertInvoiceLineItem, type InvoiceWithLineItems, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, clients, spendLogs, meetings, invoices, invoiceLineItems, todos, whatsappTemplates, companySettings, serviceScopes } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, clients, spendLogs, meetings, todos, whatsappTemplates, companySettings, serviceScopes } from "@shared/schema";
 import { eq, desc, sum, count, sql, and, gte } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
@@ -66,18 +66,16 @@ export class DatabaseStorage implements IStorage {
   async deleteClient(id: string): Promise<boolean> {
     try {
       // Check if client has dependent records first
-      const [spendLogsCount, meetingsCount, serviceScopesCount, invoicesCount] = await Promise.all([
+      const [spendLogsCount, meetingsCount, serviceScopesCount] = await Promise.all([
         db.select({ count: sql<number>`count(*)` }).from(spendLogs).where(eq(spendLogs.clientId, id)),
         db.select({ count: sql<number>`count(*)` }).from(meetings).where(eq(meetings.clientId, id)),
-        db.select({ count: sql<number>`count(*)` }).from(serviceScopes).where(eq(serviceScopes.clientId, id)),
-        db.select({ count: sql<number>`count(*)` }).from(invoices).where(eq(invoices.clientId, id))
+        db.select({ count: sql<number>`count(*)` }).from(serviceScopes).where(eq(serviceScopes.clientId, id))
       ]);
 
       const dependencies = [];
       if (spendLogsCount[0].count > 0) dependencies.push(`${spendLogsCount[0].count} spend logs`);
       if (meetingsCount[0].count > 0) dependencies.push(`${meetingsCount[0].count} meetings`);
       if (serviceScopesCount[0].count > 0) dependencies.push(`${serviceScopesCount[0].count} service scopes`);
-      if (invoicesCount[0].count > 0) dependencies.push(`${invoicesCount[0].count} invoices`);
 
       if (dependencies.length > 0) {
         throw new Error(`Cannot permanently delete client with existing ${dependencies.join(', ')}. Please remove them first or use soft delete (trash) instead.`);
@@ -169,77 +167,6 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount > 0;
   }
 
-  // Invoice operations
-  async getInvoices(): Promise<Invoice[]> {
-    return await db.select().from(invoices).orderBy(desc(invoices.createdAt));
-  }
-
-  async getInvoice(id: string): Promise<InvoiceWithLineItems | undefined> {
-    const invoice = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
-    if (invoice.length === 0) return undefined;
-
-    const [client] = await db.select().from(clients).where(eq(clients.id, invoice[0].clientId)).limit(1);
-    const lineItems = await db.select().from(invoiceLineItems).where(eq(invoiceLineItems.invoiceId, id));
-
-    return {
-      ...invoice[0],
-      client,
-      lineItems,
-    };
-  }
-
-  async createInvoice(insertInvoice: InsertInvoice, lineItems: InsertInvoiceLineItem[]): Promise<Invoice> {
-    // Generate invoice number
-    const invoiceCount = await db.select({ count: sql<number>`count(*)` }).from(invoices);
-    const invoiceNumber = `INV-${String(invoiceCount[0].count + 1).padStart(4, '0')}`;
-
-    // Calculate totals
-    const subtotal = lineItems.reduce((sum, item) => sum + ((item.quantity || 1) * item.rate), 0);
-    const discountAmount = Math.round((subtotal * (insertInvoice.discount || 0)) / 100);
-    const vatAmount = Math.round(((subtotal - discountAmount) * (insertInvoice.vat || 0)) / 100);
-    const totalAmount = subtotal - discountAmount + vatAmount;
-
-    // Create invoice
-    const [invoice] = await db.insert(invoices).values({
-      ...insertInvoice,
-      invoiceNumber,
-      subtotal,
-      totalAmount,
-    }).returning();
-
-    // Create line items
-    await db.insert(invoiceLineItems).values(
-      lineItems.map(item => ({
-        ...item,
-        invoiceId: invoice.id,
-        amount: (item.quantity || 1) * item.rate, // Calculate amount
-      }))
-    );
-
-    return invoice;
-  }
-
-  async updateInvoice(id: string, updates: Partial<Invoice>): Promise<Invoice | undefined> {
-    const [updated] = await db.update(invoices)
-      .set(updates)
-      .where(eq(invoices.id, id))
-      .returning();
-    
-    return updated;
-  }
-
-  async updateInvoiceStatus(id: string, status: "Paid" | "Due"): Promise<Invoice | undefined> {
-    return this.updateInvoice(id, { status });
-  }
-
-  async deleteInvoice(id: string): Promise<boolean> {
-    // Delete line items first
-    await db.delete(invoiceLineItems).where(eq(invoiceLineItems.invoiceId, id));
-    
-    // Delete invoice
-    const result = await db.delete(invoices).where(eq(invoices.id, id));
-    return result.rowCount > 0;
-  }
 
   // Todo operations
   async getTodos(): Promise<Todo[]> {
