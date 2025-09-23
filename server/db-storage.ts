@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type CustomButton, type InsertCustomButton, type WebsiteProject, clients, spendLogs, meetings, todos, whatsappTemplates, companySettings, serviceScopes, customButtons, websiteProjects } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type CustomButton, type InsertCustomButton, type WebsiteProject, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, clients, spendLogs, meetings, todos, whatsappTemplates, companySettings, serviceScopes, customButtons, websiteProjects, uploads, invoicePdfs } from "@shared/schema";
 import { eq, desc, sum, count, sql, and, gte } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
@@ -421,5 +421,46 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(websiteProjects)
       .where(eq(websiteProjects.clientId, clientId))
       .orderBy(desc(websiteProjects.createdAt));
+  }
+
+  // File upload operations
+  async saveUpload(insertUpload: InsertUpload): Promise<Upload> {
+    const [upload] = await db.insert(uploads).values(insertUpload).returning();
+    return upload;
+  }
+
+  async getUpload(id: string): Promise<Upload | undefined> {
+    const result = await db.select().from(uploads).where(eq(uploads.id, id)).limit(1);
+    return result[0];
+  }
+
+  async deleteUpload(id: string): Promise<boolean> {
+    const [deleted] = await db.delete(uploads)
+      .where(eq(uploads.id, id))
+      .returning({ id: uploads.id });
+    return !!deleted;
+  }
+
+  // Invoice PDF operations
+  async saveInvoicePdf(insertInvoicePdf: InsertInvoicePdf): Promise<InvoicePdf> {
+    const [invoicePdf] = await db.insert(invoicePdfs).values(insertInvoicePdf).returning();
+    return invoicePdf;
+  }
+
+  async getInvoicePdfs(): Promise<InvoicePdf[]> {
+    return await db.select().from(invoicePdfs)
+      .orderBy(desc(invoicePdfs.createdAt));
+  }
+
+  async getInvoicePdf(id: string): Promise<InvoicePdf | undefined> {
+    const result = await db.select().from(invoicePdfs).where(eq(invoicePdfs.id, id)).limit(1);
+    return result[0];
+  }
+
+  async deleteInvoicePdf(id: string): Promise<boolean> {
+    const [deleted] = await db.delete(invoicePdfs)
+      .where(eq(invoicePdfs.id, id))
+      .returning({ id: invoicePdfs.id });
+    return !!deleted;
   }
 }

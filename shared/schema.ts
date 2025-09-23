@@ -182,6 +182,39 @@ export const insertInvoiceItemSchema = createInsertSchema(invoiceItems).omit({
   createdAt: true,
 });
 
+// File uploads table for managing uploaded files (images, documents)
+export const uploads = pgTable("uploads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fileName: text("file_name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  size: integer("size").notNull(), // File size in bytes
+  data: text("data").notNull(), // Base64 encoded file data
+  uploadedBy: text("uploaded_by"), // Optional: track who uploaded
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Saved Invoice PDFs table for tracking generated invoices
+export const invoicePdfs = pgTable("invoice_pdfs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  invoiceNo: text("invoice_no").notNull(),
+  clientId: varchar("client_id").notNull().references(() => clients.id),
+  fileName: text("file_name").notNull(),
+  mimeType: text("mime_type").notNull().default("application/pdf"),
+  size: integer("size").notNull(), // PDF file size in bytes
+  data: text("data").notNull(), // Base64 encoded PDF data
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertUploadSchema = createInsertSchema(uploads).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertInvoicePdfSchema = createInsertSchema(invoicePdfs).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertMeetingSchema = createInsertSchema(meetings).omit({
   id: true,
   createdAt: true,
@@ -227,6 +260,10 @@ export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type InvoiceItem = typeof invoiceItems.$inferSelect;
 export type InsertInvoiceItem = z.infer<typeof insertInvoiceItemSchema>;
+export type Upload = typeof uploads.$inferSelect;
+export type InsertUpload = z.infer<typeof insertUploadSchema>;
+export type InvoicePdf = typeof invoicePdfs.$inferSelect;
+export type InsertInvoicePdf = z.infer<typeof insertInvoicePdfSchema>;
 
 export interface ClientWithLogs extends Client {
   logs: SpendLog[];
