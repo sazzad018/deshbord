@@ -76,31 +76,62 @@ export default function InvoiceMaker() {
   });
 
   // Fetch company settings
-  const { data: companyData } = useQuery<CompanySettings[]>({
+  const { data: companyData } = useQuery<CompanySettings>({
     queryKey: ["/api/company-settings"],
     refetchInterval: false,
   });
 
-  const company = useMemo(() => companyData?.[0] || {
-    companyName: "Social Ads Expert",
-    companyEmail: "support@agentcrm.com",
-    companyPhone: "+8801XXXXXXXXX",
-    companyAddress: "Dhaka, Bangladesh",
-    companyWebsite: "agentcrm.com"
-  }, [companyData]);
-  
-  // Update editable company data when company data is fetched
-  useEffect(() => {
-    if (company) {
-      setEditableCompany({
-        companyName: company.companyName || "",
-        companyEmail: company.companyEmail || "", 
-        companyPhone: company.companyPhone || "",
-        companyAddress: company.companyAddress || "",
-        companyWebsite: company.companyWebsite || ""
-      });
+  // Use editableCompany state for invoice preview, with fallback to DB data or defaults
+  const company = useMemo(() => {
+    // If user has typed something, use their input for preview
+    if (editableCompany.companyName) {
+      return editableCompany;
     }
-  }, [company]);
+    // Fallback to DB data or defaults
+    return companyData || {
+      companyName: "Social Ads Expert",
+      companyEmail: "support@agentcrm.com",
+      companyPhone: "+8801XXXXXXXXX",
+      companyAddress: "Dhaka, Bangladesh",
+      companyWebsite: "agentcrm.com"
+    };
+  }, [editableCompany, companyData]);
+  
+  // Track initialization state to prevent unnecessary resets during user interaction
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const [userHasEdited, setUserHasEdited] = useState(false);
+
+  // Initialize editable company data when component loads and when DB data becomes available
+  useEffect(() => {
+    if (companyData && (!hasInitialized || !userHasEdited)) {
+      // Load from database data - either first time or when data becomes available
+      const dbCompany = companyData;
+      setEditableCompany({
+        companyName: dbCompany.companyName || "",
+        companyEmail: dbCompany.companyEmail || "", 
+        companyPhone: dbCompany.companyPhone || "",
+        companyAddress: dbCompany.companyAddress || "",
+        companyWebsite: dbCompany.companyWebsite || ""
+      });
+      setHasInitialized(true);
+    } else if (!companyData && !hasInitialized) {
+      // If no DB data exists, use default values (but only once)
+      setEditableCompany({
+        companyName: "Social Ads Expert",
+        companyEmail: "support@agentcrm.com",
+        companyPhone: "+8801XXXXXXXXX",
+        companyAddress: "Dhaka, Bangladesh",
+        companyWebsite: "agentcrm.com"
+      });
+      setHasInitialized(true);
+    }
+  }, [companyData, hasInitialized, userHasEdited]);
+
+  // Track when user starts editing to prevent overwriting their changes
+  const handleCompanyFieldChange = (field: string, value: string) => {
+    setUserHasEdited(true);
+    setEditableCompany(prev => ({ ...prev, [field]: value }));
+  };
 
   const selectedClient = useMemo(() => clients.find(c => c.id === clientId), [clients, clientId]);
 
@@ -134,7 +165,7 @@ export default function InvoiceMaker() {
   const saveCompanyMutation = useMutation({
     mutationFn: async (companyUpdateData: typeof editableCompany) => {
       // Check if we have existing company from database
-      const existingCompany = companyData?.[0];
+      const existingCompany = companyData;
       if (!existingCompany?.id) {
         // If no existing company, create new one
         return await apiRequest("POST", "/api/company-settings", companyUpdateData);
@@ -307,7 +338,7 @@ export default function InvoiceMaker() {
                       <Label className="text-sm">কোম্পানির নাম</Label>
                       <Input 
                         value={editableCompany.companyName} 
-                        onChange={(e) => setEditableCompany(prev => ({ ...prev, companyName: e.target.value }))}
+                        onChange={(e) => handleCompanyFieldChange('companyName', e.target.value)}
                         className="text-sm" 
                         placeholder="কোম্পানির নাম লিখুন"
                         data-testid="input-company-name"
@@ -318,7 +349,7 @@ export default function InvoiceMaker() {
                         <Label className="text-sm">ইমেইল</Label>
                         <Input 
                           value={editableCompany.companyEmail} 
-                          onChange={(e) => setEditableCompany(prev => ({ ...prev, companyEmail: e.target.value }))}
+                          onChange={(e) => handleCompanyFieldChange('companyEmail', e.target.value)}
                           className="text-sm" 
                           placeholder="company@example.com"
                           data-testid="input-company-email"
@@ -328,7 +359,7 @@ export default function InvoiceMaker() {
                         <Label className="text-sm">ফোন</Label>
                         <Input 
                           value={editableCompany.companyPhone} 
-                          onChange={(e) => setEditableCompany(prev => ({ ...prev, companyPhone: e.target.value }))}
+                          onChange={(e) => handleCompanyFieldChange('companyPhone', e.target.value)}
                           className="text-sm" 
                           placeholder="+8801XXXXXXXXX"
                           data-testid="input-company-phone"
@@ -340,7 +371,7 @@ export default function InvoiceMaker() {
                         <Label className="text-sm">ঠিকানা</Label>
                         <Input 
                           value={editableCompany.companyAddress} 
-                          onChange={(e) => setEditableCompany(prev => ({ ...prev, companyAddress: e.target.value }))}
+                          onChange={(e) => handleCompanyFieldChange('companyAddress', e.target.value)}
                           className="text-sm" 
                           placeholder="শহর, দেশ"
                           data-testid="input-company-address"
@@ -350,7 +381,7 @@ export default function InvoiceMaker() {
                         <Label className="text-sm">ওয়েবসাইট</Label>
                         <Input 
                           value={editableCompany.companyWebsite} 
-                          onChange={(e) => setEditableCompany(prev => ({ ...prev, companyWebsite: e.target.value }))}
+                          onChange={(e) => handleCompanyFieldChange('companyWebsite', e.target.value)}
                           className="text-sm" 
                           placeholder="www.example.com"
                           data-testid="input-company-website"
