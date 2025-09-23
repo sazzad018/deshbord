@@ -257,7 +257,7 @@ export default function ClientPortal() {
         {/* Footer */}
         <div className="text-center text-gray-500 text-sm">
           <p>আরো তথ্যের জন্য আমাদের সাথে যোগাযোগ করুন</p>
-          <p className="mt-1">© {new Date().getFullYear()} Agent CRM + Ops</p>
+          <p className="mt-1">© {new Date().getFullYear()} Social Ads Expert</p>
         </div>
       </div>
     </div>

@@ -549,7 +549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const uploadData = {
         fileName,
         mimeType,
-        size: sizeInBytes,
+        size: Math.round(sizeInBytes),
         data: dataUrl,
         uploadedBy: uploadedBy || null,
       };
@@ -568,6 +568,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Upload error:", error);
       res.status(400).json({ error: "Invalid upload data" });
     }
+  });
+
+  // List uploads endpoint - returns empty array since individual files are accessed by ID
+  app.get("/api/uploads", async (req, res) => {
+    res.json([]);
   });
 
   app.get("/api/uploads/:id", async (req, res) => {

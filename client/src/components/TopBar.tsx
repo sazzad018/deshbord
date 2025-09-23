@@ -31,7 +31,7 @@ export default function TopBar({ query, setQuery }: TopBarProps) {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <Bot className="h-6 w-6 text-primary" />
-                <h1 className="text-xl font-semibold">Agent CRM + Ops</h1>
+                <h1 className="text-xl font-semibold">Social Ads Expert</h1>
               </div>
               <Badge variant="secondary" className="rounded-2xl">MVP</Badge>
               <Badge className="rounded-2xl bg-green-100 text-green-800">Asia/Dhaka</Badge>

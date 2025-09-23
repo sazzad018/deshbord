@@ -82,7 +82,7 @@ export default function InvoiceMaker() {
   });
 
   const company = useMemo(() => companyData?.[0] || {
-    companyName: "Agent CRM + Ops",
+    companyName: "Social Ads Expert",
     companyEmail: "support@agentcrm.com",
     companyPhone: "+8801XXXXXXXXX",
     companyAddress: "Dhaka, Bangladesh",

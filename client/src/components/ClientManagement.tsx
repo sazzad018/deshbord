@@ -88,6 +88,8 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
       return await apiRequest("POST", "/api/uploads", uploadData);
     },
     onSuccess: (data: any) => {
+      console.log("Upload response data:", data);
+      console.log("Setting profilePicture to:", data.url);
       setNewClient({ ...newClient, profilePicture: data.url });
       setIsUploading(false);
       toast({

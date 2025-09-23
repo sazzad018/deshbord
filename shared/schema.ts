@@ -74,7 +74,7 @@ export const whatsappTemplates = pgTable("whatsapp_templates", {
 
 export const companySettings = pgTable("company_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  companyName: text("company_name").notNull().default("Agent CRM + Ops"),
+  companyName: text("company_name").notNull().default("Social Ads Expert"),
   companyEmail: text("company_email"),
   companyPhone: text("company_phone"),
   companyWebsite: text("company_website"),
