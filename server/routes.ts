@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertClientSchema, insertSpendLogSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, insertCustomButtonSchema } from "@shared/schema";
+import { insertClientSchema, insertSpendLogSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, insertCustomButtonSchema, insertUploadSchema, insertInvoicePdfSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Client routes
@@ -518,6 +518,185 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to reorder custom buttons" });
+    }
+  });
+
+  // File upload routes
+  app.post("/api/uploads", async (req, res) => {
+    try {
+      const { dataUrl, fileName, uploadedBy } = req.body;
+      
+      if (!dataUrl || !fileName) {
+        return res.status(400).json({ error: "dataUrl and fileName are required" });
+      }
+
+      // Validate file size (2MB limit)
+      const sizeInBytes = (dataUrl.length * 3) / 4; // Base64 size approximation
+      if (sizeInBytes > 2 * 1024 * 1024) {
+        return res.status(400).json({ error: "File size too large (max 2MB)" });
+      }
+
+      // Extract mime type from data URL
+      const mimeMatch = dataUrl.match(/^data:([^;]+)/);
+      const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+      
+      // Validate image types
+      const allowedMimes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      if (!allowedMimes.includes(mimeType)) {
+        return res.status(400).json({ error: "Only image files are allowed" });
+      }
+
+      const uploadData = {
+        fileName,
+        mimeType,
+        size: sizeInBytes,
+        data: dataUrl,
+        uploadedBy: uploadedBy || null,
+      };
+
+      const validatedData = insertUploadSchema.parse(uploadData);
+      const upload = await storage.saveUpload(validatedData);
+      
+      res.status(201).json({
+        id: upload.id,
+        url: `/api/uploads/${upload.id}`,
+        fileName: upload.fileName,
+        mimeType: upload.mimeType,
+        size: upload.size
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      res.status(400).json({ error: "Invalid upload data" });
+    }
+  });
+
+  app.get("/api/uploads/:id", async (req, res) => {
+    try {
+      const upload = await storage.getUpload(req.params.id);
+      if (!upload) {
+        return res.status(404).json({ error: "Upload not found" });
+      }
+
+      // Convert data URL to buffer
+      const base64Data = upload.data.split(',')[1];
+      const buffer = Buffer.from(base64Data, 'base64');
+
+      res.set({
+        'Content-Type': upload.mimeType,
+        'Content-Length': buffer.length.toString(),
+        'Cache-Control': 'public, max-age=86400', // 24 hours cache
+      });
+
+      res.send(buffer);
+    } catch (error) {
+      console.error("Get upload error:", error);
+      res.status(500).json({ error: "Failed to retrieve upload" });
+    }
+  });
+
+  app.delete("/api/uploads/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteUpload(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Upload not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete upload" });
+    }
+  });
+
+  // Invoice PDF routes
+  app.post("/api/invoice-pdfs", async (req, res) => {
+    try {
+      const { invoiceNo, clientId, fileName, dataBase64 } = req.body;
+      
+      if (!invoiceNo || !clientId || !fileName || !dataBase64) {
+        return res.status(400).json({ error: "invoiceNo, clientId, fileName, and dataBase64 are required" });
+      }
+
+      const sizeInBytes = (dataBase64.length * 3) / 4;
+      
+      const pdfData = {
+        invoiceNo,
+        clientId,
+        fileName,
+        mimeType: "application/pdf",
+        size: sizeInBytes,
+        data: `data:application/pdf;base64,${dataBase64}`,
+      };
+
+      const validatedData = insertInvoicePdfSchema.parse(pdfData);
+      const invoicePdf = await storage.saveInvoicePdf(validatedData);
+      
+      res.status(201).json({
+        id: invoicePdf.id,
+        invoiceNo: invoicePdf.invoiceNo,
+        fileName: invoicePdf.fileName,
+        url: `/api/invoice-pdfs/${invoicePdf.id}`,
+        createdAt: invoicePdf.createdAt
+      });
+    } catch (error) {
+      console.error("Save invoice PDF error:", error);
+      res.status(400).json({ error: "Invalid PDF data" });
+    }
+  });
+
+  app.get("/api/invoice-pdfs", async (req, res) => {
+    try {
+      const invoicePdfs = await storage.getInvoicePdfs();
+      
+      // Return metadata without the large data field
+      const pdfsMetadata = invoicePdfs.map(pdf => ({
+        id: pdf.id,
+        invoiceNo: pdf.invoiceNo,
+        clientId: pdf.clientId,
+        fileName: pdf.fileName,
+        size: pdf.size,
+        url: `/api/invoice-pdfs/${pdf.id}`,
+        createdAt: pdf.createdAt
+      }));
+      
+      res.json(pdfsMetadata);
+    } catch (error) {
+      console.error("Get invoice PDFs error:", error);
+      res.status(500).json({ error: "Failed to retrieve invoice PDFs" });
+    }
+  });
+
+  app.get("/api/invoice-pdfs/:id", async (req, res) => {
+    try {
+      const invoicePdf = await storage.getInvoicePdf(req.params.id);
+      if (!invoicePdf) {
+        return res.status(404).json({ error: "Invoice PDF not found" });
+      }
+
+      // Convert data URL to buffer
+      const base64Data = invoicePdf.data.split(',')[1];
+      const buffer = Buffer.from(base64Data, 'base64');
+
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename="${invoicePdf.fileName}"`,
+        'Content-Length': buffer.length.toString(),
+      });
+
+      res.send(buffer);
+    } catch (error) {
+      console.error("Get invoice PDF error:", error);
+      res.status(500).json({ error: "Failed to retrieve invoice PDF" });
+    }
+  });
+
+  app.delete("/api/invoice-pdfs/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteInvoicePdf(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Invoice PDF not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete invoice PDF" });
     }
   });
 
