@@ -279,14 +279,14 @@ var init_schema = __esm({
   }
 });
 
-// server/db.ts
-var db_exports = {};
-__export(db_exports, {
+// server/db-cpanel.ts
+var db_cpanel_exports = {};
+__export(db_cpanel_exports, {
   db: () => db,
   initializeDatabase: () => initializeDatabase
 });
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 async function initializeDatabase() {
   try {
     const existingClients = await db.select().from(clients).limit(1);
@@ -400,29 +400,35 @@ async function initializeDatabase() {
     throw error;
   }
 }
-var sql2, db;
-var init_db = __esm({
-  "server/db.ts"() {
+var connection, db;
+var init_db_cpanel = __esm({
+  "server/db-cpanel.ts"() {
     "use strict";
     init_schema();
     if (!process.env.DATABASE_URL) {
       throw new Error("DATABASE_URL is required");
     }
-    sql2 = neon(process.env.DATABASE_URL);
-    db = drizzle(sql2);
+    connection = postgres(process.env.DATABASE_URL, {
+      ssl: "require",
+      // cPanel usually requires SSL
+      max: 10,
+      idle_timeout: 20,
+      connect_timeout: 10
+    });
+    db = drizzle(connection);
   }
 });
 
-// server/index.ts
+// server/index-cpanel.ts
 import express2 from "express";
 
-// server/routes.ts
+// server/routes-cpanel.ts
 import { createServer } from "http";
 
-// server/db-storage.ts
+// server/db-storage-cpanel.ts
 init_schema();
-init_db();
-import { eq, desc, sum, sql as sql3, and, gte } from "drizzle-orm";
+init_db_cpanel();
+import { eq, desc, sum, sql as sql2, and, gte } from "drizzle-orm";
 var DatabaseStorage = class {
   async getClients() {
     return await db.select().from(clients).where(eq(clients.deleted, false)).orderBy(desc(clients.createdAt));
@@ -471,9 +477,9 @@ var DatabaseStorage = class {
   async deleteClient(id) {
     try {
       const [spendLogsCount, meetingsCount, serviceScopesCount] = await Promise.all([
-        db.select({ count: sql3`count(*)` }).from(spendLogs).where(eq(spendLogs.clientId, id)),
-        db.select({ count: sql3`count(*)` }).from(meetings).where(eq(meetings.clientId, id)),
-        db.select({ count: sql3`count(*)` }).from(serviceScopes).where(eq(serviceScopes.clientId, id))
+        db.select({ count: sql2`count(*)` }).from(spendLogs).where(eq(spendLogs.clientId, id)),
+        db.select({ count: sql2`count(*)` }).from(meetings).where(eq(meetings.clientId, id)),
+        db.select({ count: sql2`count(*)` }).from(serviceScopes).where(eq(serviceScopes.clientId, id))
       ]);
       const dependencies = [];
       if (spendLogsCount[0].count > 0) dependencies.push(`${spendLogsCount[0].count} spend logs`);
@@ -509,7 +515,7 @@ var DatabaseStorage = class {
       balanceAfter
     }).returning();
     await db.update(clients).set({
-      walletSpent: sql3`${clients.walletSpent} + ${insertSpendLog.amount}`
+      walletSpent: sql2`${clients.walletSpent} + ${insertSpendLog.amount}`
     }).where(eq(clients.id, insertSpendLog.clientId));
     return spendLog;
   }
@@ -647,8 +653,8 @@ var DatabaseStorage = class {
       date: spendLogs.date,
       amount: sum(spendLogs.amount).as("amount")
     }).from(spendLogs).where(and(
-      sql3`${spendLogs.clientId} = ANY(${clientIds})`,
-      gte(sql3`DATE(${spendLogs.date})`, sevenDaysAgo.toISOString().split("T")[0])
+      sql2`${spendLogs.clientId} = ANY(${clientIds})`,
+      gte(sql2`DATE(${spendLogs.date})`, sevenDaysAgo.toISOString().split("T")[0])
     )).groupBy(spendLogs.date).orderBy(spendLogs.date);
     return {
       serviceName,
@@ -676,7 +682,7 @@ var DatabaseStorage = class {
     return await db.select().from(customButtons).where(eq(customButtons.isActive, true)).orderBy(customButtons.sortOrder, customButtons.createdAt);
   }
   async createCustomButton(insertButton) {
-    const maxOrder = await db.select({ max: sql3`max(${customButtons.sortOrder})` }).from(customButtons);
+    const maxOrder = await db.select({ max: sql2`max(${customButtons.sortOrder})` }).from(customButtons);
     const nextOrder = (maxOrder[0]?.max || 0) + 1;
     const [button] = await db.insert(customButtons).values({
       ...insertButton,
@@ -737,10 +743,10 @@ var DatabaseStorage = class {
   }
 };
 
-// server/storage.ts
+// server/storage-cpanel.ts
 var storage = new DatabaseStorage();
 
-// server/routes.ts
+// server/routes-cpanel.ts
 init_schema();
 async function registerRoutes(app2) {
   app2.get("/api/clients", async (req, res) => {
@@ -1365,7 +1371,7 @@ function serveStatic(app2) {
   });
 }
 
-// server/index.ts
+// server/index-cpanel.ts
 var app = express2();
 app.use(express2.json({ limit: "50mb" }));
 app.use(express2.urlencoded({ extended: false, limit: "50mb" }));
@@ -1394,7 +1400,7 @@ app.use((req, res, next) => {
   next();
 });
 (async () => {
-  const { initializeDatabase: initializeDatabase2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+  const { initializeDatabase: initializeDatabase2 } = await Promise.resolve().then(() => (init_db_cpanel(), db_cpanel_exports));
   await initializeDatabase2();
   console.log("Database initialized successfully");
   const server = await registerRoutes(app);
@@ -1404,12 +1410,7 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
     throw err;
   });
-  if (false) {
-    const { setupVite } = await null;
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
+  serveStatic(app);
   const port = parseInt(process.env.PORT || "5000", 10);
   server.listen({
     port,
