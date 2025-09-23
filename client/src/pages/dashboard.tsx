@@ -34,6 +34,7 @@ export default function Dashboard() {
             <AIQuerySystem />
             <SpendChart />
             <WebsiteServicesSection selectedClientId={selectedClientId} />
+            <InvoiceMaker />
           </div>
           
           <div className="space-y-6">
@@ -48,9 +49,6 @@ export default function Dashboard() {
             <ControlPanel />
           </div>
         </div>
-        
-        {/* Invoice Maker - Where Control Panel used to be */}
-        <InvoiceMaker />
       </div>
     </div>
   );

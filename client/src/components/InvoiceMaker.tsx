@@ -273,7 +273,7 @@ export default function InvoiceMaker() {
   };
 
   return (
-    <div className="w-full max-w-[819px] mx-auto space-y-6">
+    <div className="w-full max-w-[819px] mx-auto space-y-6 overflow-x-auto">
       <Card className="rounded-2xl shadow-sm">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
