@@ -14,6 +14,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Deleted clients route - must come before :id route
+  app.get("/api/clients/deleted", async (req, res) => {
+    try {
+      const deletedClients = await storage.getDeletedClients();
+      res.json(deletedClients);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch deleted clients" });
+    }
+  });
+
   app.get("/api/clients/:id", async (req, res) => {
     try {
       const client = await storage.getClientWithLogs(req.params.id);
@@ -85,15 +95,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to restore client" });
-    }
-  });
-
-  app.get("/api/clients/deleted", async (req, res) => {
-    try {
-      const deletedClients = await storage.getDeletedClients();
-      res.json(deletedClients);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch deleted clients" });
     }
   });
 
