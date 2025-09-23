@@ -224,18 +224,14 @@ export default function InvoiceMaker() {
   return (
     <div className="w-full space-y-6">
       <Card className="rounded-2xl shadow-sm">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-full">
-              <FileText className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <CardTitle className="text-xl text-gray-900">ইনভয়েস মেকার</CardTitle>
-              <p className="text-gray-600 text-sm">Professional invoice তৈরি করুন এবং PDF download করুন</p>
-            </div>
-          </div>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            ইনভয়েস মেকার
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">Professional invoice তৈরি করুন এবং PDF download করুন</p>
         </CardHeader>
-        <CardContent className="space-y-8">
+        <CardContent className="pt-0 space-y-6">
           {/* Form Inputs Section - Top */}
           <div className="max-w-4xl mx-auto space-y-6">
               {/* Company Section - Minimized */}
