@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
-import { clients, spendLogs, meetings, invoices, invoiceLineItems, todos, whatsappTemplates } from "@shared/schema";
+import { clients, spendLogs, meetings, todos, whatsappTemplates } from "@shared/schema";
 import { eq, desc, gt } from "drizzle-orm";
 
 if (!process.env.DATABASE_URL) {
@@ -85,38 +85,6 @@ export async function initializeDatabase() {
       }
     ]);
 
-    // Insert sample invoice
-    const [invoice1] = await db.insert(invoices).values([
-      {
-        clientId: client1.id,
-        invoiceNumber: "INV-0001",
-        status: "Due",
-        discount: 0,
-        vat: 5,
-        subtotal: 15000,
-        totalAmount: 15750,
-        dueDate: new Date("2024-02-15"),
-        notes: "Facebook Marketing Campaign Setup",
-      }
-    ]).returning();
-
-    // Insert sample invoice line items
-    await db.insert(invoiceLineItems).values([
-      {
-        invoiceId: invoice1.id,
-        description: "Facebook Ad Campaign Design",
-        quantity: 1,
-        rate: 10000,
-        amount: 10000,
-      },
-      {
-        invoiceId: invoice1.id,
-        description: "Landing Page Development",
-        quantity: 1,
-        rate: 5000,
-        amount: 5000,
-      }
-    ]);
 
     // Insert sample todos
     await db.insert(todos).values([
