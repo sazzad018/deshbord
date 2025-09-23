@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Download, Plus, Trash2, Building2, User2, Percent, TimerReset, FileText, Minus } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Calendar, Download, Plus, Trash2, Building2, User2, Percent, TimerReset, FileText, Minus, Save } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Client, CompanySettings } from "@shared/schema";
 
 // Brand Colors
@@ -106,6 +107,27 @@ export default function InvoiceMaker() {
     setCompanyMinimized(true); // Reset company section to minimized
   };
 
+  // PDF Save Mutation
+  const savePdfMutation = useMutation({
+    mutationFn: async (pdfData: { dataUrl: string; fileName: string; clientId: string; invoiceNo: string; total: number }) => {
+      return await apiRequest("POST", "/api/invoice-pdfs", pdfData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "সফল",
+        description: "PDF database এ সংরক্ষিত হয়েছে!",
+      });
+    },
+    onError: (error: any) => {
+      console.error("PDF save error:", error);
+      toast({
+        title: "সতর্কতা",
+        description: "PDF ডাউনলোড হয়েছে কিন্তু database এ save হতে পারেনি",
+        variant: "destructive",
+      });
+    },
+  });
+
   // PDF Download
   const downloadPDF = async () => {
     if (!selectedClient) {
@@ -159,8 +181,10 @@ export default function InvoiceMaker() {
               pageCanvas.width, pageCanvas.height,
               0, 0, pageCanvas.width, pageCanvas.height
             );
-            const pageData = pageCanvas.toDataURL("image/png");
-            pdf.addImage(pageData, "PNG", 20, 20, imgWidth, pageCanvas.height * ratio);
+            const pageData = pageCanvas.getContext("2d")?.canvas.toDataURL("image/png");
+            if (pageData) {
+              pdf.addImage(pageData, "PNG", 20, 20, imgWidth, pageCanvas.height * ratio);
+            }
           }
           drawn += pageCanvas.height * ratio;
           remaining -= sliceHeight;
@@ -168,7 +192,21 @@ export default function InvoiceMaker() {
         }
       }
 
+      // Get PDF as data URL for saving to database
+      const pdfDataUrl = pdf.output('datauristring');
+      
+      // Download the PDF
       pdf.save(`${invoiceNo}.pdf`);
+      
+      // Save to database
+      savePdfMutation.mutate({
+        dataUrl: pdfDataUrl,
+        fileName: `${invoiceNo}.pdf`,
+        clientId: selectedClient.id,
+        invoiceNo: invoiceNo,
+        total: grandTotal,
+      });
+
       toast({
         title: "সফল",
         description: "PDF সফলভাবে ডাউনলোড হয়েছে!",
