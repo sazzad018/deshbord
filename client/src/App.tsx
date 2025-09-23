@@ -7,6 +7,7 @@ import Dashboard from "@/pages/dashboard";
 import ClientPortal from "@/pages/client-portal";
 import TodoList from "@/pages/TodoList";
 import WhatsAppMessaging from "@/pages/WhatsAppMessaging";
+import SavedPDFs from "@/pages/SavedPDFs";
 
 function Router() {
   return (
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/todo-list" component={TodoList} />
       <Route path="/whatsapp-messaging" component={WhatsAppMessaging} />
+      <Route path="/saved-pdfs" component={SavedPDFs} />
       <Route path="/portal/:portalKey" component={ClientPortal} />
     </Switch>
   );
