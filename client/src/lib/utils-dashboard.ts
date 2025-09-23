@@ -1,11 +1,13 @@
 import type { Client, AIQueryResult } from "@shared/schema";
 
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('bn-BD', {
+  // Format in English numbers with BDT symbol
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'BDT',
-    minimumFractionDigits: 0
-  }).format(amount);
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount).replace('BDT', '৳');
 }
 
 export async function safeWriteToClipboard(

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -27,6 +28,8 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
     name: "",
     phone: "",
     fb: "",
+    profilePicture: "",
+    adminNotes: "",
   });
 
   const { toast } = useToast();
@@ -42,7 +45,7 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
       setIsDialogOpen(false);
-      setNewClient({ name: "", phone: "", fb: "" });
+      setNewClient({ name: "", phone: "", fb: "", profilePicture: "", adminNotes: "" });
       toast({
         title: "সফল",
         description: "নতুন ক্লায়েন্ট সফলভাবে যোগ করা হয়েছে",
@@ -90,6 +93,8 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
       name: newClient.name.trim(),
       phone: newClient.phone.trim(),
       fb: newClient.fb.trim() || undefined,
+      profilePicture: newClient.profilePicture.trim() || undefined,
+      adminNotes: newClient.adminNotes.trim() || undefined,
       status: "Active",
       scopes: ["Facebook Marketing"],
     });
@@ -161,6 +166,19 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
                     placeholder="ফেসবুক পেইজ লিংক (ঐচ্ছিক)"
                     value={newClient.fb}
                     onChange={(e) => setNewClient({ ...newClient, fb: e.target.value })}
+                  />
+                  <Input
+                    data-testid="input-client-profile-picture"
+                    placeholder="প্রোফাইল ছবির URL (ঐচ্ছিক)"
+                    value={newClient.profilePicture}
+                    onChange={(e) => setNewClient({ ...newClient, profilePicture: e.target.value })}
+                  />
+                  <Textarea
+                    data-testid="textarea-client-admin-notes"
+                    placeholder="এডমিন নোট - বিশেষ নির্দেশনা বা মন্তব্য (ঐচ্ছিক)"
+                    value={newClient.adminNotes}
+                    onChange={(e) => setNewClient({ ...newClient, adminNotes: e.target.value })}
+                    rows={3}
                   />
                   <div className="flex gap-2">
                     <Button 

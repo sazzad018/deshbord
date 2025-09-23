@@ -107,6 +107,21 @@ export default function ClientDetailsPanel({ selectedClientId, onSelectClient }:
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Profile Picture Section */}
+              {(clientDetails?.profilePicture || selectedClient.profilePicture) && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">প্রোফাইল ছবি</label>
+                  <div className="mt-2 flex items-center gap-3">
+                    <img 
+                      src={clientDetails?.profilePicture || selectedClient.profilePicture || ''} 
+                      alt={`${selectedClient.name} এর প্রোফাইল ছবি`}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                      data-testid="img-client-profile-picture"
+                    />
+                  </div>
+                </div>
+              )}
+              
               <div>
                 <label className="text-sm font-medium text-muted-foreground">নাম</label>
                 <p className="font-medium" data-testid="text-client-details-name">{selectedClient.name}</p>
@@ -146,10 +161,48 @@ export default function ClientDetailsPanel({ selectedClientId, onSelectClient }:
                 <label className="text-sm font-medium text-muted-foreground">সার্ভিস স্কোপ</label>
                 <div className="flex flex-wrap gap-1 mt-1" data-testid="div-client-details-scopes">
                   {selectedClient.scopes.map((scope, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
+                    <Badge key={index} variant="secondary" className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-200">
                       {scope}
                     </Badge>
                   ))}
+                </div>
+              </div>
+
+              {/* Admin Notes Section */}
+              {(clientDetails?.adminNotes || selectedClient.adminNotes) && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">এডমিন নোট</label>
+                  <div className="mt-1 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-amber-800" data-testid="text-client-admin-notes">
+                      {clientDetails?.adminNotes || selectedClient.adminNotes}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Portal Link Section */}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">ক্লায়েন্ট পোর্টাল</label>
+                <div className="mt-1 flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(`/api/clients/${selectedClient.id}/details`);
+                        const data = await response.json();
+                        if (data.portalKey) {
+                          window.open(`/portal/${data.portalKey}`, '_blank');
+                        }
+                      } catch (error) {
+                        console.error('Failed to get portal key:', error);
+                      }
+                    }}
+                    data-testid="button-open-client-portal"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    পোর্টাল খুলুন
+                  </Button>
                 </div>
               </div>
             </div>

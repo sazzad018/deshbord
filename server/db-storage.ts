@@ -41,6 +41,8 @@ export class DatabaseStorage implements IStorage {
       name: insertClient.name,
       phone: insertClient.phone,
       fb: insertClient.fb || null,
+      profilePicture: insertClient.profilePicture || null,
+      adminNotes: insertClient.adminNotes || null,
       status: insertClient.status || "Active",
       walletDeposited: 0,
       walletSpent: 0,

@@ -65,7 +65,17 @@ export default function WebsiteServicesSection({ selectedClientId }: WebsiteServ
                   <Button 
                     size="sm" 
                     variant="outline"
-                    onClick={() => window.open(`/portal/${selectedClientId}`, '_blank')}
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(`/api/clients/${selectedClientId}/details`);
+                        const clientData = await response.json();
+                        if (clientData.portalKey) {
+                          window.open(`/portal/${clientData.portalKey}`, '_blank');
+                        }
+                      } catch (error) {
+                        console.error('Failed to get portal key:', error);
+                      }
+                    }}
                     data-testid="button-client-portal"
                   >
                     ক্লায়েন্ট পোর্টাল
@@ -99,7 +109,17 @@ export default function WebsiteServicesSection({ selectedClientId }: WebsiteServ
                   <Button 
                     size="sm" 
                     variant="outline"
-                    onClick={() => window.open(`/portal/${selectedClientId}`, '_blank')}
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(`/api/clients/${selectedClientId}/details`);
+                        const clientData = await response.json();
+                        if (clientData.portalKey) {
+                          window.open(`/portal/${clientData.portalKey}`, '_blank');
+                        }
+                      } catch (error) {
+                        console.error('Failed to get portal key:', error);
+                      }
+                    }}
                     data-testid="button-client-portal-2"
                   >
                     ক্লায়েন্ট পোর্টাল

@@ -126,28 +126,49 @@ export default function QuickActions({ selectedClientId }: QuickActionsProps) {
       return;
     }
 
-    const portalUrl = `https://portal.example.com/c/${selectedClientId}?key=portal-key`;
-    setCopyMsg("");
-    
-    const res = await safeWriteToClipboard(portalUrl);
-    if (res.ok) {
-      setCopyMsg(res.method === "clipboard" ? "ক্লিপবোর্ডে কপি হয়েছে" : "কপি হয়েছে (fallback)");
-      toast({
-        title: "সফল",
-        description: "পোর্টাল লিংক কপি করা হয়েছে",
-      });
-    } else {
-      const input = portalInputRef.current;
-      if (input) {
-        input.focus();
-        input.select();
-        setCopyMsg("কপি ব্লকড — টেক্সট সিলেক্ট হয়েছে, Ctrl/Cmd + C চাপুন");
-      } else {
-        setCopyMsg("কপি ব্লকড — লিংক সিলেক্ট করে নিজে কপি করুন");
+    // Get client data to access portalKey
+    try {
+      const response = await fetch(`/api/clients/${selectedClientId}/details`);
+      const clientData = await response.json();
+      
+      if (!clientData.portalKey) {
+        toast({
+          title: "ত্রুটি",
+          description: "ক্লায়েন্ট পোর্টাল কী পাওয়া যায়নি",
+          variant: "destructive",
+        });
+        return;
       }
-    }
 
-    setTimeout(() => setCopyMsg(""), 3000);
+      const portalUrl = `${window.location.origin}/portal/${clientData.portalKey}`;
+      setCopyMsg("");
+      
+      const res = await safeWriteToClipboard(portalUrl);
+      if (res.ok) {
+        setCopyMsg(res.method === "clipboard" ? "ক্লিপবোর্ডে কপি হয়েছে" : "কপি হয়েছে (fallback)");
+        toast({
+          title: "সফল",
+          description: "পোর্টাল লিংক কপি করা হয়েছে",
+        });
+      } else {
+        const input = portalInputRef.current;
+        if (input) {
+          input.focus();
+          input.select();
+          setCopyMsg("কপি ব্লকড — টেক্সট সিলেক্ট হয়েছে, Ctrl/Cmd + C চাপুন");
+        } else {
+          setCopyMsg("কপি ব্লকড — লিংক সিলেক্ট করে নিজে কপি করুন");
+        }
+      }
+
+      setTimeout(() => setCopyMsg(""), 3000);
+    } catch (error) {
+      toast({
+        title: "ত্রুটি",
+        description: "পোর্টাল লিংক তৈরি করতে সমস্যা হয়েছে",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleExportData = () => {
@@ -167,7 +188,7 @@ export default function QuickActions({ selectedClientId }: QuickActionsProps) {
     });
   };
 
-  const portalUrl = selectedClientId ? `https://portal.example.com/c/${selectedClientId}?key=portal-key` : "";
+  const portalUrl = selectedClientId ? `${window.location.origin}/portal/[loading...]` : "";
 
   return (
     <Card className="rounded-2xl shadow-sm">

@@ -8,11 +8,13 @@ export const clients = pgTable("clients", {
   name: text("name").notNull(),
   phone: text("phone").notNull(),
   fb: text("fb"),
+  profilePicture: text("profile_picture"),
   status: text("status").notNull().default("Active"),
   walletDeposited: integer("wallet_deposited").notNull().default(0),
   walletSpent: integer("wallet_spent").notNull().default(0),
   scopes: jsonb("scopes").$type<string[]>().notNull().default([]),
   portalKey: text("portal_key").notNull(),
+  adminNotes: text("admin_notes"),
   deleted: boolean("deleted").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
