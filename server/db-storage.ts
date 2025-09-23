@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type DashboardMetrics, type Invoice, type InsertInvoice, type InvoiceLineItem, type InsertInvoiceLineItem, type InvoiceWithLineItems, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, clients, spendLogs, meetings, invoices, invoiceLineItems, todos, whatsappTemplates } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type DashboardMetrics, type Invoice, type InsertInvoice, type InvoiceLineItem, type InsertInvoiceLineItem, type InvoiceWithLineItems, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, clients, spendLogs, meetings, invoices, invoiceLineItems, todos, whatsappTemplates, companySettings } from "@shared/schema";
 import { eq, desc, sum, count, sql } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
@@ -154,7 +154,7 @@ export class DatabaseStorage implements IStorage {
     const invoiceNumber = `INV-${String(invoiceCount[0].count + 1).padStart(4, '0')}`;
 
     // Calculate totals
-    const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
+    const subtotal = lineItems.reduce((sum, item) => sum + ((item.quantity || 1) * item.rate), 0);
     const discountAmount = Math.round((subtotal * (insertInvoice.discount || 0)) / 100);
     const vatAmount = Math.round(((subtotal - discountAmount) * (insertInvoice.vat || 0)) / 100);
     const totalAmount = subtotal - discountAmount + vatAmount;
@@ -172,6 +172,7 @@ export class DatabaseStorage implements IStorage {
       lineItems.map(item => ({
         ...item,
         invoiceId: invoice.id,
+        amount: (item.quantity || 1) * item.rate, // Calculate amount
       }))
     );
 
@@ -276,5 +277,34 @@ export class DatabaseStorage implements IStorage {
       balance: totals.totalDeposited - totals.totalSpent,
       activeClients,
     };
+  }
+
+  // Company settings operations
+  async getCompanySettings(): Promise<CompanySettings | undefined> {
+    const result = await db.select().from(companySettings).where(eq(companySettings.isDefault, true)).limit(1);
+    return result[0];
+  }
+
+  async createCompanySettings(insertCompanySettings: InsertCompanySettings): Promise<CompanySettings> {
+    // Set all existing settings to non-default
+    await db.update(companySettings).set({ isDefault: false });
+    
+    const [settings] = await db.insert(companySettings).values({
+      ...insertCompanySettings,
+      isDefault: true,
+    }).returning();
+    return settings;
+  }
+
+  async updateCompanySettings(id: string, updates: Partial<CompanySettings>): Promise<CompanySettings | undefined> {
+    const [updated] = await db.update(companySettings)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(companySettings.id, id))
+      .returning();
+    
+    return updated;
   }
 }

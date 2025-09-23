@@ -78,6 +78,20 @@ export const whatsappTemplates = pgTable("whatsapp_templates", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const companySettings = pgTable("company_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyName: text("company_name").notNull().default("Agent CRM + Ops"),
+  companyEmail: text("company_email"),
+  companyPhone: text("company_phone"),
+  companyWebsite: text("company_website"),
+  companyAddress: text("company_address"),
+  logoUrl: text("logo_url"),
+  brandColor: text("brand_color").notNull().default("#A576FF"),
+  isDefault: boolean("is_default").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
   createdAt: true,
@@ -117,6 +131,12 @@ export const insertWhatsappTemplateSchema = createInsertSchema(whatsappTemplates
   createdAt: true,
 });
 
+export const insertCompanySettingsSchema = createInsertSchema(companySettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type SpendLog = typeof spendLogs.$inferSelect;
@@ -131,6 +151,8 @@ export type Todo = typeof todos.$inferSelect;
 export type InsertTodo = z.infer<typeof insertTodoSchema>;
 export type WhatsappTemplate = typeof whatsappTemplates.$inferSelect;
 export type InsertWhatsappTemplate = z.infer<typeof insertWhatsappTemplateSchema>;
+export type CompanySettings = typeof companySettings.$inferSelect;
+export type InsertCompanySettings = z.infer<typeof insertCompanySettingsSchema>;
 
 export interface ClientWithLogs extends Client {
   logs: SpendLog[];
