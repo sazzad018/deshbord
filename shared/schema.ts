@@ -138,6 +138,50 @@ export const insertCustomButtonSchema = createInsertSchema(customButtons).omit({
   createdAt: true,
 });
 
+// Invoice Management Tables
+export const invoices = pgTable("invoices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  invoiceNo: text("invoice_no").notNull().unique(),
+  clientId: varchar("client_id").notNull().references(() => clients.id),
+  companyId: varchar("company_id").references(() => companySettings.id), // Optional: multiple companies
+  issueDate: text("issue_date").notNull(), // YYYY-MM-DD format
+  startDate: text("start_date"), // Service period start
+  endDate: text("end_date"), // Service period end
+  currency: text("currency").notNull().default("BDT"),
+  subTotal: integer("sub_total").notNull().default(0), // In paisa/cents
+  discountPct: integer("discount_pct").notNull().default(0), // Percentage * 100 (e.g., 1500 = 15.00%)
+  discountAmt: integer("discount_amt").notNull().default(0), // In paisa/cents
+  vatPct: integer("vat_pct").notNull().default(0), // Percentage * 100
+  vatAmt: integer("vat_amt").notNull().default(0), // In paisa/cents
+  grandTotal: integer("grand_total").notNull().default(0), // In paisa/cents
+  notes: text("notes"),
+  status: text("status").notNull().default("Draft"), // "Draft", "Sent", "Paid", "Cancelled"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const invoiceItems = pgTable("invoice_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  invoiceId: varchar("invoice_id").notNull().references(() => invoices.id, { onDelete: "cascade" }),
+  description: text("description").notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  rate: integer("rate").notNull().default(0), // In paisa/cents
+  amount: integer("amount").notNull().default(0), // quantity * rate (in paisa/cents)
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertInvoiceItemSchema = createInsertSchema(invoiceItems).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertMeetingSchema = createInsertSchema(meetings).omit({
   id: true,
   createdAt: true,
@@ -179,6 +223,10 @@ export type CompanySettings = typeof companySettings.$inferSelect;
 export type InsertCompanySettings = z.infer<typeof insertCompanySettingsSchema>;
 export type CustomButton = typeof customButtons.$inferSelect;
 export type InsertCustomButton = z.infer<typeof insertCustomButtonSchema>;
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+export type InvoiceItem = typeof invoiceItems.$inferSelect;
+export type InsertInvoiceItem = z.infer<typeof insertInvoiceItemSchema>;
 
 export interface ClientWithLogs extends Client {
   logs: SpendLog[];
