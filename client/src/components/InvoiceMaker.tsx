@@ -94,13 +94,16 @@ export default function InvoiceMaker() {
 
   const resetForm = () => {
     setInvoiceNo(`INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
+    setClientId(""); // Reset client selection
     setIssueDate(todayISO());
     setStartDate(todayISO());
     setEndDate(addDays(todayISO(), 30));
-    setItems([{ ...EMPTY_ITEM }]);
+    setItems([{ ...EMPTY_ITEM }]); // Reset to single empty item
     setDiscountPct(0);
     setVatPct(0);
-    setNotes("");
+    setNotes("Payment due within 7 days. Mobile Banking/Bkash/Nagad accepted.");
+    setCurrency("BDT"); // Reset currency to default
+    setCompanyMinimized(true); // Reset company section to minimized
   };
 
   // PDF Download
