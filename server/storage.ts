@@ -16,6 +16,7 @@ export interface IStorage {
 
   // Spend log operations
   getSpendLogs(clientId: string): Promise<SpendLog[]>;
+  getAllSpendLogs(): Promise<SpendLog[]>;
   createSpendLog(spendLog: InsertSpendLog): Promise<SpendLog>;
   
   // Meeting operations

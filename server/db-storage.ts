@@ -64,13 +64,21 @@ export class DatabaseStorage implements IStorage {
   async deleteClient(id: string): Promise<boolean> {
     try {
       // Check if client has dependent records first
-      const [spendLogsCount, meetingsCount] = await Promise.all([
+      const [spendLogsCount, meetingsCount, serviceScopesCount, invoicesCount] = await Promise.all([
         db.select({ count: sql<number>`count(*)` }).from(spendLogs).where(eq(spendLogs.clientId, id)),
-        db.select({ count: sql<number>`count(*)` }).from(meetings).where(eq(meetings.clientId, id))
+        db.select({ count: sql<number>`count(*)` }).from(meetings).where(eq(meetings.clientId, id)),
+        db.select({ count: sql<number>`count(*)` }).from(serviceScopes).where(eq(serviceScopes.clientId, id)),
+        db.select({ count: sql<number>`count(*)` }).from(invoices).where(eq(invoices.clientId, id))
       ]);
 
-      if (spendLogsCount[0].count > 0 || meetingsCount[0].count > 0) {
-        throw new Error("Cannot delete client with existing spend logs or meetings. Please remove them first.");
+      const dependencies = [];
+      if (spendLogsCount[0].count > 0) dependencies.push(`${spendLogsCount[0].count} spend logs`);
+      if (meetingsCount[0].count > 0) dependencies.push(`${meetingsCount[0].count} meetings`);
+      if (serviceScopesCount[0].count > 0) dependencies.push(`${serviceScopesCount[0].count} service scopes`);
+      if (invoicesCount[0].count > 0) dependencies.push(`${invoicesCount[0].count} invoices`);
+
+      if (dependencies.length > 0) {
+        throw new Error(`Cannot permanently delete client with existing ${dependencies.join(', ')}. Please remove them first or use soft delete (trash) instead.`);
       }
 
       const result = await db.delete(clients).where(eq(clients.id, id));
@@ -84,6 +92,12 @@ export class DatabaseStorage implements IStorage {
     return await db.select()
       .from(spendLogs)
       .where(eq(spendLogs.clientId, clientId))
+      .orderBy(spendLogs.date);
+  }
+
+  async getAllSpendLogs(): Promise<SpendLog[]> {
+    return await db.select()
+      .from(spendLogs)
       .orderBy(spendLogs.date);
   }
 

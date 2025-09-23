@@ -56,7 +56,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: "Failed to delete client" });
+      if (error instanceof Error && error.message.includes("Cannot permanently delete client")) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Failed to delete client" });
+      }
     }
   });
 
@@ -105,14 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/spend-logs/all", async (req, res) => {
     try {
-      const clients = await storage.getClients();
-      const allLogs = [];
-      
-      for (const client of clients) {
-        const logs = await storage.getSpendLogs(client.id);
-        allLogs.push(...logs);
-      }
-      
+      const allLogs = await storage.getAllSpendLogs();
       res.json(allLogs);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch all spend logs" });
