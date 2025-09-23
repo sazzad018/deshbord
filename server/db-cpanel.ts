@@ -9,7 +9,7 @@ if (!process.env.DATABASE_URL) {
 
 // Create postgres connection for cPanel
 const connection = postgres(process.env.DATABASE_URL, {
-  ssl: 'require', // cPanel usually requires SSL
+  ssl: false, // Disable SSL for cPanel hosting (most don't support SSL for internal connections)
   max: 10,
   idle_timeout: 20,
   connect_timeout: 10,

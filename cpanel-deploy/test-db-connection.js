@@ -13,45 +13,52 @@ const DB_USER = 'your_username';     // Replace with your database username
 const DB_PASS = 'your_password';     // Replace with your database password  
 const DB_NAME = 'your_database';     // Replace with your database name
 
-// Test different connection options
+// Test different connection options with SSL configurations
 const testConnections = [
-  // Test 1: Localhost with port (Most common for cPanel)
+  // Test 1: Localhost with SSL disabled (Most common for cPanel)
   {
-    name: "Localhost with Port 5432",
-    url: `postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}`
+    name: "Localhost - SSL Disabled",
+    url: `postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}`,
+    ssl: false
   },
   
-  // Test 2: Localhost without port
+  // Test 2: Localhost with SSL prefer
   {
-    name: "Localhost Default Port",
-    url: `postgresql://${DB_USER}:${DB_PASS}@localhost/${DB_NAME}`
+    name: "Localhost - SSL Prefer", 
+    url: `postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}`,
+    ssl: 'prefer'
   },
   
-  // Test 3: 127.0.0.1 instead of localhost
+  // Test 3: 127.0.0.1 with SSL disabled
   {
-    name: "Local IP 127.0.0.1",
-    url: `postgresql://${DB_USER}:${DB_PASS}@127.0.0.1:5432/${DB_NAME}`
+    name: "Local IP - SSL Disabled",
+    url: `postgresql://${DB_USER}:${DB_PASS}@127.0.0.1:5432/${DB_NAME}`,
+    ssl: false
   },
   
-  // Test 4: Original hostname
+  // Test 4: Original hostname with SSL disabled
   {
-    name: "jupiter.hostseba.com",
-    url: `postgresql://${DB_USER}:${DB_PASS}@jupiter.hostseba.com:5432/${DB_NAME}`
+    name: "jupiter.hostseba.com - SSL Disabled",
+    url: `postgresql://${DB_USER}:${DB_PASS}@jupiter.hostseba.com:5432/${DB_NAME}`,
+    ssl: false
   },
   
-  // Test 5: Alternative common cPanel database hosts
+  // Test 5: Original hostname with SSL required (if external SSL is needed)
   {
-    name: "Internal Host (sql)",
-    url: `postgresql://${DB_USER}:${DB_PASS}@sql.your-domain.com:5432/${DB_NAME}`
+    name: "jupiter.hostseba.com - SSL Required",
+    url: `postgresql://${DB_USER}:${DB_PASS}@jupiter.hostseba.com:5432/${DB_NAME}`,
+    ssl: 'require'
   }
 ];
 
 async function testConnection(config) {
   console.log(`\n🔍 Testing: ${config.name}`);
   console.log(`📡 URL: ${config.url.replace(/:([^:@]*?)@/, ':****@')}`); // Hide password
+  console.log(`🔒 SSL: ${config.ssl}`);
   
   try {
     const sql = postgres(config.url, {
+      ssl: config.ssl,
       connect_timeout: 5,
       max: 1,
       onnotice: () => {} // Suppress notices
