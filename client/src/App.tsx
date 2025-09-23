@@ -8,12 +8,16 @@ import ClientPortal from "@/pages/client-portal";
 import TodoList from "@/pages/TodoList";
 import WhatsAppMessaging from "@/pages/WhatsAppMessaging";
 import SavedPDFs from "@/pages/SavedPDFs";
+import InvoiceMakerPage from "@/pages/InvoiceMaker";
+import ClientManagementPage from "@/pages/ClientManagement";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/clients" component={ClientManagementPage} />
+      <Route path="/invoice-maker" component={InvoiceMakerPage} />
       <Route path="/todo-list" component={TodoList} />
       <Route path="/whatsapp-messaging" component={WhatsAppMessaging} />
       <Route path="/saved-pdfs" component={SavedPDFs} />

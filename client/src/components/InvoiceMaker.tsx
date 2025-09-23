@@ -456,7 +456,28 @@ export default function InvoiceMaker() {
                   data-testid="button-download-pdf"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  PDF ডাউনলোড
+                  PDF তৈরি করুন
+                </Button>
+                <Button 
+                  onClick={() => {
+                    if (!selectedClient) {
+                      toast({
+                        title: "ত্রুটি",
+                        description: "দয়া করে একটি ক্লায়েন্ট নির্বাচন করুন",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    // Use existing downloadPDF function which already includes save to database
+                    downloadPDF();
+                  }}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg"
+                  disabled={!selectedClient || savePdfMutation.isPending}
+                  data-testid="button-save-database"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {savePdfMutation.isPending ? "সেভ হচ্ছে..." : "ডাটাবেজে সেভ করুন"}
                 </Button>
                 <Button 
                   variant="outline" 
