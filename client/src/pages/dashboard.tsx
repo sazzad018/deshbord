@@ -8,6 +8,7 @@ import SpendChart from "@/components/SpendChart";
 import ClientDetailsPanel from "@/components/ClientDetailsPanel";
 import WebsiteServicesSection from "@/components/WebsiteServicesSection";
 import QuickActions from "@/components/QuickActions";
+import ControlPanel from "@/components/ControlPanel";
 
 export default function Dashboard() {
   const [query, setQuery] = useState("");
@@ -41,6 +42,9 @@ export default function Dashboard() {
             <MeetingScheduler selectedClientId={selectedClientId} />
           </div>
         </div>
+        
+        {/* Control Panel - Beautiful and Prominent at Bottom */}
+        <ControlPanel />
       </div>
     </div>
   );

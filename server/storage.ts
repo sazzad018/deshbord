@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type WebsiteProject, type InsertWebsiteProject } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type WebsiteProject, type InsertWebsiteProject, type CustomButton, type InsertCustomButton } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -56,6 +56,16 @@ export interface IStorage {
 
   // Analytics
   getDashboardMetrics(): Promise<DashboardMetrics>;
+
+  // Custom Button operations
+  getCustomButtons(): Promise<CustomButton[]>;
+  createCustomButton(button: InsertCustomButton): Promise<CustomButton>;
+  updateCustomButton(id: string, updates: Partial<CustomButton>): Promise<CustomButton | undefined>;
+  deleteCustomButton(id: string): Promise<boolean>;
+  reorderCustomButtons(buttonIds: string[]): Promise<boolean>;
+
+  // Website Project operations  
+  getWebsiteProjects(clientId: string): Promise<WebsiteProject[]>;
 }
 
 export class MemStorage implements IStorage {

@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, clients, spendLogs, meetings, todos, whatsappTemplates, companySettings, serviceScopes } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type CustomButton, type InsertCustomButton, type WebsiteProject, clients, spendLogs, meetings, todos, whatsappTemplates, companySettings, serviceScopes, customButtons, websiteProjects } from "@shared/schema";
 import { eq, desc, sum, count, sql, and, gte } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
@@ -27,11 +27,12 @@ export class DatabaseStorage implements IStorage {
     const client = await this.getClient(id);
     if (!client) return undefined;
 
-    const [logs, serviceScopes] = await Promise.all([
+    const [logs, serviceScopes, websiteProjects] = await Promise.all([
       this.getSpendLogs(id),
-      this.getServiceScopes(id)
+      this.getServiceScopes(id),
+      this.getWebsiteProjects(id)
     ]);
-    return { ...client, logs, serviceScopes };
+    return { ...client, logs, serviceScopes, websiteProjects };
   }
 
   async createClient(insertClient: InsertClient): Promise<Client> {
@@ -365,5 +366,60 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(clients)
       .where(eq(clients.deleted, true))
       .orderBy(desc(clients.createdAt));
+  }
+
+  // Custom Button CRUD Operations
+  async getCustomButtons(): Promise<CustomButton[]> {
+    return await db.select().from(customButtons)
+      .where(eq(customButtons.isActive, true))
+      .orderBy(customButtons.sortOrder, customButtons.createdAt);
+  }
+
+  async createCustomButton(insertButton: InsertCustomButton): Promise<CustomButton> {
+    // Get next sort order
+    const maxOrder = await db.select({ max: sql<number>`max(${customButtons.sortOrder})` })
+      .from(customButtons);
+    const nextOrder = (maxOrder[0]?.max || 0) + 1;
+
+    const [button] = await db.insert(customButtons).values({
+      ...insertButton,
+      sortOrder: nextOrder
+    }).returning();
+    return button;
+  }
+
+  async updateCustomButton(id: string, updates: Partial<CustomButton>): Promise<CustomButton | undefined> {
+    const [updated] = await db.update(customButtons)
+      .set(updates)
+      .where(eq(customButtons.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCustomButton(id: string): Promise<boolean> {
+    const [deleted] = await db.delete(customButtons)
+      .where(eq(customButtons.id, id))
+      .returning({ id: customButtons.id });
+    return !!deleted;
+  }
+
+  async reorderCustomButtons(buttonIds: string[]): Promise<boolean> {
+    try {
+      for (let i = 0; i < buttonIds.length; i++) {
+        await db.update(customButtons)
+          .set({ sortOrder: i })
+          .where(eq(customButtons.id, buttonIds[i]));
+      }
+      return true;
+    } catch (error) {
+      console.error('Error reordering custom buttons:', error);
+      return false;
+    }
+  }
+
+  async getWebsiteProjects(clientId: string): Promise<WebsiteProject[]> {
+    return await db.select().from(websiteProjects)
+      .where(eq(websiteProjects.clientId, clientId))
+      .orderBy(desc(websiteProjects.createdAt));
   }
 }

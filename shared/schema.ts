@@ -120,6 +120,24 @@ export const insertWebsiteProjectSchema = createInsertSchema(websiteProjects).om
   createdAt: true,
 });
 
+// Custom Control Panel Buttons Table
+export const customButtons = pgTable("custom_buttons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(), // Button text/label
+  description: text("description"), // Optional description
+  url: text("url").notNull(), // Link URL
+  icon: text("icon").default("ExternalLink"), // Lucide icon name
+  color: text("color").default("primary"), // Button color theme
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0), // For ordering buttons
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCustomButtonSchema = createInsertSchema(customButtons).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertMeetingSchema = createInsertSchema(meetings).omit({
   id: true,
   createdAt: true,
@@ -159,6 +177,8 @@ export type WhatsappTemplate = typeof whatsappTemplates.$inferSelect;
 export type InsertWhatsappTemplate = z.infer<typeof insertWhatsappTemplateSchema>;
 export type CompanySettings = typeof companySettings.$inferSelect;
 export type InsertCompanySettings = z.infer<typeof insertCompanySettingsSchema>;
+export type CustomButton = typeof customButtons.$inferSelect;
+export type InsertCustomButton = z.infer<typeof insertCustomButtonSchema>;
 
 export interface ClientWithLogs extends Client {
   logs: SpendLog[];

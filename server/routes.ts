@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertClientSchema, insertSpendLogSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema } from "@shared/schema";
+import { insertClientSchema, insertSpendLogSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, insertCustomButtonSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Client routes
@@ -456,6 +456,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(clientDetails);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch client portal data" });
+    }
+  });
+
+  // Custom Button routes
+  app.get("/api/custom-buttons", async (req, res) => {
+    try {
+      const buttons = await storage.getCustomButtons();
+      res.json(buttons);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch custom buttons" });
+    }
+  });
+
+  app.post("/api/custom-buttons", async (req, res) => {
+    try {
+      const validatedData = insertCustomButtonSchema.parse(req.body);
+      const button = await storage.createCustomButton(validatedData);
+      res.status(201).json(button);
+    } catch (error) {
+      console.error("Custom button creation error:", error);
+      res.status(400).json({ error: "Invalid custom button data" });
+    }
+  });
+
+  app.patch("/api/custom-buttons/:id", async (req, res) => {
+    try {
+      const button = await storage.updateCustomButton(req.params.id, req.body);
+      if (!button) {
+        return res.status(404).json({ error: "Custom button not found" });
+      }
+      res.json(button);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update custom button" });
+    }
+  });
+
+  app.delete("/api/custom-buttons/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteCustomButton(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Custom button not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete custom button" });
+    }
+  });
+
+  app.patch("/api/custom-buttons/reorder", async (req, res) => {
+    try {
+      const { buttonIds } = req.body;
+      if (!Array.isArray(buttonIds)) {
+        return res.status(400).json({ error: "buttonIds must be an array" });
+      }
+      
+      const success = await storage.reorderCustomButtons(buttonIds);
+      if (!success) {
+        return res.status(500).json({ error: "Failed to reorder buttons" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to reorder custom buttons" });
     }
   });
 
