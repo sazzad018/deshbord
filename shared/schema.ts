@@ -13,6 +13,7 @@ export const clients = pgTable("clients", {
   walletSpent: integer("wallet_spent").notNull().default(0),
   scopes: jsonb("scopes").$type<string[]>().notNull().default([]),
   portalKey: text("portal_key").notNull(),
+  deleted: boolean("deleted").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

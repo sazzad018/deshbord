@@ -60,6 +60,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/clients/:id/trash", async (req, res) => {
+    try {
+      const success = await storage.softDeleteClient(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to trash client" });
+    }
+  });
+
+  app.patch("/api/clients/:id/restore", async (req, res) => {
+    try {
+      const success = await storage.restoreClient(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to restore client" });
+    }
+  });
+
+  app.get("/api/clients/deleted", async (req, res) => {
+    try {
+      const deletedClients = await storage.getDeletedClients();
+      res.json(deletedClients);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch deleted clients" });
+    }
+  });
+
   // Spend log routes
   app.get("/api/clients/:id/spend-logs", async (req, res) => {
     try {
@@ -67,6 +100,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(logs);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch spend logs" });
+    }
+  });
+
+  app.get("/api/spend-logs/all", async (req, res) => {
+    try {
+      const clients = await storage.getClients();
+      const allLogs = [];
+      
+      for (const client of clients) {
+        const logs = await storage.getSpendLogs(client.id);
+        allLogs.push(...logs);
+      }
+      
+      res.json(allLogs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch all spend logs" });
     }
   });
 

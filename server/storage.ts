@@ -10,6 +10,9 @@ export interface IStorage {
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: string, updates: Partial<Client>): Promise<Client | undefined>;
   deleteClient(id: string): Promise<boolean>;
+  softDeleteClient(id: string): Promise<boolean>;
+  restoreClient(id: string): Promise<boolean>;
+  getDeletedClients(): Promise<Client[]>;
 
   // Spend log operations
   getSpendLogs(clientId: string): Promise<SpendLog[]>;

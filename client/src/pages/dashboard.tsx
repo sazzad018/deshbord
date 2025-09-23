@@ -6,6 +6,7 @@ import MeetingScheduler from "@/components/MeetingScheduler";
 import AIQuerySystem from "@/components/AIQuerySystem";
 import SpendChart from "@/components/SpendChart";
 import ClientDetailsPanel from "@/components/ClientDetailsPanel";
+import WebsiteServicesSection from "@/components/WebsiteServicesSection";
 import QuickActions from "@/components/QuickActions";
 
 export default function Dashboard() {
@@ -28,6 +29,7 @@ export default function Dashboard() {
             />
             <AIQuerySystem />
             <SpendChart />
+            <WebsiteServicesSection selectedClientId={selectedClientId} />
           </div>
           
           <div className="space-y-6">

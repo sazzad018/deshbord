@@ -1,18 +1,45 @@
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-
-const spend7d = [
-  { day: "সোম", spend: 18000 },
-  { day: "মঙ্গল", spend: 21000 },
-  { day: "বুধ", spend: 16500 },
-  { day: "বৃহস্পতি", spend: 25000 },
-  { day: "শুক্র", spend: 32000 },
-  { day: "শনি", spend: 14000 },
-  { day: "রবি", spend: 29000 },
-];
+import type { SpendLog } from "@shared/schema";
 
 export default function SpendChart() {
+  const { data: allSpendLogs = [] } = useQuery<SpendLog[]>({
+    queryKey: ["/api/spend-logs/all"],
+  });
+
+  // Generate last 7 days data from real spend logs
+  const generateLast7DaysData = () => {
+    const today = new Date();
+    const last7Days = [];
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      const dateString = date.toISOString().split('T')[0];
+      
+      // Get spending for this date
+      const daySpending = allSpendLogs
+        .filter(log => {
+          const logDate = new Date(log.date).toISOString().split('T')[0];
+          return logDate === dateString;
+        })
+        .reduce((total, log) => total + log.amount, 0);
+      
+      const dayNames = ["রবি", "সোম", "মঙ্গল", "বুধ", "বৃহস্পতি", "শুক্র", "শনি"];
+      
+      last7Days.push({
+        day: dayNames[date.getDay()],
+        spend: daySpending,
+        fullDate: date.toLocaleDateString()
+      });
+    }
+    
+    return last7Days;
+  };
+
+  const spend7d = generateLast7DaysData();
   return (
     <Card className="rounded-2xl shadow-sm">
       <CardHeader className="pb-2 flex-row items-center justify-between">

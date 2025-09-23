@@ -8,12 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, Trash2, TrendingUp } from "lucide-react";
+import { Plus, Edit, Trash2, TrendingUp, ExternalLink } from "lucide-react";
 import { formatCurrency } from "@/lib/utils-dashboard";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import type { Client, ClientWithLogs, ClientWithDetails, ServiceScope, ServiceAnalytics } from "@shared/schema";
+import type { Client, ClientWithLogs, ClientWithDetails, ServiceScope } from "@shared/schema";
 
 interface ClientDetailsPanelProps {
   selectedClientId: string;
@@ -40,13 +40,6 @@ export default function ClientDetailsPanel({ selectedClientId, onSelectClient }:
     enabled: !!selectedClientId,
   });
 
-  const { data: websiteAnalytics } = useQuery<ServiceAnalytics>({
-    queryKey: ["/api/service-analytics", "ওয়েবসাইট"],
-  });
-
-  const { data: landingPageAnalytics } = useQuery<ServiceAnalytics>({
-    queryKey: ["/api/service-analytics", "ল্যান্ডিং পেজ"],
-  });
 
   const createServiceScopeMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/service-scopes", data),
@@ -58,6 +51,17 @@ export default function ClientDetailsPanel({ selectedClientId, onSelectClient }:
     },
     onError: () => {
       toast({ title: "সার্ভিস স্কোপ যুক্ত করতে সমস্যা হয়েছে", variant: "destructive" });
+    },
+  });
+
+  const deleteServiceScopeMutation = useMutation({
+    mutationFn: (scopeId: string) => apiRequest("DELETE", `/api/service-scopes/${scopeId}`, undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients", selectedClientId, "details"] });
+      toast({ title: "সার্ভিস স্কোপ ডিলিট হয়েছে", variant: "default" });
+    },
+    onError: () => {
+      toast({ title: "সার্ভিস স্কোপ ডিলিট করতে সমস্যা হয়েছে", variant: "destructive" });
     },
   });
 
@@ -243,6 +247,33 @@ export default function ClientDetailsPanel({ selectedClientId, onSelectClient }:
                           শুরু: {new Date(scope.startDate).toLocaleDateString()}
                         </p>
                       </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            // Future: Add edit functionality
+                            toast({ title: "Edit functionality coming soon", variant: "default" });
+                          }}
+                          data-testid={`button-edit-scope-${scope.id}`}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            if (confirm("আপনি কি নিশ্চিত যে এই সার্ভিস স্কোপটি ডিলিট করতে চান?")) {
+                              deleteServiceScopeMutation.mutate(scope.id);
+                            }
+                          }}
+                          disabled={deleteServiceScopeMutation.isPending}
+                          data-testid={`button-delete-scope-${scope.id}`}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -257,184 +288,7 @@ export default function ClientDetailsPanel({ selectedClientId, onSelectClient }:
       )}
 
 
-      {/* Website Services Section */}
-      {selectedClient && (
-        <Card className="rounded-2xl shadow-sm">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold">ওয়েবসাইট সার্ভিস প্রজেক্ট</CardTitle>
-              <Button size="sm" data-testid="button-add-website-project">
-                <Plus className="h-4 w-4 mr-1" />
-                নতুন প্রজেক্ট
-              </Button>
-            </div>
-          </CardHeader>
-          
-          <CardContent>
-            <div className="space-y-3">
-              {/* Sample Website Projects - will be replaced with real data */}
-              <div className="border rounded-lg p-4 bg-green-50 border-green-200">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="default" className="bg-green-600">সম্পন্ন</Badge>
-                      <span className="font-medium">ই-কমার্স ওয়েবসাইট</span>
-                    </div>
-                    <p className="text-sm text-gray-700 mb-3">
-                      সম্পূর্ণ রেসপন্সিভ ই-কমার্স সাইট, পেমেন্ট গেটওয়ে সহ
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => window.open(`/portal/${selectedClient.portalKey}`, '_blank')}
-                        data-testid="button-client-portal"
-                      >
-                        ক্লায়েন্ট পোর্টাল
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => window.open('https://example-site.com', '_blank')}
-                      >
-                        লাইভ সাইট দেখুন
-                      </Button>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-2">
-                      সম্পন্ন: {new Date().toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
 
-              <div className="border rounded-lg p-4 bg-blue-50 border-blue-200">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="secondary" className="bg-blue-600 text-white">চলমান</Badge>
-                      <span className="font-medium">কর্পোরেট ওয়েবসাইট</span>
-                    </div>
-                    <p className="text-sm text-gray-700 mb-3">
-                      প্রফেশনাল কর্পোরেট সাইট ডিজাইন এবং ডেভেলপমেন্ট
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => window.open(`/portal/${selectedClient.portalKey}`, '_blank')}
-                        data-testid="button-client-portal-2"
-                      >
-                        ক্লায়েন্ট পোর্টাল
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        disabled
-                      >
-                        ডেভেলপমেন্ট চলছে
-                      </Button>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-2">
-                      শুরু: {new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-center py-4">
-                <p className="text-sm text-muted-foreground">
-                  ক্লায়েন্ট পোর্টাল দিয়ে আপনার ক্লায়েন্ট তাদের প্রজেক্টের অগ্রগতি এবং খরচের বিস্তারিত দেখতে পারবেন
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 7-Day Service Analytics */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card className="rounded-2xl shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              ওয়েবসাইট সার্ভিস (৭ দিন)
-            </CardTitle>
-          </CardHeader>
-          
-          <CardContent>
-            {websiteAnalytics ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">মোট ক্লায়েন্ট</p>
-                    <p className="text-2xl font-bold">{websiteAnalytics.totalClients}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">সক্রিয় প্রজেক্ট</p>
-                    <p className="text-2xl font-bold">{websiteAnalytics.activeScopes}</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">সাম্প্রতিক খরচ</p>
-                  <div className="space-y-1">
-                    {websiteAnalytics.last7DaysSpending.map((day, index) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span>{new Date(day.date).toLocaleDateString()}</span>
-                        <span>৳{day.amount.toLocaleString()}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                ডেটা লোড হচ্ছে...
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              ল্যান্ডিং পেজ সার্ভিস (৭ দিন)
-            </CardTitle>
-          </CardHeader>
-          
-          <CardContent>
-            {landingPageAnalytics ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">মোট ক্লায়েন্ট</p>
-                    <p className="text-2xl font-bold">{landingPageAnalytics.totalClients}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">সক্রিয় প্রজেক্ট</p>
-                    <p className="text-2xl font-bold">{landingPageAnalytics.activeScopes}</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">সাম্প্রতিক খরচ</p>
-                  <div className="space-y-1">
-                    {landingPageAnalytics.last7DaysSpending.map((day, index) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span>{new Date(day.date).toLocaleDateString()}</span>
-                        <span>৳{day.amount.toLocaleString()}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                ডেটা লোড হচ্ছে...
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

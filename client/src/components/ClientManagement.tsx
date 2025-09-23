@@ -6,10 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils-dashboard";
 import { createClient } from "@/lib/api";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import DeletedClientsView from "./DeletedClientsView";
 import type { Client } from "@shared/schema";
 
 interface ClientManagementProps {
@@ -20,6 +22,7 @@ interface ClientManagementProps {
 
 export default function ClientManagement({ query, selectedClientId, onSelectClient }: ClientManagementProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
   const [newClient, setNewClient] = useState({
     name: "",
     phone: "",
@@ -49,6 +52,25 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
       toast({
         title: "ত্রুটি",
         description: "ক্লায়েন্ট যোগ করতে সমস্যা হয়েছে",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const trashClientMutation = useMutation({
+    mutationFn: (clientId: string) => apiRequest("PATCH", `/api/clients/${clientId}/trash`, undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
+      toast({
+        title: "সফল",
+        description: "ক্লায়েন্ট ট্র্যাশে পাঠানো হয়েছে",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "ত্রুটি",
+        description: "ক্লায়েন্ট ট্র্যাশে পাঠাতে সমস্যা হয়েছে",
         variant: "destructive",
       });
     },
@@ -87,64 +109,88 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
     <Card className="rounded-2xl shadow-sm">
       <CardHeader className="pb-2 flex-row items-center justify-between">
         <div>
-          <CardTitle className="text-lg font-semibold">ক্লায়েন্ট ম্যানেজমেন্ট</CardTitle>
-          <p className="text-sm text-muted-foreground">সব ক্লায়েন্টের তথ্য এবং ওয়ালেট স্ট্যাটাস</p>
+          <CardTitle className="text-lg font-semibold">
+            {showDeleted ? "ট্র্যাশ করা ক্লায়েন্ট" : "ক্লায়েন্ট ম্যানেজমেন্ট"}
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {showDeleted ? "ডিলিট করা ক্লায়েন্টদের তালিকা ও পুনরুদ্ধার" : "সব ক্লায়েন্টের তথ্য এবং ওয়ালেট স্ট্যাটাস"}
+          </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2" data-testid="button-add-client">
-              <Plus className="h-4 w-4" />
-              নতুন ক্লায়েন্ট
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>নতুন ক্লায়েন্ট যোগ করুন</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Input
-                data-testid="input-client-name"
-                placeholder="ক্লায়েন্টের নাম"
-                value={newClient.name}
-                onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
-              />
-              <Input
-                data-testid="input-client-phone"
-                placeholder="হোয়াটসঅ্যাপ/ফোন নাম্বার"
-                value={newClient.phone}
-                onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
-              />
-              <Input
-                data-testid="input-client-fb"
-                placeholder="ফেসবুক পেইজ লিংক (ঐচ্ছিক)"
-                value={newClient.fb}
-                onChange={(e) => setNewClient({ ...newClient, fb: e.target.value })}
-              />
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  className="flex-1" 
-                  onClick={() => setIsDialogOpen(false)}
-                  data-testid="button-cancel-client"
-                >
-                  বাতিল
+        <div className="flex gap-2">
+          <Button 
+            variant={showDeleted ? "outline" : "secondary"}
+            onClick={() => setShowDeleted(false)}
+            data-testid="button-show-active-clients"
+          >
+            সক্রিয় ক্লায়েন্ট
+          </Button>
+          <Button 
+            variant={showDeleted ? "secondary" : "outline"}
+            onClick={() => setShowDeleted(true)}
+            data-testid="button-show-deleted-clients"
+          >
+            ট্র্যাশ করা
+          </Button>
+          {!showDeleted && (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2" data-testid="button-add-client">
+                  <Plus className="h-4 w-4" />
+                  নতুন ক্লায়েন্ট
                 </Button>
-                <Button
-                  className="flex-1"
-                  onClick={handleCreateClient}
-                  disabled={createClientMutation.isPending}
-                  data-testid="button-create-client"
-                >
-                  {createClientMutation.isPending ? "তৈরি হচ্ছে..." : "তৈরি করুন"}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>নতুন ক্লায়েন্ট যোগ করুন</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <Input
+                    data-testid="input-client-name"
+                    placeholder="ক্লায়েন্টের নাম"
+                    value={newClient.name}
+                    onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
+                  />
+                  <Input
+                    data-testid="input-client-phone"
+                    placeholder="হোয়াটসঅ্যাপ/ফোন নাম্বার"
+                    value={newClient.phone}
+                    onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
+                  />
+                  <Input
+                    data-testid="input-client-fb"
+                    placeholder="ফেসবুক পেইজ লিংক (ঐচ্ছিক)"
+                    value={newClient.fb}
+                    onChange={(e) => setNewClient({ ...newClient, fb: e.target.value })}
+                  />
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1" 
+                      onClick={() => setIsDialogOpen(false)}
+                      data-testid="button-cancel-client"
+                    >
+                      বাতিল
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      onClick={handleCreateClient}
+                      disabled={createClientMutation.isPending}
+                      data-testid="button-create-client"
+                    >
+                      {createClientMutation.isPending ? "তৈরি হচ্ছে..." : "তৈরি করুন"}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
       </CardHeader>
       
       <CardContent className="pt-0">
-        {isLoading ? (
+        {showDeleted ? (
+          <DeletedClientsView />
+        ) : isLoading ? (
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="animate-pulse">
@@ -182,7 +228,23 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
                         data-testid={`row-client-${client.id}`}
                       >
                         <TableCell className="font-medium" data-testid={`text-client-name-${client.id}`}>
-                          {client.name}
+                          <div className="space-y-1">
+                            <div>{client.name}</div>
+                            {client.scopes && client.scopes.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {client.scopes.slice(0, 3).map((scope, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs px-1 py-0">
+                                    {scope}
+                                  </Badge>
+                                ))}
+                                {client.scopes.length > 3 && (
+                                  <Badge variant="outline" className="text-xs px-1 py-0">
+                                    +{client.scopes.length - 3}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge className="bg-green-100 text-green-800" data-testid={`badge-client-status-${client.id}`}>
@@ -202,14 +264,30 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
                           {formatCurrency(balance)}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onSelectClient(client.id)}
-                            data-testid={`button-select-client-${client.id}`}
-                          >
-                            নির্বাচন করুন
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => onSelectClient(client.id)}
+                              data-testid={`button-select-client-${client.id}`}
+                            >
+                              নির্বাচন করুন
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => {
+                                if (confirm("আপনি কি নিশ্চিত যে এই ক্লায়েন্টটি ট্র্যাশে পাঠাতে চান? এটি পরবর্তীতে পুনরুদ্ধার করা যাবে।")) {
+                                  trashClientMutation.mutate(client.id);
+                                }
+                              }}
+                              disabled={trashClientMutation.isPending}
+                              data-testid={`button-trash-client-${client.id}`}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );

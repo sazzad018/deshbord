@@ -5,7 +5,9 @@ import { IStorage } from "./storage";
 
 export class DatabaseStorage implements IStorage {
   async getClients(): Promise<Client[]> {
-    return await db.select().from(clients).orderBy(desc(clients.createdAt));
+    return await db.select().from(clients)
+      .where(eq(clients.deleted, false))
+      .orderBy(desc(clients.createdAt));
   }
 
   async getClient(id: string): Promise<Client | undefined> {
@@ -398,5 +400,27 @@ export class DatabaseStorage implements IStorage {
         amount: Number(d.amount) || 0
       }))
     };
+  }
+
+  async softDeleteClient(id: string): Promise<boolean> {
+    const [updated] = await db.update(clients)
+      .set({ deleted: true })
+      .where(eq(clients.id, id))
+      .returning({ id: clients.id });
+    return !!updated;
+  }
+
+  async restoreClient(id: string): Promise<boolean> {
+    const [updated] = await db.update(clients)
+      .set({ deleted: false })
+      .where(eq(clients.id, id))
+      .returning({ id: clients.id });
+    return !!updated;
+  }
+
+  async getDeletedClients(): Promise<Client[]> {
+    return await db.select().from(clients)
+      .where(eq(clients.deleted, true))
+      .orderBy(desc(clients.createdAt));
   }
 }
