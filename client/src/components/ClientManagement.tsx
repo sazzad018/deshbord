@@ -85,12 +85,14 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
 
   const uploadImageMutation = useMutation({
     mutationFn: async (uploadData: { dataUrl: string; fileName: string }) => {
-      return await apiRequest("POST", "/api/uploads", uploadData);
+      const response = await apiRequest("POST", "/api/uploads", uploadData);
+      const data = await response.json();
+      return data;
     },
     onSuccess: (data: any) => {
-      console.log("Upload response data:", data);
-      console.log("Setting profilePicture to:", data.url);
-      setNewClient({ ...newClient, profilePicture: data.url });
+      if (data && data.url) {
+        setNewClient({ ...newClient, profilePicture: data.url });
+      }
       setIsUploading(false);
       toast({
         title: "সফল",
