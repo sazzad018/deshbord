@@ -193,45 +193,36 @@ export default function ControlPanel() {
   };
 
   return (
-    <Card className="mt-8">
-      <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 border-b">
+    <Card className="rounded-2xl shadow-sm">
+      <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-full">
-              <Settings className="h-6 w-6 text-purple-600" />
-            </div>
-            <div>
-              <CardTitle className="text-xl text-gray-900">কন্ট্রোল প্যানেল</CardTitle>
-              <CardDescription className="text-gray-600">
-                আপনার কাস্টম লিংক এবং বাটন পরিচালনা করুন
-              </CardDescription>
-            </div>
+          <div>
+            <CardTitle className="text-2xl font-bold text-slate-900">কন্ট্রোল প্যানেল</CardTitle>
+            <CardDescription className="text-sm text-slate-500 mt-1">
+              কাস্টম লিংক পরিচালনা
+            </CardDescription>
           </div>
           
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button 
                 data-testid="button-add-custom-button"
-                className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                className="bg-slate-900 hover:bg-slate-800 text-white"
                 onClick={() => {
                   setEditingButton(null);
                   setFormData({ title: "", description: "", url: "", icon: "ExternalLink", color: "primary" });
                 }}
               >
-                <Plus className="h-4 w-4" />
-                নতুন বাটন
+                <Plus className="h-4 w-4 mr-2" />
+                নতুন
               </Button>
             </DialogTrigger>
             
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <LinkIcon className="h-5 w-5" />
-                  {editingButton ? "বাটন সম্পাদনা" : "নতুন বাটন যোগ করুন"}
+                <DialogTitle className="text-lg">
+                  {editingButton ? "বাটন সম্পাদনা" : "নতুন বাটন"}
                 </DialogTitle>
-                <DialogDescription>
-                  একটি কাস্টম বাটন তৈরি করুন যা আপনার পছন্দের লিংকে নিয়ে যাবে।
-                </DialogDescription>
               </DialogHeader>
               
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -359,28 +350,30 @@ export default function ControlPanel() {
             <p className="text-gray-500 mb-4">আপনার প্রয়োজনীয় লিংকের জন্য কাস্টম বাটন তৈরি করুন।</p>
             <Button 
               onClick={() => setIsAddDialogOpen(true)}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+              className="bg-slate-900 hover:bg-slate-800 text-white"
             >
               প্রথম বাটন যোগ করুন
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             {customButtons.map((button) => {
-              const Icon = getIcon(button.icon || "ExternalLink");
               return (
-                <Card key={button.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-5 w-5 text-gray-600" />
-                        <h4 className="font-medium text-gray-900 truncate">{button.title}</h4>
-                      </div>
+                <Card key={button.id} className="hover:shadow-md transition-shadow border border-slate-200">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-slate-900 text-sm leading-tight">{button.title}</h3>
+                      {button.description && (
+                        <p className="text-xs text-slate-500 line-clamp-2">{button.description}</p>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
                       <div className="flex gap-1">
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0"
+                          variant="outline"
+                          className="h-7 px-2"
                           onClick={() => handleEdit(button)}
                           data-testid={`button-edit-${button.id}`}
                         >
@@ -389,32 +382,20 @@ export default function ControlPanel() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                          className="h-7 px-2 text-slate-400 hover:text-red-600"
                           onClick={() => handleDelete(button.id)}
                           data-testid={`button-delete-${button.id}`}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
-                    </div>
-                    
-                    {button.description && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{button.description}</p>
-                    )}
-                    
-                    <div className="flex items-center justify-between">
-                      <Badge variant="outline" className="text-xs">
-                        {button.url.startsWith('http') ? 'External' : 'Internal'}
-                      </Badge>
                       
                       <Button
                         size="sm"
-                        variant={getButtonVariant(button.color || "primary") as any}
-                        className={`flex items-center gap-1 ${getButtonClassName(button.color || "primary")}`}
+                        className="bg-slate-900 hover:bg-slate-800 text-white h-7 px-3"
                         onClick={() => handleButtonClick(button.url)}
                         data-testid={`button-link-${button.id}`}
                       >
-                        <ExternalLink className="h-3 w-3" />
                         যান
                       </Button>
                     </div>
