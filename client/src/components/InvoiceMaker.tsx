@@ -59,6 +59,15 @@ export default function InvoiceMaker() {
   const [vatPct, setVatPct] = useState(0);
   const [notes, setNotes] = useState("Payment due within 7 days. Mobile Banking/Bkash/Nagad accepted.");
   const [currency, setCurrency] = useState("BDT");
+  
+  // Company editing state
+  const [editableCompany, setEditableCompany] = useState({
+    companyName: "",
+    companyEmail: "",
+    companyPhone: "",
+    companyAddress: "",
+    companyWebsite: ""
+  });
 
   // Fetch clients
   const { data: clients = [] } = useQuery<Client[]>({
@@ -79,6 +88,19 @@ export default function InvoiceMaker() {
     companyAddress: "Dhaka, Bangladesh",
     companyWebsite: "agentcrm.com"
   }, [companyData]);
+  
+  // Update editable company data when company data is fetched
+  useEffect(() => {
+    if (company) {
+      setEditableCompany({
+        companyName: company.companyName || "",
+        companyEmail: company.companyEmail || "", 
+        companyPhone: company.companyPhone || "",
+        companyAddress: company.companyAddress || "",
+        companyWebsite: company.companyWebsite || ""
+      });
+    }
+  }, [company]);
 
   const selectedClient = useMemo(() => clients.find(c => c.id === clientId), [clients, clientId]);
 
@@ -107,6 +129,34 @@ export default function InvoiceMaker() {
     setCurrency("BDT"); // Reset currency to default
     setCompanyMinimized(true); // Reset company section to minimized
   };
+
+  // Company Save Mutation
+  const saveCompanyMutation = useMutation({
+    mutationFn: async (companyUpdateData: typeof editableCompany) => {
+      // Check if we have existing company from database
+      const existingCompany = companyData?.[0];
+      if (!existingCompany?.id) {
+        // If no existing company, create new one
+        return await apiRequest("POST", "/api/company-settings", companyUpdateData);
+      }
+      return await apiRequest("PATCH", `/api/company-settings/${existingCompany.id}`, companyUpdateData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "সফল",
+        description: "কোম্পানি তথ্য সফলভাবে আপডেট হয়েছে!",
+      });
+      // Refetch company settings to update the data
+      queryClient.invalidateQueries({ queryKey: ["/api/company-settings"] });
+    },
+    onError: () => {
+      toast({
+        title: "ত্রুটি",
+        description: "কোম্পানি তথ্য আপডেট করতে সমস্যা হয়েছে",
+        variant: "destructive",
+      });
+    },
+  });
 
   // PDF Save Mutation
   const savePdfMutation = useMutation({
@@ -252,20 +302,71 @@ export default function InvoiceMaker() {
                   </Button>
                 </CardHeader>
                 {!companyMinimized && (
-                  <CardContent className="pt-0 space-y-3">
+                  <CardContent className="pt-0 space-y-4">
                     <div>
                       <Label className="text-sm">কোম্পানির নাম</Label>
-                      <Input value={company.companyName || ""} readOnly className="text-sm" />
+                      <Input 
+                        value={editableCompany.companyName} 
+                        onChange={(e) => setEditableCompany(prev => ({ ...prev, companyName: e.target.value }))}
+                        className="text-sm" 
+                        placeholder="কোম্পানির নাম লিখুন"
+                        data-testid="input-company-name"
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-sm">ইমেইল</Label>
-                        <Input value={company.companyEmail || ""} readOnly className="text-sm" />
+                        <Input 
+                          value={editableCompany.companyEmail} 
+                          onChange={(e) => setEditableCompany(prev => ({ ...prev, companyEmail: e.target.value }))}
+                          className="text-sm" 
+                          placeholder="company@example.com"
+                          data-testid="input-company-email"
+                        />
                       </div>
                       <div>
                         <Label className="text-sm">ফোন</Label>
-                        <Input value={company.companyPhone || ""} readOnly className="text-sm" />
+                        <Input 
+                          value={editableCompany.companyPhone} 
+                          onChange={(e) => setEditableCompany(prev => ({ ...prev, companyPhone: e.target.value }))}
+                          className="text-sm" 
+                          placeholder="+8801XXXXXXXXX"
+                          data-testid="input-company-phone"
+                        />
                       </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-sm">ঠিকানা</Label>
+                        <Input 
+                          value={editableCompany.companyAddress} 
+                          onChange={(e) => setEditableCompany(prev => ({ ...prev, companyAddress: e.target.value }))}
+                          className="text-sm" 
+                          placeholder="শহর, দেশ"
+                          data-testid="input-company-address"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm">ওয়েবসাইট</Label>
+                        <Input 
+                          value={editableCompany.companyWebsite} 
+                          onChange={(e) => setEditableCompany(prev => ({ ...prev, companyWebsite: e.target.value }))}
+                          className="text-sm" 
+                          placeholder="www.example.com"
+                          data-testid="input-company-website"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end pt-2">
+                      <Button 
+                        onClick={() => saveCompanyMutation.mutate(editableCompany)}
+                        disabled={saveCompanyMutation.isPending}
+                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-2 rounded-lg"
+                        data-testid="button-save-company"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        {saveCompanyMutation.isPending ? "সেভ হচ্ছে..." : "কোম্পানি তথ্য সেভ করুন"}
+                      </Button>
                     </div>
                   </CardContent>
                 )}
