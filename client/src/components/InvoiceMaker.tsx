@@ -235,10 +235,9 @@ export default function InvoiceMaker() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* LEFT: Form */}
-            <div className="space-y-4">
+        <CardContent className="space-y-8">
+          {/* Form Inputs Section - Top */}
+          <div className="max-w-4xl mx-auto space-y-6">
               {/* Company Section - Minimized */}
               <Card className="rounded-lg">
                 <CardHeader className="pb-2">
@@ -448,16 +447,19 @@ export default function InvoiceMaker() {
                 />
               </div>
 
-              <div className="flex items-center gap-3">
+              
+              {/* Action Buttons - FIXED VERSION */}
+              <div className="flex gap-4 justify-center pt-6">
                 <Button 
                   onClick={downloadPDF} 
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg"
                   disabled={!selectedClient}
-                  data-testid="button-download-pdf"
+                  data-testid="button-create-pdf"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   PDF তৈরি করুন
                 </Button>
+                
                 <Button 
                   onClick={() => {
                     if (!selectedClient) {
@@ -468,21 +470,21 @@ export default function InvoiceMaker() {
                       });
                       return;
                     }
-
-                    // Use existing downloadPDF function which already includes save to database
+                    // Call the existing downloadPDF which also saves to database
                     downloadPDF();
                   }}
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg"
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-3 rounded-lg"
                   disabled={!selectedClient || savePdfMutation.isPending}
                   data-testid="button-save-database"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {savePdfMutation.isPending ? "সেভ হচ্ছে..." : "ডাটাবেজে সেভ করুন"}
                 </Button>
+                
                 <Button 
                   variant="outline" 
                   onClick={resetForm} 
-                  className="rounded-lg border-gray-300 hover:bg-gray-50"
+                  className="px-8 py-3 rounded-lg"
                   data-testid="button-reset"
                 >
                   <TimerReset className="h-4 w-4 mr-2" />
@@ -491,48 +493,49 @@ export default function InvoiceMaker() {
               </div>
             </div>
 
-            {/* RIGHT: Preview */}
-            <Card className="rounded-2xl shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-xl">প্রিন্ট প্রিভিউ</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div
-                  ref={printableRef}
-                  className="rounded-xl overflow-hidden"
-                  style={{ background: PAPER_BG, color: BODY_TEXT }}
-                >
-                  {/* Brand Header */}
-                  <div style={{ background: BRAND, color: BRAND_TEXT, padding: 16 }}>
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="text-2xl font-bold">{company.companyName}</div>
-                        <div className="text-sm">{company.companyAddress}</div>
-                        <div className="text-sm">{company.companyPhone} · {company.companyEmail}</div>
-                        {company.companyWebsite && <div className="text-sm">{company.companyWebsite}</div>}
-                      </div>
-                      <div className="text-right">
-                        <div className="text-3xl font-black tracking-wide">INVOICE</div>
-                        <div className="text-sm">Invoice No: <span className="font-semibold">{invoiceNo}</span></div>
-                        <div className="text-sm">Issue Date: {issueDate}</div>
+            {/* Preview Section - MOVED TO BOTTOM */}
+            <div className="mt-8">
+              <Card className="rounded-2xl shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 border-b">
+                  <CardTitle className="text-xl text-center">প্রিন্ট প্রিভিউ</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div
+                    ref={printableRef}
+                    className="rounded-xl overflow-hidden border"
+                    style={{ background: PAPER_BG, color: BODY_TEXT }}
+                  >
+                    {/* Brand Header */}
+                    <div style={{ background: BRAND, color: BRAND_TEXT, padding: 16 }}>
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="text-2xl font-bold">{company.companyName}</div>
+                          <div className="text-sm">{company.companyAddress}</div>
+                          <div className="text-sm">{company.companyPhone} · {company.companyEmail}</div>
+                          {company.companyWebsite && <div className="text-sm">{company.companyWebsite}</div>}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-3xl font-black tracking-wide">INVOICE</div>
+                          <div className="text-sm">Invoice No: <span className="font-semibold">{invoiceNo}</span></div>
+                          <div className="text-sm">Issue Date: {issueDate}</div>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="p-8">
-                    {/* Parties */}
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <div className="p-4 rounded-lg" style={{ background: ACCENT_BG, border: `1px solid ${BORDER}` }}>
-                        <div className="font-semibold flex items-center gap-2" style={{ color: BRAND_TEXT }}>
-                          <User2 className="h-4 w-4" />
-                          Bill To
-                        </div>
-                        {selectedClient ? (
-                          <>
-                            <div className="text-lg">{selectedClient.name}</div>
-                            <div className="text-sm">{selectedClient.phone}</div>
-                            {selectedClient.fb && <div className="text-sm">{selectedClient.fb}</div>}
-                          </>
+                    <div className="p-8">
+                      {/* Parties */}
+                      <div className="grid grid-cols-2 gap-4 mt-4">
+                        <div className="p-4 rounded-lg" style={{ background: ACCENT_BG, border: `1px solid ${BORDER}` }}>
+                          <div className="font-semibold flex items-center gap-2" style={{ color: BRAND_TEXT }}>
+                            <User2 className="h-4 w-4" />
+                            Bill To
+                          </div>
+                          {selectedClient ? (
+                            <>
+                              <div className="text-lg">{selectedClient.name}</div>
+                              <div className="text-sm">{selectedClient.phone}</div>
+                              {selectedClient.fb && <div className="text-sm">{selectedClient.fb}</div>}
+                            </>
                         ) : (
                           <div className="text-sm text-gray-500">ক্লায়েন্ট নির্বাচন করুন</div>
                         )}
