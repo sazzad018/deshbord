@@ -258,7 +258,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const puppeteer = await import('puppeteer');
       const browser = await puppeteer.default.launch({ 
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-features=VizDisplayCompositor'],
+        timeout: 30000
       });
       const page = await browser.newPage();
 
@@ -680,7 +681,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      await browser.close();
+      try {
+        await browser.close();
+      } catch (closeError) {
+        console.error("Error closing browser:", closeError);
+      }
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`);
