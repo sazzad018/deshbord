@@ -10,6 +10,8 @@ import WebsiteServicesSection from "@/components/WebsiteServicesSection";
 import QuickActions from "@/components/QuickActions";
 import ControlPanel from "@/components/ControlPanel";
 import InvoiceMaker from "@/components/InvoiceMaker";
+import TodoListShort from "@/components/TodoListShort";
+import WhatsAppShortcut from "@/components/WhatsAppShortcut";
 
 export default function Dashboard() {
   const [query, setQuery] = useState("");
@@ -41,6 +43,8 @@ export default function Dashboard() {
             />
             <QuickActions selectedClientId={selectedClientId} />
             <MeetingScheduler selectedClientId={selectedClientId} />
+            <TodoListShort selectedClientId={selectedClientId} />
+            <WhatsAppShortcut selectedClientId={selectedClientId} />
             <ControlPanel />
           </div>
         </div>
