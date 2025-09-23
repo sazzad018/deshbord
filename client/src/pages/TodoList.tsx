@@ -16,7 +16,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, CheckSquare, Plus, Clock, User, Filter, Search, Edit, Trash2 } from "lucide-react";
+import { CalendarIcon, CheckSquare, Plus, Clock, User, Filter, Search, Edit, Trash2, Check, X, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -48,6 +48,8 @@ export default function TodoList() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTodos, setSelectedTodos] = useState<Set<string>>(new Set());
+  const [showBulkActions, setShowBulkActions] = useState(false);
 
   const form = useForm<z.infer<typeof todoFormSchema>>({
     resolver: zodResolver(todoFormSchema),
@@ -110,6 +112,22 @@ export default function TodoList() {
     },
   });
 
+  // Bulk operations
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async ({ ids, data }: { ids: string[]; data: Partial<Todo> }) => {
+      const promises = ids.map(id => 
+        apiRequest("PATCH", `/api/todos/${id}`, data)
+      );
+      return Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/todos"] });
+      setSelectedTodos(new Set());
+      setShowBulkActions(false);
+      toast({ title: "সফল", description: "নির্বাচিত টাস্কগুলো আপডেট করা হয়েছে!" });
+    },
+  });
+
   const onSubmit = (values: z.infer<typeof todoFormSchema>) => {
     // Convert "none" to undefined for clientId
     const processedValues = {
@@ -152,6 +170,57 @@ export default function TodoList() {
     setEditingTodo(null);
     form.reset();
   };
+
+  const toggleTodoSelection = (todoId: string) => {
+    const newSelected = new Set(selectedTodos);
+    if (newSelected.has(todoId)) {
+      newSelected.delete(todoId);
+    } else {
+      newSelected.add(todoId);
+    }
+    setSelectedTodos(newSelected);
+    setShowBulkActions(newSelected.size > 0);
+  };
+
+  const selectAllTodos = () => {
+    const allIds = new Set(sortedTodos.map(todo => todo.id));
+    setSelectedTodos(allIds);
+    setShowBulkActions(true);
+  };
+
+  const clearSelection = () => {
+    setSelectedTodos(new Set());
+    setShowBulkActions(false);
+  };
+
+  const bulkMarkComplete = () => {
+    bulkUpdateMutation.mutate({
+      ids: Array.from(selectedTodos),
+      data: { status: "Completed" }
+    });
+  };
+
+  const bulkDelete = () => {
+    const promises = Array.from(selectedTodos).map(id => 
+      apiRequest("DELETE", `/api/todos/${id}`)
+    );
+    Promise.all(promises).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["/api/todos"] });
+      setSelectedTodos(new Set());
+      setShowBulkActions(false);
+      toast({ title: "সফল", description: "নির্বাচিত টাস্কগুলো ডিলিট করা হয়েছে!" });
+    });
+  };
+
+  // Calculate statistics
+  const totalTodos = (todos as Todo[]).length;
+  const completedTodos = (todos as Todo[]).filter((todo: Todo) => todo.status === 'Completed').length;
+  const pendingTodos = (todos as Todo[]).filter((todo: Todo) => todo.status === 'Pending').length;
+  const inProgressTodos = (todos as Todo[]).filter((todo: Todo) => todo.status === 'In Progress').length;
+  const overdueTodos = (todos as Todo[]).filter((todo: Todo) => {
+    return todo.dueDate && new Date(todo.dueDate) < new Date() && todo.status !== 'Completed';
+  }).length;
+  const completionPercentage = totalTodos > 0 ? Math.round((completedTodos / totalTodos) * 100) : 0;
 
   const openCreateDialog = () => {
     setEditingTodo(null);
@@ -419,6 +488,116 @@ export default function TodoList() {
         </Dialog>
       </div>
 
+      {/* Statistics Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">মোট টাস্ক</p>
+                <p className="text-2xl font-bold" data-testid="stat-total">{totalTodos}</p>
+              </div>
+              <BarChart3 className="h-8 w-8 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">সম্পন্ন</p>
+                <p className="text-2xl font-bold text-green-600" data-testid="stat-completed">{completedTodos}</p>
+              </div>
+              <CheckSquare className="h-8 w-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">চলমান</p>
+                <p className="text-2xl font-bold text-blue-600" data-testid="stat-in-progress">{inProgressTodos}</p>
+              </div>
+              <Clock className="h-8 w-8 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">অপেক্ষমান</p>
+                <p className="text-2xl font-bold text-orange-600" data-testid="stat-pending">{pendingTodos}</p>
+              </div>
+              <Filter className="h-8 w-8 text-orange-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">অগ্রগতি</p>
+                <p className="text-2xl font-bold text-purple-600" data-testid="stat-progress">{completionPercentage}%</p>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                <div className="w-4 h-4 rounded-full bg-purple-600" style={{transform: `scale(${completionPercentage / 100})`}}></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Bulk Actions Bar */}
+      {showBulkActions && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <p className="font-medium" data-testid="text-selected-count">
+                  {selectedTodos.size} টি টাস্ক নির্বাচিত
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={bulkMarkComplete}
+                  disabled={bulkUpdateMutation.isPending}
+                  data-testid="button-bulk-complete"
+                >
+                  <Check className="h-4 w-4 mr-1" />
+                  সব সম্পন্ন করুন
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={bulkDelete}
+                  data-testid="button-bulk-delete"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  সব মুছুন
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearSelection}
+                  data-testid="button-clear-selection"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  নির্বাচন বাতিল
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filters and Search */}
       <div className="flex flex-wrap gap-4 items-center">
         <div className="flex items-center gap-2">
@@ -459,6 +638,18 @@ export default function TodoList() {
         <Badge variant="outline" data-testid="text-todo-count">
           মোট: {filteredTodos.length} টি টাস্ক
         </Badge>
+
+        {filteredTodos.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={selectedTodos.size === filteredTodos.length ? clearSelection : selectAllTodos}
+            data-testid="button-select-all"
+          >
+            <Check className="h-4 w-4 mr-1" />
+            {selectedTodos.size === filteredTodos.length ? "সব বাতিল" : "সব নির্বাচন"}
+          </Button>
+        )}
       </div>
 
       {/* Todo List */}
@@ -497,12 +688,18 @@ export default function TodoList() {
               >
                 <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
                   <div className="flex items-start gap-3 flex-1">
-                    <Checkbox
-                      checked={todo.status === "Completed"}
-                      onCheckedChange={() => toggleTodoStatus(todo)}
-                      className="mt-1"
-                      data-testid={`checkbox-complete-${todo.id}`}
-                    />
+                    <div className="flex flex-col gap-2 mt-1">
+                      <Checkbox
+                        checked={selectedTodos.has(todo.id)}
+                        onCheckedChange={() => toggleTodoSelection(todo.id)}
+                        data-testid={`checkbox-select-${todo.id}`}
+                      />
+                      <Checkbox
+                        checked={todo.status === "Completed"}
+                        onCheckedChange={() => toggleTodoStatus(todo)}
+                        data-testid={`checkbox-complete-${todo.id}`}
+                      />
+                    </div>
                     <div className="flex-1">
                       <CardTitle 
                         className={cn(
