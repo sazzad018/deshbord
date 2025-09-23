@@ -35,6 +35,49 @@ export const meetings = pgTable("meetings", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const invoices = pgTable("invoices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().references(() => clients.id),
+  invoiceNumber: text("invoice_number").notNull().unique(),
+  status: text("status").notNull().default("Due"), // "Paid" or "Due"
+  discount: integer("discount").notNull().default(0), // percentage
+  vat: integer("vat").notNull().default(0), // percentage
+  subtotal: integer("subtotal").notNull().default(0),
+  totalAmount: integer("total_amount").notNull().default(0),
+  dueDate: timestamp("due_date"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const invoiceLineItems = pgTable("invoice_line_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  invoiceId: varchar("invoice_id").notNull().references(() => invoices.id),
+  description: text("description").notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  rate: integer("rate").notNull(),
+  amount: integer("amount").notNull(), // quantity * rate
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const todos = pgTable("todos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  priority: text("priority").notNull().default("Medium"), // "High", "Medium", "Low"
+  status: text("status").notNull().default("Pending"), // "Completed", "Pending"
+  dueDate: timestamp("due_date"),
+  clientId: varchar("client_id").references(() => clients.id), // optional: link to client
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const whatsappTemplates = pgTable("whatsapp_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  message: text("message").notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
   createdAt: true,
@@ -51,12 +94,43 @@ export const insertMeetingSchema = createInsertSchema(meetings).omit({
   createdAt: true,
 });
 
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({
+  id: true,
+  createdAt: true,
+  invoiceNumber: true, // auto-generated
+});
+
+export const insertInvoiceLineItemSchema = createInsertSchema(invoiceLineItems).omit({
+  id: true,
+  createdAt: true,
+  invoiceId: true, // auto-set by server
+  amount: true, // calculated by server (quantity * rate)
+});
+
+export const insertTodoSchema = createInsertSchema(todos).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertWhatsappTemplateSchema = createInsertSchema(whatsappTemplates).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type SpendLog = typeof spendLogs.$inferSelect;
 export type InsertSpendLog = z.infer<typeof insertSpendLogSchema>;
 export type Meeting = typeof meetings.$inferSelect;
 export type InsertMeeting = z.infer<typeof insertMeetingSchema>;
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+export type InvoiceLineItem = typeof invoiceLineItems.$inferSelect;
+export type InsertInvoiceLineItem = z.infer<typeof insertInvoiceLineItemSchema>;
+export type Todo = typeof todos.$inferSelect;
+export type InsertTodo = z.infer<typeof insertTodoSchema>;
+export type WhatsappTemplate = typeof whatsappTemplates.$inferSelect;
+export type InsertWhatsappTemplate = z.infer<typeof insertWhatsappTemplateSchema>;
 
 export interface ClientWithLogs extends Client {
   logs: SpendLog[];
@@ -73,4 +147,9 @@ export interface AIQueryResult {
   columns: { key: string; label: string }[];
   results: any[];
   summary: string;
+}
+
+export interface InvoiceWithLineItems extends Invoice {
+  lineItems: InvoiceLineItem[];
+  client: Client;
 }

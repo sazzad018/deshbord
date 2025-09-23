@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
-import { clients, spendLogs, meetings } from "@shared/schema";
+import { clients, spendLogs, meetings, invoices, invoiceLineItems, todos, whatsappTemplates } from "@shared/schema";
 import { eq, desc, gt } from "drizzle-orm";
 
 if (!process.env.DATABASE_URL) {
@@ -82,6 +82,85 @@ export async function initializeDatabase() {
         datetime: new Date("2024-12-25T11:30:00"),
         location: "Google Meet",
         reminders: ["1 day before", "3 hours before", "30 min before"],
+      }
+    ]);
+
+    // Insert sample invoice
+    const [invoice1] = await db.insert(invoices).values([
+      {
+        clientId: client1.id,
+        invoiceNumber: "INV-0001",
+        status: "Due",
+        discount: 0,
+        vat: 5,
+        subtotal: 15000,
+        totalAmount: 15750,
+        dueDate: new Date("2024-02-15"),
+        notes: "Facebook Marketing Campaign Setup",
+      }
+    ]).returning();
+
+    // Insert sample invoice line items
+    await db.insert(invoiceLineItems).values([
+      {
+        invoiceId: invoice1.id,
+        description: "Facebook Ad Campaign Design",
+        quantity: 1,
+        rate: 10000,
+        amount: 10000,
+      },
+      {
+        invoiceId: invoice1.id,
+        description: "Landing Page Development",
+        quantity: 1,
+        rate: 5000,
+        amount: 5000,
+      }
+    ]);
+
+    // Insert sample todos
+    await db.insert(todos).values([
+      {
+        title: "ক্লায়েন্ট প্রেজেন্টেশন তৈরি করুন",
+        description: "নতুন প্রোডাক্ট লঞ্চের জন্য প্রেজেন্টেশন তৈরি করুন",
+        priority: "High",
+        status: "Pending",
+        dueDate: new Date("2024-01-25"),
+        clientId: client1.id,
+      },
+      {
+        title: "সোশ্যাল মিডিয়া ক্যাম্পেইন রিভিউ",
+        description: "গত সপ্তাহের ক্যাম্পেইনের পারফরম্যান্স রিভিউ করুন",
+        priority: "Medium",
+        status: "Completed",
+        dueDate: new Date("2024-01-20"),
+        clientId: client2.id,
+      },
+      {
+        title: "ইনভয়েস জেনারেট করুন",
+        description: "ডিসেম্বরের সার্ভিসের জন্য ইনভয়েস তৈরি করুন",
+        priority: "High",
+        status: "Pending",
+        dueDate: new Date("2024-01-31"),
+      }
+    ]);
+
+    // Insert sample WhatsApp templates
+    await db.insert(whatsappTemplates).values([
+      {
+        name: "ফলোআপ মেসেজ",
+        message: "আসসালামু আলাইকুম {client_name}, আপনার প্রোজেক্টের আপডেট দিতে যোগাযোগ করলাম। আপনার সুবিধামত সময়ে কথা বলতে পারি কি?",
+        isDefault: true,
+      },
+      {
+        name: "পেমেন্ট রিমাইন্ডার",
+        message: "প্রিয় {client_name}, আপনার ইনভয়েস #{invoice_number} এর পেমেন্ট পেন্ডিং রয়েছে। অনুগ্রহ করে যত দ্রুত সম্ভব পেমেন্ট করুন।",
+        isDefault: false,
+      },
+      {
+        name: "প্রোজেক্ট কমপ্লিট",
+        message: "আপনার প্রোজেক্ট সফলভাবে সম্পন্ন হয়েছে। ফিডব্যাক দিতে এই লিংকে ক্লিক করুন।",
+        isDefault: false,
       }
     ]);
 

@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type DashboardMetrics, clients, spendLogs, meetings } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type DashboardMetrics, type Invoice, type InsertInvoice, type InvoiceLineItem, type InsertInvoiceLineItem, type InvoiceWithLineItems, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, clients, spendLogs, meetings, invoices, invoiceLineItems, todos, whatsappTemplates } from "@shared/schema";
 import { eq, desc, sum, count, sql } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
@@ -75,25 +75,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSpendLog(insertSpendLog: InsertSpendLog): Promise<SpendLog> {
-    // Use a transaction to ensure atomicity
-    return await db.transaction(async (tx) => {
-      // Insert the spend log first
-      const [spendLog] = await tx.insert(spendLogs).values({
-        clientId: insertSpendLog.clientId,
-        date: insertSpendLog.date,
-        amount: insertSpendLog.amount,
-        note: insertSpendLog.note || null,
-      }).returning();
+    // Insert the spend log first
+    const [spendLog] = await db.insert(spendLogs).values({
+      clientId: insertSpendLog.clientId,
+      date: insertSpendLog.date,
+      amount: insertSpendLog.amount,
+      note: insertSpendLog.note || null,
+    }).returning();
 
-      // Atomically increment the client's spent amount
-      await tx.update(clients)
-        .set({
-          walletSpent: sql`${clients.walletSpent} + ${insertSpendLog.amount}`,
-        })
-        .where(eq(clients.id, insertSpendLog.clientId));
+    // Increment the client's spent amount
+    await db.update(clients)
+      .set({
+        walletSpent: sql`${clients.walletSpent} + ${insertSpendLog.amount}`,
+      })
+      .where(eq(clients.id, insertSpendLog.clientId));
 
-      return spendLog;
-    });
+    return spendLog;
   }
 
   async getMeetings(): Promise<Meeting[]> {
@@ -129,6 +126,135 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMeeting(id: string): Promise<boolean> {
     const result = await db.delete(meetings).where(eq(meetings.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Invoice operations
+  async getInvoices(): Promise<Invoice[]> {
+    return await db.select().from(invoices).orderBy(desc(invoices.createdAt));
+  }
+
+  async getInvoice(id: string): Promise<InvoiceWithLineItems | undefined> {
+    const invoice = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
+    if (invoice.length === 0) return undefined;
+
+    const [client] = await db.select().from(clients).where(eq(clients.id, invoice[0].clientId)).limit(1);
+    const lineItems = await db.select().from(invoiceLineItems).where(eq(invoiceLineItems.invoiceId, id));
+
+    return {
+      ...invoice[0],
+      client,
+      lineItems,
+    };
+  }
+
+  async createInvoice(insertInvoice: InsertInvoice, lineItems: InsertInvoiceLineItem[]): Promise<Invoice> {
+    // Generate invoice number
+    const invoiceCount = await db.select({ count: sql<number>`count(*)` }).from(invoices);
+    const invoiceNumber = `INV-${String(invoiceCount[0].count + 1).padStart(4, '0')}`;
+
+    // Calculate totals
+    const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
+    const discountAmount = Math.round((subtotal * (insertInvoice.discount || 0)) / 100);
+    const vatAmount = Math.round(((subtotal - discountAmount) * (insertInvoice.vat || 0)) / 100);
+    const totalAmount = subtotal - discountAmount + vatAmount;
+
+    // Create invoice
+    const [invoice] = await db.insert(invoices).values({
+      ...insertInvoice,
+      invoiceNumber,
+      subtotal,
+      totalAmount,
+    }).returning();
+
+    // Create line items
+    await db.insert(invoiceLineItems).values(
+      lineItems.map(item => ({
+        ...item,
+        invoiceId: invoice.id,
+      }))
+    );
+
+    return invoice;
+  }
+
+  async updateInvoice(id: string, updates: Partial<Invoice>): Promise<Invoice | undefined> {
+    const [updated] = await db.update(invoices)
+      .set(updates)
+      .where(eq(invoices.id, id))
+      .returning();
+    
+    return updated;
+  }
+
+  async updateInvoiceStatus(id: string, status: "Paid" | "Due"): Promise<Invoice | undefined> {
+    return this.updateInvoice(id, { status });
+  }
+
+  async deleteInvoice(id: string): Promise<boolean> {
+    // Delete line items first
+    await db.delete(invoiceLineItems).where(eq(invoiceLineItems.invoiceId, id));
+    
+    // Delete invoice
+    const result = await db.delete(invoices).where(eq(invoices.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Todo operations
+  async getTodos(): Promise<Todo[]> {
+    return await db.select().from(todos).orderBy(desc(todos.createdAt));
+  }
+
+  async getTodo(id: string): Promise<Todo | undefined> {
+    const result = await db.select().from(todos).where(eq(todos.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createTodo(insertTodo: InsertTodo): Promise<Todo> {
+    const [todo] = await db.insert(todos).values(insertTodo).returning();
+    return todo;
+  }
+
+  async updateTodo(id: string, updates: Partial<Todo>): Promise<Todo | undefined> {
+    const [updated] = await db.update(todos)
+      .set(updates)
+      .where(eq(todos.id, id))
+      .returning();
+    
+    return updated;
+  }
+
+  async deleteTodo(id: string): Promise<boolean> {
+    const result = await db.delete(todos).where(eq(todos.id, id));
+    return result.rowCount > 0;
+  }
+
+  // WhatsApp template operations
+  async getWhatsappTemplates(): Promise<WhatsappTemplate[]> {
+    return await db.select().from(whatsappTemplates).orderBy(desc(whatsappTemplates.createdAt));
+  }
+
+  async getWhatsappTemplate(id: string): Promise<WhatsappTemplate | undefined> {
+    const result = await db.select().from(whatsappTemplates).where(eq(whatsappTemplates.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createWhatsappTemplate(insertTemplate: InsertWhatsappTemplate): Promise<WhatsappTemplate> {
+    const [template] = await db.insert(whatsappTemplates).values(insertTemplate).returning();
+    return template;
+  }
+
+  async updateWhatsappTemplate(id: string, updates: Partial<WhatsappTemplate>): Promise<WhatsappTemplate | undefined> {
+    const [updated] = await db.update(whatsappTemplates)
+      .set(updates)
+      .where(eq(whatsappTemplates.id, id))
+      .returning();
+    
+    return updated;
+  }
+
+  async deleteWhatsappTemplate(id: string): Promise<boolean> {
+    const result = await db.delete(whatsappTemplates).where(eq(whatsappTemplates.id, id));
     return result.rowCount > 0;
   }
 

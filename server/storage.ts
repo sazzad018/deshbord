@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type DashboardMetrics } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type DashboardMetrics, type Invoice, type InsertInvoice, type InvoiceLineItem, type InsertInvoiceLineItem, type InvoiceWithLineItems, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -20,6 +20,28 @@ export interface IStorage {
   createMeeting(meeting: InsertMeeting): Promise<Meeting>;
   updateMeeting(id: string, updates: Partial<Meeting>): Promise<Meeting | undefined>;
   deleteMeeting(id: string): Promise<boolean>;
+
+  // Invoice operations
+  getInvoices(): Promise<Invoice[]>;
+  getInvoice(id: string): Promise<InvoiceWithLineItems | undefined>;
+  createInvoice(invoice: InsertInvoice, lineItems: InsertInvoiceLineItem[]): Promise<Invoice>;
+  updateInvoice(id: string, updates: Partial<Invoice>): Promise<Invoice | undefined>;
+  deleteInvoice(id: string): Promise<boolean>;
+  updateInvoiceStatus(id: string, status: "Paid" | "Due"): Promise<Invoice | undefined>;
+
+  // Todo operations
+  getTodos(): Promise<Todo[]>;
+  getTodo(id: string): Promise<Todo | undefined>;
+  createTodo(todo: InsertTodo): Promise<Todo>;
+  updateTodo(id: string, updates: Partial<Todo>): Promise<Todo | undefined>;
+  deleteTodo(id: string): Promise<boolean>;
+
+  // WhatsApp template operations
+  getWhatsappTemplates(): Promise<WhatsappTemplate[]>;
+  getWhatsappTemplate(id: string): Promise<WhatsappTemplate | undefined>;
+  createWhatsappTemplate(template: InsertWhatsappTemplate): Promise<WhatsappTemplate>;
+  updateWhatsappTemplate(id: string, updates: Partial<WhatsappTemplate>): Promise<WhatsappTemplate | undefined>;
+  deleteWhatsappTemplate(id: string): Promise<boolean>;
 
   // Analytics
   getDashboardMetrics(): Promise<DashboardMetrics>;
