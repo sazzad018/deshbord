@@ -9,6 +9,7 @@ import ClientDetailsPanel from "@/components/ClientDetailsPanel";
 import WebsiteServicesSection from "@/components/WebsiteServicesSection";
 import QuickActions from "@/components/QuickActions";
 import ControlPanel from "@/components/ControlPanel";
+import InvoiceMaker from "@/components/InvoiceMaker";
 
 export default function Dashboard() {
   const [query, setQuery] = useState("");
@@ -43,6 +44,9 @@ export default function Dashboard() {
             <ControlPanel />
           </div>
         </div>
+        
+        {/* Invoice Maker - Where Control Panel used to be */}
+        <InvoiceMaker />
       </div>
     </div>
   );
