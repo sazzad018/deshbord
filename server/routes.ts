@@ -173,6 +173,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { lineItems, ...invoiceData } = req.body;
       
+      // Convert dueDate string to Date object if provided
+      if (invoiceData.dueDate) {
+        invoiceData.dueDate = new Date(invoiceData.dueDate);
+      }
+      
       // Validate invoice data
       const validatedInvoice = insertInvoiceSchema.parse(invoiceData);
       
