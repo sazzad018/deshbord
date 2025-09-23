@@ -409,8 +409,8 @@ var init_db_cpanel = __esm({
       throw new Error("DATABASE_URL is required");
     }
     connection = postgres(process.env.DATABASE_URL, {
-      ssl: "require",
-      // cPanel usually requires SSL
+      ssl: false,
+      // Disable SSL for cPanel hosting (most don't support SSL for internal connections)
       max: 10,
       idle_timeout: 20,
       connect_timeout: 10
