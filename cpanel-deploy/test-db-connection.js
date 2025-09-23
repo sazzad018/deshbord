@@ -1,28 +1,48 @@
 #!/usr/bin/env node
 
 // Database Connection Tester for cPanel
-// Run: node test-db-connection.js
+// Usage: 
+//   1. Edit the credentials below
+//   2. Run: node test-db-connection.js
+//   3. Use the working connection string in your .env
 
 const postgres = require('postgres');
 
+// ⚠️ EDIT THESE VALUES WITH YOUR ACTUAL DATABASE CREDENTIALS:
+const DB_USER = 'your_username';     // Replace with your database username
+const DB_PASS = 'your_password';     // Replace with your database password  
+const DB_NAME = 'your_database';     // Replace with your database name
+
 // Test different connection options
 const testConnections = [
-  // Test 1: Localhost
+  // Test 1: Localhost with port (Most common for cPanel)
   {
-    name: "Localhost Connection",
-    url: "postgresql://your_username:your_password@localhost:5432/your_database"
+    name: "Localhost with Port 5432",
+    url: `postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}`
   },
   
   // Test 2: Localhost without port
   {
-    name: "Localhost No Port",
-    url: "postgresql://your_username:your_password@localhost/your_database"
+    name: "Localhost Default Port",
+    url: `postgresql://${DB_USER}:${DB_PASS}@localhost/${DB_NAME}`
   },
   
-  // Test 3: Original hostname
+  // Test 3: 127.0.0.1 instead of localhost
   {
-    name: "Original Hostname",
-    url: "postgresql://your_username:your_password@jupiter.hostseba.com:5432/your_database"
+    name: "Local IP 127.0.0.1",
+    url: `postgresql://${DB_USER}:${DB_PASS}@127.0.0.1:5432/${DB_NAME}`
+  },
+  
+  // Test 4: Original hostname
+  {
+    name: "jupiter.hostseba.com",
+    url: `postgresql://${DB_USER}:${DB_PASS}@jupiter.hostseba.com:5432/${DB_NAME}`
+  },
+  
+  // Test 5: Alternative common cPanel database hosts
+  {
+    name: "Internal Host (sql)",
+    url: `postgresql://${DB_USER}:${DB_PASS}@sql.your-domain.com:5432/${DB_NAME}`
   }
 ];
 
