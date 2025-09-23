@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type DashboardMetrics, type Invoice, type InsertInvoice, type InvoiceLineItem, type InsertInvoiceLineItem, type InvoiceWithLineItems, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Invoice, type InsertInvoice, type InvoiceLineItem, type InsertInvoiceLineItem, type InvoiceWithLineItems, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -6,6 +6,7 @@ export interface IStorage {
   getClients(): Promise<Client[]>;
   getClient(id: string): Promise<Client | undefined>;
   getClientWithLogs(id: string): Promise<ClientWithLogs | undefined>;
+  getClientWithDetails(id: string): Promise<ClientWithDetails | undefined>;
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: string, updates: Partial<Client>): Promise<Client | undefined>;
   deleteClient(id: string): Promise<boolean>;
@@ -42,6 +43,14 @@ export interface IStorage {
   createWhatsappTemplate(template: InsertWhatsappTemplate): Promise<WhatsappTemplate>;
   updateWhatsappTemplate(id: string, updates: Partial<WhatsappTemplate>): Promise<WhatsappTemplate | undefined>;
   deleteWhatsappTemplate(id: string): Promise<boolean>;
+
+  // Service scope operations
+  getServiceScopes(clientId: string): Promise<ServiceScope[]>;
+  getServiceScope(id: string): Promise<ServiceScope | undefined>;
+  createServiceScope(serviceScope: InsertServiceScope): Promise<ServiceScope>;
+  updateServiceScope(id: string, updates: Partial<ServiceScope>): Promise<ServiceScope | undefined>;
+  deleteServiceScope(id: string): Promise<boolean>;
+  getServiceAnalytics(serviceName: string): Promise<ServiceAnalytics>;
 
   // Company settings operations
   getCompanySettings(): Promise<CompanySettings | undefined>;

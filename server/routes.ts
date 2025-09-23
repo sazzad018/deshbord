@@ -870,6 +870,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Service scope routes
+  app.get("/api/clients/:id/service-scopes", async (req, res) => {
+    try {
+      const serviceScopes = await storage.getServiceScopes(req.params.id);
+      res.json(serviceScopes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch service scopes" });
+    }
+  });
+
+  app.post("/api/service-scopes", async (req, res) => {
+    try {
+      const { insertServiceScopeSchema } = await import("@shared/schema");
+      const validatedScope = insertServiceScopeSchema.parse(req.body);
+      const serviceScope = await storage.createServiceScope(validatedScope);
+      res.status(201).json(serviceScope);
+    } catch (error) {
+      console.error("Service scope creation error:", error);
+      res.status(400).json({ error: "Invalid service scope data" });
+    }
+  });
+
+  app.patch("/api/service-scopes/:id", async (req, res) => {
+    try {
+      const serviceScope = await storage.updateServiceScope(req.params.id, req.body);
+      if (!serviceScope) {
+        return res.status(404).json({ error: "Service scope not found" });
+      }
+      res.json(serviceScope);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update service scope" });
+    }
+  });
+
+  app.delete("/api/service-scopes/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteServiceScope(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Service scope not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete service scope" });
+    }
+  });
+
+  // Service analytics routes
+  app.get("/api/service-analytics/:serviceName", async (req, res) => {
+    try {
+      const analytics = await storage.getServiceAnalytics(req.params.serviceName);
+      res.json(analytics);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch service analytics" });
+    }
+  });
+
+  // Enhanced client details with service scopes
+  app.get("/api/clients/:id/details", async (req, res) => {
+    try {
+      const clientDetails = await storage.getClientWithDetails(req.params.id);
+      if (!clientDetails) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+      res.json(clientDetails);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch client details" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

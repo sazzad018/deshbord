@@ -1,5 +1,5 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type DashboardMetrics, type Invoice, type InsertInvoice, type InvoiceLineItem, type InsertInvoiceLineItem, type InvoiceWithLineItems, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, clients, spendLogs, meetings, invoices, invoiceLineItems, todos, whatsappTemplates, companySettings } from "@shared/schema";
-import { eq, desc, sum, count, sql } from "drizzle-orm";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Invoice, type InsertInvoice, type InvoiceLineItem, type InsertInvoiceLineItem, type InvoiceWithLineItems, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, clients, spendLogs, meetings, invoices, invoiceLineItems, todos, whatsappTemplates, companySettings, serviceScopes } from "@shared/schema";
+import { eq, desc, sum, count, sql, and, gte } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
 
@@ -19,6 +19,17 @@ export class DatabaseStorage implements IStorage {
 
     const logs = await this.getSpendLogs(id);
     return { ...client, logs };
+  }
+
+  async getClientWithDetails(id: string): Promise<ClientWithDetails | undefined> {
+    const client = await this.getClient(id);
+    if (!client) return undefined;
+
+    const [logs, serviceScopes] = await Promise.all([
+      this.getSpendLogs(id),
+      this.getServiceScopes(id)
+    ]);
+    return { ...client, logs, serviceScopes };
   }
 
   async createClient(insertClient: InsertClient): Promise<Client> {
@@ -75,12 +86,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSpendLog(insertSpendLog: InsertSpendLog): Promise<SpendLog> {
-    // Insert the spend log first
+    // Get current client to calculate balance
+    const client = await this.getClient(insertSpendLog.clientId);
+    if (!client) {
+      throw new Error("Client not found");
+    }
+
+    // Calculate balance after this transaction
+    const newWalletSpent = client.walletSpent + insertSpendLog.amount;
+    const balanceAfter = client.walletDeposited - newWalletSpent;
+
+    // Insert the spend log with calculated balance
     const [spendLog] = await db.insert(spendLogs).values({
       clientId: insertSpendLog.clientId,
       date: insertSpendLog.date,
       amount: insertSpendLog.amount,
       note: insertSpendLog.note || null,
+      balanceAfter,
     }).returning();
 
     // Increment the client's spent amount
@@ -306,5 +328,75 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updated;
+  }
+
+  // Service scope operations
+  async getServiceScopes(clientId: string): Promise<ServiceScope[]> {
+    return await db.select()
+      .from(serviceScopes)
+      .where(eq(serviceScopes.clientId, clientId))
+      .orderBy(desc(serviceScopes.createdAt));
+  }
+
+  async getServiceScope(id: string): Promise<ServiceScope | undefined> {
+    const result = await db.select().from(serviceScopes).where(eq(serviceScopes.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createServiceScope(insertServiceScope: InsertServiceScope): Promise<ServiceScope> {
+    const [serviceScope] = await db.insert(serviceScopes).values(insertServiceScope).returning();
+    return serviceScope;
+  }
+
+  async updateServiceScope(id: string, updates: Partial<ServiceScope>): Promise<ServiceScope | undefined> {
+    const [updated] = await db.update(serviceScopes)
+      .set(updates)
+      .where(eq(serviceScopes.id, id))
+      .returning();
+    
+    return updated;
+  }
+
+  async deleteServiceScope(id: string): Promise<boolean> {
+    const result = await db.delete(serviceScopes).where(eq(serviceScopes.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getServiceAnalytics(serviceName: string): Promise<ServiceAnalytics> {
+    // Get clients with this service
+    const clientsWithService = await db.select()
+      .from(serviceScopes)
+      .where(eq(serviceScopes.serviceName, serviceName));
+
+    const totalClients = clientsWithService.length;
+    const activeScopes = clientsWithService.filter(s => s.status === "Active").length;
+
+    // Get 7-day spending data for clients with this service
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const clientIds = clientsWithService.map(s => s.clientId);
+    
+    const spendingData = await db.select({
+      date: spendLogs.date,
+      amount: sum(spendLogs.amount).as('amount')
+    })
+    .from(spendLogs)
+    .where(and(
+      sql`${spendLogs.clientId} = ANY(${clientIds})`,
+      gte(sql`DATE(${spendLogs.date})`, sevenDaysAgo.toISOString().split('T')[0])
+    ))
+    .groupBy(spendLogs.date)
+    .orderBy(spendLogs.date);
+
+    return {
+      serviceName,
+      totalClients,
+      activeScopes,
+      last7DaysSpending: spendingData.map(d => ({
+        date: d.date,
+        amount: Number(d.amount) || 0
+      }))
+    };
   }
 }

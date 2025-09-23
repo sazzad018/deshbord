@@ -22,6 +22,19 @@ export const spendLogs = pgTable("spend_logs", {
   date: text("date").notNull(),
   amount: integer("amount").notNull(),
   note: text("note"),
+  balanceAfter: integer("balance_after").notNull().default(0), // Balance after this transaction
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const serviceScopes = pgTable("service_scopes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().references(() => clients.id),
+  serviceName: text("service_name").notNull(), // e.g., "ওয়েবসাইট", "ল্যান্ডিং পেজ"
+  scope: text("scope").notNull(), // Custom scope description
+  status: text("status").notNull().default("Active"), // "Active", "Completed", "Paused"
+  startDate: timestamp("start_date").defaultNow().notNull(),
+  endDate: timestamp("end_date"),
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -103,6 +116,11 @@ export const insertSpendLogSchema = createInsertSchema(spendLogs).omit({
   createdAt: true,
 });
 
+export const insertServiceScopeSchema = createInsertSchema(serviceScopes).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertMeetingSchema = createInsertSchema(meetings).omit({
   id: true,
   createdAt: true,
@@ -141,6 +159,8 @@ export type Client = typeof clients.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type SpendLog = typeof spendLogs.$inferSelect;
 export type InsertSpendLog = z.infer<typeof insertSpendLogSchema>;
+export type ServiceScope = typeof serviceScopes.$inferSelect;
+export type InsertServiceScope = z.infer<typeof insertServiceScopeSchema>;
 export type Meeting = typeof meetings.$inferSelect;
 export type InsertMeeting = z.infer<typeof insertMeetingSchema>;
 export type Invoice = typeof invoices.$inferSelect;
@@ -156,6 +176,21 @@ export type InsertCompanySettings = z.infer<typeof insertCompanySettingsSchema>;
 
 export interface ClientWithLogs extends Client {
   logs: SpendLog[];
+}
+
+export interface ClientWithDetails extends Client {
+  logs: SpendLog[];
+  serviceScopes: ServiceScope[];
+}
+
+export interface ServiceAnalytics {
+  serviceName: string;
+  totalClients: number;
+  activeScopes: number;
+  last7DaysSpending: {
+    date: string;
+    amount: number;
+  }[];
 }
 
 export interface DashboardMetrics {
