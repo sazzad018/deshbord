@@ -302,437 +302,262 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/'/g, '&#39;');
       };
 
-      const puppeteer = await import('puppeteer');
-      const browser = await puppeteer.default.launch({ 
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-features=VizDisplayCompositor'],
-        timeout: 30000
-      });
-      const page = await browser.newPage();
+      const pdfMake = await import('pdfmake/build/pdfmake');
+      const pdfFonts = await import('pdfmake/build/vfs_fonts');
+      
+      // Set up fonts - try different import structures
+      try {
+        if (pdfFonts.default && pdfFonts.default.pdfMake && pdfFonts.default.pdfMake.vfs) {
+          pdfMake.default.vfs = pdfFonts.default.pdfMake.vfs;
+        } else if (pdfFonts.default && pdfFonts.default.vfs) {
+          pdfMake.default.vfs = pdfFonts.default.vfs;
+        } else if (pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
+          pdfMake.default.vfs = pdfFonts.pdfMake.vfs;
+        } else {
+          // Fallback: create empty vfs
+          pdfMake.default.vfs = {};
+        }
+      } catch (fontError) {
+        console.warn('Font setup warning:', fontError);
+        pdfMake.default.vfs = {};
+      }
 
       // Calculate discount and VAT amounts
       const discountAmount = Math.round((invoice.subtotal * invoice.discount) / 100);
       const vatAmount = Math.round(((invoice.subtotal - discountAmount) * invoice.vat) / 100);
 
-      // Generate HTML for the invoice
-      const invoiceHTML = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Invoice ${invoice.invoiceNumber}</title>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-            
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            
-            body { 
-              font-family: 'Inter', Arial, sans-serif; 
-              line-height: 1.6; 
-              color: #1f2937; 
-              background: #ffffff;
-              padding: 0;
-              margin: 0;
-            }
-            
-            .container { 
-              max-width: 800px; 
-              margin: 0 auto; 
-              padding: 40px;
-              min-height: 100vh;
-            }
-            
-            .header { 
-              background: linear-gradient(135deg, ${company.brandColor} 0%, ${company.brandColor}dd 100%);
-              color: white; 
-              padding: 40px;
-              border-radius: 12px;
-              margin-bottom: 40px;
-              position: relative;
-              overflow: hidden;
-            }
-            
-            .header::before {
-              content: '';
-              position: absolute;
-              top: -50%;
-              right: -20%;
-              width: 200px;
-              height: 200px;
-              background: rgba(255,255,255,0.1);
-              border-radius: 50%;
-            }
-            
-            .company-info {
-              position: relative;
-              z-index: 2;
-            }
-            
-            .company-name { 
-              font-size: 32px; 
-              font-weight: 700; 
-              margin-bottom: 8px;
-              letter-spacing: -0.5px;
-            }
-            
-            .company-tagline { 
-              font-size: 16px; 
-              opacity: 0.9;
-              margin-bottom: 20px;
-            }
-            
-            .company-details {
-              font-size: 14px;
-              opacity: 0.95;
-              line-height: 1.8;
-            }
-            
-            .invoice-banner {
-              background: #f8fafc;
-              border: 2px solid ${company.brandColor}22;
-              border-radius: 8px;
-              padding: 24px;
-              margin: 30px 0;
-              text-align: center;
-            }
-            
-            .invoice-title {
-              font-size: 28px;
-              font-weight: 600;
-              color: ${company.brandColor};
-              margin-bottom: 8px;
-            }
-            
-            .invoice-number {
-              font-size: 20px;
-              font-weight: 500;
-              color: #374151;
-            }
-            
-            .invoice-meta {
-              display: flex;
-              justify-content: space-between;
-              margin: 40px 0;
-              gap: 40px;
-            }
-            
-            .bill-to, .invoice-details {
-              flex: 1;
-              background: #fafbfc;
-              padding: 24px;
-              border-radius: 8px;
-              border-left: 4px solid ${company.brandColor};
-            }
-            
-            .section-title {
-              font-size: 16px;
-              font-weight: 600;
-              color: ${company.brandColor};
-              margin-bottom: 16px;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-            }
-            
-            .client-info {
-              font-size: 16px;
-              line-height: 1.8;
-            }
-            
-            .client-name {
-              font-size: 18px;
-              font-weight: 600;
-              color: #111827;
-              margin-bottom: 8px;
-            }
-            
-            .invoice-details-content {
-              font-size: 15px;
-              line-height: 1.8;
-            }
-            
-            .status-badge { 
-              display: inline-block;
-              padding: 6px 16px; 
-              border-radius: 20px; 
-              font-size: 12px; 
-              font-weight: 600;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-              margin-top: 8px;
-            }
-            
-            .status-paid { 
-              background: linear-gradient(135deg, #10b981, #059669); 
-              color: white; 
-            }
-            
-            .status-due { 
-              background: linear-gradient(135deg, #ef4444, #dc2626); 
-              color: white; 
-            }
-            
-            .items-section {
-              margin: 40px 0;
-            }
-            
-            .items-title {
-              font-size: 20px;
-              font-weight: 600;
-              color: #111827;
-              margin-bottom: 20px;
-              padding-bottom: 10px;
-              border-bottom: 2px solid ${company.brandColor}22;
-            }
-            
-            .items-table { 
-              width: 100%; 
-              border-collapse: collapse; 
-              background: white;
-              border-radius: 8px;
-              overflow: hidden;
-              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            }
-            
-            .items-table th { 
-              background: ${company.brandColor}; 
-              color: white; 
-              padding: 16px; 
-              text-align: left; 
-              font-weight: 600;
-              font-size: 14px;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-            }
-            
-            .items-table td { 
-              padding: 16px; 
-              border-bottom: 1px solid #e5e7eb;
-              font-size: 15px;
-            }
-            
-            .items-table tr:last-child td {
-              border-bottom: none;
-            }
-            
-            .items-table tr:nth-child(even) {
-              background: #f9fafb;
-            }
-            
-            .text-right { text-align: right; font-weight: 500; }
-            
-            .totals-section {
-              margin-top: 40px;
-              display: flex;
-              justify-content: flex-end;
-            }
-            
-            .totals-card {
-              background: #fafbfc;
-              border: 1px solid #e5e7eb;
-              border-radius: 8px;
-              padding: 24px;
-              min-width: 350px;
-            }
-            
-            .totals-table { 
-              width: 100%; 
-              border-collapse: collapse;
-            }
-            
-            .totals-table td { 
-              padding: 8px 0; 
-              font-size: 15px;
-            }
-            
-            .totals-table td:first-child {
-              color: #6b7280;
-            }
-            
-            .totals-table td:last-child {
-              text-align: right;
-              font-weight: 500;
-            }
-            
-            .total-row { 
-              border-top: 2px solid ${company.brandColor};
-              padding-top: 12px !important;
-              margin-top: 8px;
-            }
-            
-            .total-row td {
-              font-weight: 700 !important; 
-              font-size: 18px !important;
-              color: ${company.brandColor} !important;
-              padding-top: 16px !important;
-            }
-            
-            .notes-section { 
-              margin-top: 40px;
-              background: #f8fafc;
-              padding: 24px;
-              border-radius: 8px;
-              border-left: 4px solid ${company.brandColor};
-            }
-            
-            .notes-title {
-              font-size: 16px;
-              font-weight: 600;
-              color: ${company.brandColor};
-              margin-bottom: 12px;
-            }
-            
-            .notes-content {
-              color: #4b5563;
-              line-height: 1.7;
-            }
-            
-            .footer { 
-              margin-top: 60px; 
-              text-align: center; 
-              color: #6b7280; 
-              font-size: 14px;
-              padding-top: 24px;
-              border-top: 1px solid #e5e7eb;
-            }
-            
-            .footer-message {
-              font-size: 16px;
-              color: ${company.brandColor};
-              font-weight: 500;
-              margin-bottom: 8px;
-            }
-            
-            .currency { color: ${company.brandColor}; font-weight: 600; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <div class="company-info">
-                <div class="company-name">${escapeHtml(company.companyName)}</div>
-                <div class="company-tagline">Professional Business Solutions</div>
-                <div class="company-details">
-                  ${company.companyEmail ? `📧 ${escapeHtml(company.companyEmail)}<br>` : ''}
-                  ${company.companyPhone ? `📱 ${escapeHtml(company.companyPhone)}<br>` : ''}
-                  ${company.companyWebsite ? `🌐 ${escapeHtml(company.companyWebsite)}<br>` : ''}
-                  ${company.companyAddress ? `📍 ${escapeHtml(company.companyAddress)}` : ''}
-                </div>
-              </div>
-            </div>
+      // Create line items table body
+      const lineItemsBody = [
+        [
+          { text: 'Description', style: 'tableHeader' },
+          { text: 'Qty', style: 'tableHeader', alignment: 'right' },
+          { text: 'Rate', style: 'tableHeader', alignment: 'right' },
+          { text: 'Amount', style: 'tableHeader', alignment: 'right' }
+        ],
+        ...invoice.lineItems.map(item => [
+          { text: item.description, style: 'tableBody' },
+          { text: item.quantity.toString(), style: 'tableBody', alignment: 'right' },
+          { text: `৳${item.rate.toLocaleString()}`, style: 'tableBody', alignment: 'right' },
+          { text: `৳${item.amount.toLocaleString()}`, style: 'tableBody', alignment: 'right' }
+        ])
+      ];
 
-            <div class="invoice-banner">
-              <div class="invoice-title">INVOICE</div>
-              <div class="invoice-number">${invoice.invoiceNumber}</div>
-            </div>
+      // Create totals table
+      const totalsBody = [
+        [{ text: 'Subtotal:', style: 'totalsLabel' }, { text: `৳${invoice.subtotal.toLocaleString()}`, style: 'totalsValue' }]
+      ];
 
-            <div class="invoice-meta">
-              <div class="bill-to">
-                <div class="section-title">Bill To</div>
-                <div class="client-info">
-                  <div class="client-name">${escapeHtml(invoice.client.name)}</div>
-                  <div>📱 ${escapeHtml(invoice.client.phone)}</div>
-                </div>
-              </div>
-              <div class="invoice-details">
-                <div class="section-title">Invoice Details</div>
-                <div class="invoice-details-content">
-                  <div><strong>Invoice #:</strong> ${invoice.invoiceNumber}</div>
-                  <div><strong>Date:</strong> ${new Date(invoice.createdAt).toLocaleDateString()}</div>
-                  ${invoice.dueDate ? `<div><strong>Due Date:</strong> ${new Date(invoice.dueDate).toLocaleDateString()}</div>` : ''}
-                  <div class="status-badge ${invoice.status === 'Paid' ? 'status-paid' : 'status-due'}">
-                    ${invoice.status === 'Paid' ? 'PAID' : 'DUE'}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="items-section">
-              <div class="items-title">Service Details</div>
-              <table class="items-table">
-                <thead>
-                  <tr>
-                    <th>Description</th>
-                    <th class="text-right">Qty</th>
-                    <th class="text-right">Rate</th>
-                    <th class="text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${invoice.lineItems.map(item => `
-                    <tr>
-                      <td>${escapeHtml(item.description)}</td>
-                      <td class="text-right">${item.quantity}</td>
-                      <td class="text-right"><span class="currency">৳</span>${item.rate.toLocaleString()}</td>
-                      <td class="text-right"><span class="currency">৳</span>${item.amount.toLocaleString()}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-
-            <div class="totals-section">
-              <div class="totals-card">
-                <table class="totals-table">
-                  <tr>
-                    <td>Subtotal:</td>
-                    <td><span class="currency">৳</span>${invoice.subtotal.toLocaleString()}</td>
-                  </tr>
-                  ${invoice.discount > 0 ? `
-                    <tr>
-                      <td>Discount (${invoice.discount}%):</td>
-                      <td>-<span class="currency">৳</span>${discountAmount.toLocaleString()}</td>
-                    </tr>
-                  ` : ''}
-                  ${invoice.vat > 0 ? `
-                    <tr>
-                      <td>VAT (${invoice.vat}%):</td>
-                      <td>+<span class="currency">৳</span>${vatAmount.toLocaleString()}</td>
-                    </tr>
-                  ` : ''}
-                  <tr class="total-row">
-                    <td>Total Amount:</td>
-                    <td><span class="currency">৳</span>${invoice.totalAmount.toLocaleString()}</td>
-                  </tr>
-                </table>
-              </div>
-            </div>
-
-            ${invoice.notes ? `
-              <div class="notes-section">
-                <div class="notes-title">Additional Notes</div>
-                <div class="notes-content">${escapeHtml(invoice.notes)}</div>
-              </div>
-            ` : ''}
-
-            <div class="footer">
-              <div class="footer-message">Thank you for your business!</div>
-              <div>Invoice generated on ${new Date().toLocaleDateString()}</div>
-              <div style="margin-top: 12px; font-size: 12px;">
-                This is a computer-generated invoice. No signature required.
-              </div>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
-
-      await page.setContent(invoiceHTML);
-      const pdf = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '20px',
-          right: '20px',
-          bottom: '20px',
-          left: '20px'
-        }
-      });
-
-      try {
-        await browser.close();
-      } catch (closeError) {
-        console.error("Error closing browser:", closeError);
+      if (invoice.discount > 0) {
+        totalsBody.push([
+          { text: `Discount (${invoice.discount}%):`, style: 'totalsLabel' },
+          { text: `-৳${discountAmount.toLocaleString()}`, style: 'totalsValue' }
+        ]);
       }
+
+      if (invoice.vat > 0) {
+        totalsBody.push([
+          { text: `VAT (${invoice.vat}%):`, style: 'totalsLabel' },
+          { text: `+৳${vatAmount.toLocaleString()}`, style: 'totalsValue' }
+        ]);
+      }
+
+      totalsBody.push([
+        { text: 'Total Amount:', style: 'totalLabel' },
+        { text: `৳${invoice.totalAmount.toLocaleString()}`, style: 'totalValue' }
+      ]);
+
+      // PDF document definition
+      const docDefinition = {
+        pageSize: 'A4',
+        pageMargins: [40, 40, 40, 40],
+        content: [
+          // Header with company info
+          {
+            table: {
+              widths: ['*'],
+              body: [[
+                {
+                  text: [
+                    { text: company.companyName, style: 'companyName' },
+                    { text: '\nProfessional Business Solutions', style: 'companyTagline' },
+                    company.companyEmail ? { text: `\n📧 ${company.companyEmail}`, style: 'companyDetails' } : '',
+                    company.companyPhone ? { text: `\n📱 ${company.companyPhone}`, style: 'companyDetails' } : '',
+                    company.companyWebsite ? { text: `\n🌐 ${company.companyWebsite}`, style: 'companyDetails' } : '',
+                    company.companyAddress ? { text: `\n📍 ${company.companyAddress}`, style: 'companyDetails' } : ''
+                  ],
+                  fillColor: company.brandColor,
+                  color: '#ffffff',
+                  margin: [20, 20, 20, 20]
+                }
+              ]]
+            },
+            layout: 'noBorders'
+          },
+          
+          // Invoice banner
+          {
+            table: {
+              widths: ['*'],
+              body: [[
+                {
+                  text: [
+                    { text: 'INVOICE\n', style: 'invoiceTitle' },
+                    { text: invoice.invoiceNumber, style: 'invoiceNumber' }
+                  ],
+                  alignment: 'center',
+                  fillColor: '#f8fafc',
+                  margin: [20, 20, 20, 20]
+                }
+              ]]
+            },
+            layout: 'noBorders',
+            margin: [0, 20, 0, 20]
+          },
+
+          // Bill to and Invoice details
+          {
+            columns: [
+              {
+                width: '48%',
+                table: {
+                  widths: ['*'],
+                  body: [[
+                    {
+                      text: [
+                        { text: 'BILL TO\n', style: 'sectionTitle' },
+                        { text: `${invoice.client.name}\n`, style: 'clientName' },
+                        { text: `📱 ${invoice.client.phone}`, style: 'clientInfo' }
+                      ],
+                      fillColor: '#fafbfc',
+                      margin: [15, 15, 15, 15]
+                    }
+                  ]]
+                },
+                layout: 'noBorders'
+              },
+              { width: '4%', text: '' },
+              {
+                width: '48%',
+                table: {
+                  widths: ['*'],
+                  body: [[
+                    {
+                      text: [
+                        { text: 'INVOICE DETAILS\n', style: 'sectionTitle' },
+                        { text: `Invoice #: ${invoice.invoiceNumber}\n`, style: 'invoiceDetailsText' },
+                        { text: `Date: ${new Date(invoice.createdAt).toLocaleDateString()}\n`, style: 'invoiceDetailsText' },
+                        invoice.dueDate ? { text: `Due Date: ${new Date(invoice.dueDate).toLocaleDateString()}\n`, style: 'invoiceDetailsText' } : '',
+                        { text: `Status: ${invoice.status}`, style: 'invoiceDetailsText' }
+                      ],
+                      fillColor: '#fafbfc',
+                      margin: [15, 15, 15, 15]
+                    }
+                  ]]
+                },
+                layout: 'noBorders'
+              }
+            ],
+            margin: [0, 0, 0, 30]
+          },
+
+          // Service details header
+          { text: 'Service Details', style: 'itemsTitle', margin: [0, 20, 0, 10] },
+
+          // Line items table
+          {
+            table: {
+              headerRows: 1,
+              widths: ['*', 60, 80, 80],
+              body: lineItemsBody
+            },
+            layout: {
+              fillColor: function (rowIndex) {
+                return (rowIndex === 0) ? company.brandColor : (rowIndex % 2 === 0 ? '#f9fafb' : null);
+              }
+            },
+            margin: [0, 0, 0, 30]
+          },
+
+          // Totals section
+          {
+            columns: [
+              { width: '60%', text: '' },
+              {
+                width: '40%',
+                table: {
+                  widths: ['*', 'auto'],
+                  body: totalsBody
+                },
+                layout: 'noBorders'
+              }
+            ]
+          },
+
+          // Notes section
+          invoice.notes ? {
+            table: {
+              widths: ['*'],
+              body: [[
+                {
+                  text: [
+                    { text: 'Additional Notes\n', style: 'notesTitle' },
+                    { text: invoice.notes, style: 'notesContent' }
+                  ],
+                  fillColor: '#f8fafc',
+                  margin: [15, 15, 15, 15]
+                }
+              ]]
+            },
+            layout: 'noBorders',
+            margin: [0, 30, 0, 0]
+          } : null,
+
+          // Footer
+          {
+            text: [
+              { text: 'Thank you for your business!\n', style: 'footerMessage' },
+              { text: `Invoice generated on ${new Date().toLocaleDateString()}\n`, style: 'footerText' },
+              { text: 'This is a computer-generated invoice. No signature required.', style: 'footerSmall' }
+            ],
+            alignment: 'center',
+            margin: [0, 40, 0, 0]
+          }
+        ].filter(Boolean),
+
+        styles: {
+          companyName: { fontSize: 24, bold: true, color: '#ffffff' },
+          companyTagline: { fontSize: 12, color: '#ffffff', opacity: 0.9 },
+          companyDetails: { fontSize: 10, color: '#ffffff', opacity: 0.95 },
+          invoiceTitle: { fontSize: 20, bold: true, color: company.brandColor },
+          invoiceNumber: { fontSize: 16, bold: true, color: '#374151' },
+          sectionTitle: { fontSize: 12, bold: true, color: company.brandColor },
+          clientName: { fontSize: 14, bold: true, color: '#111827' },
+          clientInfo: { fontSize: 12, color: '#4b5563' },
+          invoiceDetailsText: { fontSize: 11, color: '#4b5563' },
+          itemsTitle: { fontSize: 16, bold: true, color: '#111827' },
+          tableHeader: { fontSize: 10, bold: true, color: '#ffffff' },
+          tableBody: { fontSize: 11, color: '#374151' },
+          totalsLabel: { fontSize: 12, color: '#6b7280' },
+          totalsValue: { fontSize: 12, bold: true, alignment: 'right' },
+          totalLabel: { fontSize: 14, bold: true, color: company.brandColor },
+          totalValue: { fontSize: 14, bold: true, color: company.brandColor, alignment: 'right' },
+          notesTitle: { fontSize: 12, bold: true, color: company.brandColor },
+          notesContent: { fontSize: 11, color: '#4b5563' },
+          footerMessage: { fontSize: 12, bold: true, color: company.brandColor },
+          footerText: { fontSize: 10, color: '#6b7280' },
+          footerSmall: { fontSize: 8, color: '#6b7280' }
+        }
+      };
+
+      const pdf = await new Promise((resolve, reject) => {
+        pdfMake.default.createPdf(docDefinition).getBuffer((buffer: Buffer) => {
+          if (buffer) {
+            resolve(buffer);
+          } else {
+            reject(new Error('Failed to generate PDF buffer'));
+          }
+        });
+      });
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoiceNumber}.pdf"`);
