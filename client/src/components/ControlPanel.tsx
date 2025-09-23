@@ -275,7 +275,7 @@ export default function ControlPanel() {
                   <div className="space-y-2">
                     <Label htmlFor="icon">আইকন</Label>
                     <Select 
-                      value={formData.icon} 
+                      value={formData.icon || "ExternalLink"} 
                       onValueChange={(value) => setFormData(prev => ({ ...prev, icon: value }))}
                     >
                       <SelectTrigger data-testid="select-button-icon">
@@ -300,7 +300,7 @@ export default function ControlPanel() {
                   <div className="space-y-2">
                     <Label htmlFor="color">রং</Label>
                     <Select 
-                      value={formData.color} 
+                      value={formData.color || "primary"} 
                       onValueChange={(value) => setFormData(prev => ({ ...prev, color: value }))}
                     >
                       <SelectTrigger data-testid="select-button-color">
@@ -365,9 +365,9 @@ export default function ControlPanel() {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {customButtons.map((button) => {
-              const Icon = getIcon(button.icon);
+              const Icon = getIcon(button.icon || "ExternalLink");
               return (
                 <Card key={button.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
@@ -409,8 +409,8 @@ export default function ControlPanel() {
                       
                       <Button
                         size="sm"
-                        variant={getButtonVariant(button.color) as any}
-                        className={`flex items-center gap-1 ${getButtonClassName(button.color)}`}
+                        variant={getButtonVariant(button.color || "primary") as any}
+                        className={`flex items-center gap-1 ${getButtonClassName(button.color || "primary")}`}
                         onClick={() => handleButtonClick(button.url)}
                         data-testid={`button-link-${button.id}`}
                       >
