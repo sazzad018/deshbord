@@ -22,7 +22,8 @@ const BORDER = "#e5e7eb";
 // Helper functions
 const formatCurrency = (n: number, currency: string) => {
   if (currency === "BDT") {
-    return new Intl.NumberFormat("bn-BD", { style: "currency", currency: "BDT", maximumFractionDigits: 2 }).format(n || 0);
+    // Use English numerals but BDT symbol
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "BDT", maximumFractionDigits: 2 }).format(n || 0).replace('BDT', '৳');
   } else {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: currency, maximumFractionDigits: 2 }).format(n || 0);
   }
