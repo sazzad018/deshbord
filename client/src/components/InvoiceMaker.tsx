@@ -273,7 +273,7 @@ export default function InvoiceMaker() {
   };
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full max-w-[819px] mx-auto space-y-6">
       <Card className="rounded-2xl shadow-sm">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -716,7 +716,24 @@ export default function InvoiceMaker() {
 
                     {/* Footer */}
                     <div className="mt-8 text-center text-xs" style={{ color: "#6b7280" }}>
-                      This is a system-generated invoice by {company.companyName} · Thank you!
+                      <div className="font-semibold text-lg">{company.companyName}</div>
+                      {company.companyEmail && (
+                        <div className="mt-1">
+                          <span className="inline-flex items-center text-sm">
+                            <span>Email: {company.companyEmail}</span>
+                            {company.companyPhone && <span className="mx-2">•</span>}
+                          </span>
+                          {company.companyPhone && (
+                            <span className="text-sm">Phone: {company.companyPhone}</span>
+                          )}
+                        </div>
+                      )}
+                      {company.companyAddress && (
+                        <div className="text-sm mt-1">{company.companyAddress}</div>
+                      )}
+                      {company.companyWebsite && (
+                        <div className="text-sm mt-1">{company.companyWebsite}</div>
+                      )}
                     </div>
                   </div>
                 </div>
