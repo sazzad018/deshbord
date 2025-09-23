@@ -51,29 +51,7 @@ export const meetings = pgTable("meetings", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const invoices = pgTable("invoices", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  clientId: varchar("client_id").notNull().references(() => clients.id),
-  invoiceNumber: text("invoice_number").notNull().unique(),
-  status: text("status").notNull().default("Due"), // "Paid" or "Due"
-  discount: integer("discount").notNull().default(0), // percentage
-  vat: integer("vat").notNull().default(0), // percentage
-  subtotal: integer("subtotal").notNull().default(0),
-  totalAmount: integer("total_amount").notNull().default(0),
-  dueDate: timestamp("due_date"),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
 
-export const invoiceLineItems = pgTable("invoice_line_items", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  invoiceId: varchar("invoice_id").notNull().references(() => invoices.id),
-  description: text("description").notNull(),
-  quantity: integer("quantity").notNull().default(1),
-  rate: integer("rate").notNull(),
-  amount: integer("amount").notNull(), // quantity * rate
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
 
 export const todos = pgTable("todos", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -147,18 +125,7 @@ export const insertMeetingSchema = createInsertSchema(meetings).omit({
   createdAt: true,
 });
 
-export const insertInvoiceSchema = createInsertSchema(invoices).omit({
-  id: true,
-  createdAt: true,
-  invoiceNumber: true, // auto-generated
-});
 
-export const insertInvoiceLineItemSchema = createInsertSchema(invoiceLineItems).omit({
-  id: true,
-  createdAt: true,
-  invoiceId: true, // auto-set by server
-  amount: true, // calculated by server (quantity * rate)
-});
 
 export const insertTodoSchema = createInsertSchema(todos).omit({
   id: true,
@@ -186,10 +153,6 @@ export type WebsiteProject = typeof websiteProjects.$inferSelect;
 export type InsertWebsiteProject = z.infer<typeof insertWebsiteProjectSchema>;
 export type Meeting = typeof meetings.$inferSelect;
 export type InsertMeeting = z.infer<typeof insertMeetingSchema>;
-export type Invoice = typeof invoices.$inferSelect;
-export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
-export type InvoiceLineItem = typeof invoiceLineItems.$inferSelect;
-export type InsertInvoiceLineItem = z.infer<typeof insertInvoiceLineItemSchema>;
 export type Todo = typeof todos.$inferSelect;
 export type InsertTodo = z.infer<typeof insertTodoSchema>;
 export type WhatsappTemplate = typeof whatsappTemplates.$inferSelect;
@@ -230,7 +193,3 @@ export interface AIQueryResult {
   summary: string;
 }
 
-export interface InvoiceWithLineItems extends Invoice {
-  lineItems: InvoiceLineItem[];
-  client: Client;
-}
