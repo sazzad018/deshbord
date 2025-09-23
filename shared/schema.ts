@@ -121,6 +121,24 @@ export const insertServiceScopeSchema = createInsertSchema(serviceScopes).omit({
   createdAt: true,
 });
 
+// Website Projects Table for Portal Links
+export const websiteProjects = pgTable("website_projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().references(() => clients.id),
+  projectName: varchar("project_name").notNull(),
+  portalKey: varchar("portal_key").notNull().unique(),
+  projectStatus: varchar("project_status").notNull().default("In Progress"),
+  websiteUrl: varchar("website_url"),
+  notes: text("notes"),
+  completedDate: timestamp("completed_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertWebsiteProjectSchema = createInsertSchema(websiteProjects).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertMeetingSchema = createInsertSchema(meetings).omit({
   id: true,
   createdAt: true,
@@ -161,6 +179,8 @@ export type SpendLog = typeof spendLogs.$inferSelect;
 export type InsertSpendLog = z.infer<typeof insertSpendLogSchema>;
 export type ServiceScope = typeof serviceScopes.$inferSelect;
 export type InsertServiceScope = z.infer<typeof insertServiceScopeSchema>;
+export type WebsiteProject = typeof websiteProjects.$inferSelect;
+export type InsertWebsiteProject = z.infer<typeof insertWebsiteProjectSchema>;
 export type Meeting = typeof meetings.$inferSelect;
 export type InsertMeeting = z.infer<typeof insertMeetingSchema>;
 export type Invoice = typeof invoices.$inferSelect;
@@ -181,6 +201,7 @@ export interface ClientWithLogs extends Client {
 export interface ClientWithDetails extends Client {
   logs: SpendLog[];
   serviceScopes: ServiceScope[];
+  websiteProjects: WebsiteProject[];
 }
 
 export interface ServiceAnalytics {

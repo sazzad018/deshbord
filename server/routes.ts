@@ -939,6 +939,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Client portal route - fetch client by portal key
+  app.get("/api/clients/portal/:portalKey", async (req, res) => {
+    try {
+      const clients = await storage.getClients();
+      const client = clients.find(c => c.portalKey === req.params.portalKey);
+      
+      if (!client) {
+        return res.status(404).json({ error: "Client portal not found" });
+      }
+
+      const clientDetails = await storage.getClientWithDetails(client.id);
+      if (!clientDetails) {
+        return res.status(404).json({ error: "Client details not found" });
+      }
+      
+      res.json(clientDetails);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch client portal data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
