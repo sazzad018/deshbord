@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Plus, Trash2, Upload, X } from "lucide-react";
 import { formatCurrency } from "@/lib/utils-dashboard";
 import { createClient } from "@/lib/api";
 import { apiRequest } from "@/lib/queryClient";
@@ -31,7 +32,10 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
     profilePicture: "",
     adminNotes: "",
   });
-
+  const [uploadedImagePreview, setUploadedImagePreview] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -45,7 +49,7 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
       setIsDialogOpen(false);
-      setNewClient({ name: "", phone: "", fb: "", profilePicture: "", adminNotes: "" });
+      resetForm();
       toast({
         title: "সফল",
         description: "নতুন ক্লায়েন্ট সফলভাবে যোগ করা হয়েছে",
@@ -78,6 +82,100 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
       });
     },
   });
+
+  const uploadImageMutation = useMutation({
+    mutationFn: async (uploadData: { dataUrl: string; fileName: string }) => {
+      return await apiRequest("POST", "/api/uploads", uploadData);
+    },
+    onSuccess: (data: any) => {
+      setNewClient({ ...newClient, profilePicture: data.url });
+      setIsUploading(false);
+      toast({
+        title: "সফল",
+        description: "ছবি সফলভাবে আপলোড হয়েছে",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Upload error:", error);
+      setIsUploading(false);
+      toast({
+        title: "ত্রুটি",
+        description: error.message || "ছবি আপলোড করতে সমস্যা হয়েছে",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // File upload handlers
+  const handleFileSelect = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "ত্রুটি",
+        description: "শুধুমাত্র ছবি ফাইল নির্বাচন করুন",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (2MB limit)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "ত্রুটি",
+        description: "ছবির সাইজ ২ মেগাবাইটের কম হতে হবে",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      setUploadedImagePreview(dataUrl);
+      
+      uploadImageMutation.mutate({
+        dataUrl,
+        fileName: file.name,
+      });
+    };
+
+    reader.onerror = () => {
+      setIsUploading(false);
+      toast({
+        title: "ত্রুটি",
+        description: "ছবি পড়তে সমস্যা হয়েছে",
+        variant: "destructive",
+      });
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setUploadedImagePreview("");
+    setNewClient({ ...newClient, profilePicture: "" });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const resetForm = () => {
+    setNewClient({ name: "", phone: "", fb: "", profilePicture: "", adminNotes: "" });
+    setUploadedImagePreview("");
+    setIsUploading(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleCreateClient = () => {
     if (!newClient.name.trim() || !newClient.phone.trim()) {
@@ -167,12 +265,72 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
                     value={newClient.fb}
                     onChange={(e) => setNewClient({ ...newClient, fb: e.target.value })}
                   />
-                  <Input
-                    data-testid="input-client-profile-picture"
-                    placeholder="প্রোফাইল ছবির URL (ঐচ্ছিক)"
-                    value={newClient.profilePicture}
-                    onChange={(e) => setNewClient({ ...newClient, profilePicture: e.target.value })}
-                  />
+                  
+                  {/* Profile Picture Upload Section */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-gray-700">প্রোফাইল ছবি (ঐচ্ছিক)</label>
+                    
+                    {/* Image Preview */}
+                    {(uploadedImagePreview || newClient.profilePicture) && (
+                      <div className="flex items-center gap-3 p-3 border rounded-lg">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={uploadedImagePreview || newClient.profilePicture} />
+                          <AvatarFallback>{newClient.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 text-sm text-gray-600">
+                          {isUploading ? "আপলোড হচ্ছে..." : "ছবি সিলেক্ট করা হয়েছে"}
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={handleRemoveImage}
+                          disabled={isUploading}
+                          data-testid="button-remove-image"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {/* Upload Button */}
+                    <div className="flex gap-2">
+                      <Button 
+                        type="button"
+                        variant="outline" 
+                        onClick={handleFileSelect}
+                        disabled={isUploading}
+                        className="flex items-center gap-2"
+                        data-testid="button-upload-image"
+                      >
+                        <Upload className="h-4 w-4" />
+                        {isUploading ? "আপলোড হচ্ছে..." : "ছবি আপলোড করুন"}
+                      </Button>
+                      <div className="text-xs text-gray-500 flex items-center">
+                        সর্বোচ্চ ২ মেগাবাইট
+                      </div>
+                    </div>
+                    
+                    {/* Hidden File Input */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      data-testid="input-client-photo"
+                    />
+                    
+                    {/* Manual URL Input (Optional) */}
+                    <div className="pt-2 border-t">
+                      <Input
+                        data-testid="input-client-profile-picture"
+                        placeholder="অথবা ছবির URL লিংক দিন"
+                        value={newClient.profilePicture}
+                        onChange={(e) => setNewClient({ ...newClient, profilePicture: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  
                   <Textarea
                     data-testid="textarea-client-admin-notes"
                     placeholder="এডমিন নোট - বিশেষ নির্দেশনা বা মন্তব্য (ঐচ্ছিক)"
@@ -246,22 +404,30 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
                         data-testid={`row-client-${client.id}`}
                       >
                         <TableCell className="font-medium" data-testid={`text-client-name-${client.id}`}>
-                          <div className="space-y-1">
-                            <div>{client.name}</div>
-                            {client.scopes && client.scopes.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {client.scopes.slice(0, 3).map((scope, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs px-1 py-0">
-                                    {scope}
-                                  </Badge>
-                                ))}
-                                {client.scopes.length > 3 && (
-                                  <Badge variant="outline" className="text-xs px-1 py-0">
-                                    +{client.scopes.length - 3}
-                                  </Badge>
-                                )}
-                              </div>
-                            )}
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={client.profilePicture || ""} />
+                              <AvatarFallback className="text-xs">
+                                {client.name.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="space-y-1">
+                              <div>{client.name}</div>
+                              {client.scopes && client.scopes.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {client.scopes.slice(0, 3).map((scope, index) => (
+                                    <Badge key={index} variant="outline" className="text-xs px-1 py-0">
+                                      {scope}
+                                    </Badge>
+                                  ))}
+                                  {client.scopes.length > 3 && (
+                                    <Badge variant="outline" className="text-xs px-1 py-0">
+                                      +{client.scopes.length - 3}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
