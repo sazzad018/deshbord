@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Invoice, type InsertInvoice, type InvoiceLineItem, type InsertInvoiceLineItem, type InvoiceWithLineItems, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type WebsiteProject, type InsertWebsiteProject } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type WebsiteProject, type InsertWebsiteProject } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -26,13 +26,6 @@ export interface IStorage {
   updateMeeting(id: string, updates: Partial<Meeting>): Promise<Meeting | undefined>;
   deleteMeeting(id: string): Promise<boolean>;
 
-  // Invoice operations
-  getInvoices(): Promise<Invoice[]>;
-  getInvoice(id: string): Promise<InvoiceWithLineItems | undefined>;
-  createInvoice(invoice: InsertInvoice, lineItems: InsertInvoiceLineItem[]): Promise<Invoice>;
-  updateInvoice(id: string, updates: Partial<Invoice>): Promise<Invoice | undefined>;
-  deleteInvoice(id: string): Promise<boolean>;
-  updateInvoiceStatus(id: string, status: "Paid" | "Due"): Promise<Invoice | undefined>;
 
   // Todo operations
   getTodos(): Promise<Todo[]>;
