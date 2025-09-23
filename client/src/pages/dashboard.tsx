@@ -40,11 +40,9 @@ export default function Dashboard() {
             />
             <QuickActions selectedClientId={selectedClientId} />
             <MeetingScheduler selectedClientId={selectedClientId} />
+            <ControlPanel />
           </div>
         </div>
-        
-        {/* Control Panel - Beautiful and Prominent at Bottom */}
-        <ControlPanel />
       </div>
     </div>
   );
