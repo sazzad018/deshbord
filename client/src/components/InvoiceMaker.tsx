@@ -186,11 +186,16 @@ export default function InvoiceMaker() {
   return (
     <div className="w-full space-y-6">
       <Card className="rounded-2xl shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <FileText className="h-5 w-5" />
-            ইনভয়েস মেকার
-          </CardTitle>
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-full">
+              <FileText className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <CardTitle className="text-xl text-gray-900">ইনভয়েস মেকার</CardTitle>
+              <p className="text-gray-600 text-sm">Professional invoice তৈরি করুন এবং PDF download করুন</p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -344,11 +349,10 @@ export default function InvoiceMaker() {
                   <Label>সার্ভিস / আইটেম</Label>
                   <Button 
                     onClick={addItem} 
-                    className="rounded-2xl text-white" 
-                    style={{ background: BRAND }}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg"
                     data-testid="button-add-item"
                   >
-                    <Plus className="h-4 w-4 mr-1" />
+                    <Plus className="h-4 w-4 mr-2" />
                     আইটেম যোগ করুন
                   </Button>
                 </div>
@@ -406,24 +410,23 @@ export default function InvoiceMaker() {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <Button 
                   onClick={downloadPDF} 
-                  className="rounded-2xl text-white" 
-                  style={{ background: BRAND }}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg"
                   disabled={!selectedClient}
                   data-testid="button-download-pdf"
                 >
-                  <Download className="h-4 w-4 mr-1" />
+                  <Download className="h-4 w-4 mr-2" />
                   PDF ডাউনলোড
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={resetForm} 
-                  className="rounded-2xl"
+                  className="rounded-lg border-gray-300 hover:bg-gray-50"
                   data-testid="button-reset"
                 >
-                  <TimerReset className="h-4 w-4 mr-1" />
+                  <TimerReset className="h-4 w-4 mr-2" />
                   রিসেট
                 </Button>
               </div>
