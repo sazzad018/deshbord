@@ -289,10 +289,22 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 async function initializeDatabase() {
   try {
-    const existingClients = await db.select().from(clients).limit(1);
-    if (existingClients.length > 0) {
-      console.log("Database already has data, skipping initialization");
-      return;
+    console.log("Checking database connection and tables...");
+    try {
+      const existingClients = await db.select().from(clients).limit(1);
+      if (existingClients.length > 0) {
+        console.log("Database already has data, skipping initialization");
+        return;
+      }
+    } catch (error) {
+      if (error.code === "42P01") {
+        console.error("\u274C Database tables do not exist!");
+        console.log("\u{1F4CB} Please run the database setup script first:");
+        console.log("   node setup-database.js");
+        console.log("   Then restart your application");
+        throw new Error("Database tables not found. Run setup-database.js first.");
+      }
+      throw error;
     }
     console.log("Initializing database with sample data...");
     const [client1, client2] = await db.insert(clients).values([

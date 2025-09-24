@@ -20,11 +20,24 @@ export const db = drizzle(connection);
 // Initialize database with sample data if empty
 export async function initializeDatabase() {
   try {
-    // Check if we already have data
-    const existingClients = await db.select().from(clients).limit(1);
-    if (existingClients.length > 0) {
-      console.log("Database already has data, skipping initialization");
-      return;
+    console.log("Checking database connection and tables...");
+    
+    // First, try to check if tables exist
+    try {
+      const existingClients = await db.select().from(clients).limit(1);
+      if (existingClients.length > 0) {
+        console.log("Database already has data, skipping initialization");
+        return;
+      }
+    } catch (error: any) {
+      if (error.code === '42P01') {
+        console.error("❌ Database tables do not exist!");
+        console.log("📋 Please run the database setup script first:");
+        console.log("   node setup-database.js");
+        console.log("   Then restart your application");
+        throw new Error("Database tables not found. Run setup-database.js first.");
+      }
+      throw error;
     }
 
     console.log("Initializing database with sample data...");
