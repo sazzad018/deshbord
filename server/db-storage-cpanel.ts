@@ -84,8 +84,8 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`Cannot permanently delete client with existing ${dependencies.join(', ')}. Please remove them first or use soft delete (trash) instead.`);
       }
 
-      const result = await db.delete(clients).where(eq(clients.id, id));
-      return result.rowCount > 0;
+      const result = await db.delete(clients).where(eq(clients.id, id)).returning({ id: clients.id });
+      return result.length > 0;
     } catch (error) {
       throw error; // Re-throw to be handled by the route
     }
@@ -168,8 +168,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteMeeting(id: string): Promise<boolean> {
-    const result = await db.delete(meetings).where(eq(meetings.id, id));
-    return result.rowCount > 0;
+    const result = await db.delete(meetings).where(eq(meetings.id, id)).returning({ id: meetings.id });
+    return result.length > 0;
   }
 
 
@@ -202,8 +202,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTodo(id: string): Promise<boolean> {
-    const result = await db.delete(todos).where(eq(todos.id, id));
-    return result.rowCount > 0;
+    const result = await db.delete(todos).where(eq(todos.id, id)).returning({ id: todos.id });
+    return result.length > 0;
   }
 
   // WhatsApp template operations
@@ -235,8 +235,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteWhatsappTemplate(id: string): Promise<boolean> {
-    const result = await db.delete(whatsappTemplates).where(eq(whatsappTemplates.id, id));
-    return result.rowCount > 0;
+    const result = await db.delete(whatsappTemplates).where(eq(whatsappTemplates.id, id)).returning({ id: whatsappTemplates.id });
+    return result.length > 0;
   }
 
   async getDashboardMetrics(): Promise<DashboardMetrics> {
@@ -322,8 +322,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteServiceScope(id: string): Promise<boolean> {
-    const result = await db.delete(serviceScopes).where(eq(serviceScopes.id, id));
-    return result.rowCount > 0;
+    const result = await db.delete(serviceScopes).where(eq(serviceScopes.id, id)).returning({ id: serviceScopes.id });
+    return result.length > 0;
   }
 
   async getServiceAnalytics(serviceName: string): Promise<ServiceAnalytics> {
