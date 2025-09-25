@@ -48,6 +48,7 @@ export default function InvoiceMaker() {
   const { toast } = useToast();
   
   // State
+  const [isMinimized, setIsMinimized] = useState(false);
   const [companyMinimized, setCompanyMinimized] = useState(true);
   const [clientId, setClientId] = useState("");
   const [invoiceNo, setInvoiceNo] = useState(() => `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
@@ -307,13 +308,37 @@ export default function InvoiceMaker() {
     <div className="w-full max-w-[819px] mx-auto space-y-6 overflow-x-auto">
       <Card className="rounded-2xl shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            ইনভয়েস মেকার
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">Professional invoice তৈরি করুন এবং PDF download করুন</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                ইনভয়েস মেকার
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">Professional invoice তৈরি করুন এবং PDF download করুন</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMinimized(!isMinimized)}
+              className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+              data-testid="button-toggle-invoice-maker"
+            >
+              {isMinimized ? (
+                <>
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">বিস্তার করুন</span>
+                </>
+              ) : (
+                <>
+                  <Minus className="h-4 w-4" />
+                  <span className="hidden sm:inline">মিনিমাইজ করুন</span>
+                </>
+              )}
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="pt-0 space-y-6">
+        {!isMinimized && (
+          <CardContent className="pt-0 space-y-6">
           {/* Form Inputs Section - Top */}
           <div className="max-w-4xl mx-auto space-y-6">
               {/* Company Section - Minimized */}
@@ -772,6 +797,7 @@ export default function InvoiceMaker() {
             </Card>
           </div>
         </CardContent>
+        )}
       </Card>
     </div>
   );
