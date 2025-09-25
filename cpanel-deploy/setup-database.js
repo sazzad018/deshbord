@@ -3,8 +3,8 @@
 // Database Setup Script for cPanel
 // This creates all the required tables for Social Ads Expert
 
-const postgres = require('postgres');
-const crypto = require('crypto');
+import postgres from 'postgres';
+import crypto from 'crypto';
 
 console.log('🚀 Setting up database for Social Ads Expert...\n');
 
