@@ -181,7 +181,7 @@ export default function WhatsAppShortcut({ selectedClientId }: WhatsAppShortcutP
                 <SelectValue placeholder="টেমপ্লেট নির্বাচন করুন" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">কাস্টম মেসেজ</SelectItem>
+                <SelectItem value="custom">কাস্টম মেসেজ</SelectItem>
                 {templates.map(template => (
                   <SelectItem key={template.id} value={template.id}>
                     <div className="flex items-center gap-2">
