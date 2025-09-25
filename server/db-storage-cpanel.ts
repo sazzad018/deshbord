@@ -2,6 +2,7 @@ import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, typ
 import { eq, desc, sum, count, sql, and, gte } from "drizzle-orm";
 import { db } from "./db-cpanel";
 import { IStorage } from "./storage";
+import { randomUUID } from "crypto";
 
 export class DatabaseStorage implements IStorage {
   async getClients(): Promise<Client[]> {
@@ -39,6 +40,7 @@ export class DatabaseStorage implements IStorage {
     const portalKey = Math.random().toString(36).slice(2, 7);
     
     const insertData = {
+      id: randomUUID(), // Generate UUID in Node.js instead of database
       name: insertClient.name,
       phone: insertClient.phone,
       fb: insertClient.fb || null,
@@ -115,6 +117,7 @@ export class DatabaseStorage implements IStorage {
 
     // Insert the spend log with calculated balance
     const [spendLog] = await db.insert(spendLogs).values({
+      id: randomUUID(), // Generate UUID in Node.js
       clientId: insertSpendLog.clientId,
       date: insertSpendLog.date,
       amount: insertSpendLog.amount,
@@ -143,6 +146,7 @@ export class DatabaseStorage implements IStorage {
 
   async createMeeting(insertMeeting: InsertMeeting): Promise<Meeting> {
     const meetingData = {
+      id: randomUUID(), // Generate UUID in Node.js
       clientId: insertMeeting.clientId,
       title: insertMeeting.title,
       datetime: new Date(insertMeeting.datetime),
@@ -180,7 +184,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTodo(insertTodo: InsertTodo): Promise<Todo> {
-    const [todo] = await db.insert(todos).values(insertTodo).returning();
+    const todoData = {
+      id: randomUUID(), // Generate UUID in Node.js
+      ...insertTodo
+    };
+    const [todo] = await db.insert(todos).values(todoData).returning();
     return todo;
   }
 
@@ -209,7 +217,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createWhatsappTemplate(insertTemplate: InsertWhatsappTemplate): Promise<WhatsappTemplate> {
-    const [template] = await db.insert(whatsappTemplates).values(insertTemplate).returning();
+    const templateData = {
+      id: randomUUID(), // Generate UUID in Node.js
+      ...insertTemplate
+    };
+    const [template] = await db.insert(whatsappTemplates).values(templateData).returning();
     return template;
   }
 
@@ -257,10 +269,12 @@ export class DatabaseStorage implements IStorage {
     // Set all existing settings to non-default
     await db.update(companySettings).set({ isDefault: false });
     
-    const [settings] = await db.insert(companySettings).values({
+    const settingsData = {
+      id: randomUUID(), // Generate UUID in Node.js
       ...insertCompanySettings,
       isDefault: true,
-    }).returning();
+    };
+    const [settings] = await db.insert(companySettings).values(settingsData).returning();
     return settings;
   }
 
@@ -290,7 +304,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createServiceScope(insertServiceScope: InsertServiceScope): Promise<ServiceScope> {
-    const [serviceScope] = await db.insert(serviceScopes).values(insertServiceScope).returning();
+    const serviceScopeData = {
+      id: randomUUID(), // Generate UUID in Node.js
+      ...insertServiceScope
+    };
+    const [serviceScope] = await db.insert(serviceScopes).values(serviceScopeData).returning();
     return serviceScope;
   }
 
@@ -381,10 +399,12 @@ export class DatabaseStorage implements IStorage {
       .from(customButtons);
     const nextOrder = (maxOrder[0]?.max || 0) + 1;
 
-    const [button] = await db.insert(customButtons).values({
+    const buttonData = {
+      id: randomUUID(), // Generate UUID in Node.js
       ...insertButton,
       sortOrder: nextOrder
-    }).returning();
+    };
+    const [button] = await db.insert(customButtons).values(buttonData).returning();
     return button;
   }
 
@@ -425,7 +445,11 @@ export class DatabaseStorage implements IStorage {
 
   // File upload operations
   async saveUpload(insertUpload: InsertUpload): Promise<Upload> {
-    const [upload] = await db.insert(uploads).values(insertUpload).returning();
+    const uploadData = {
+      id: randomUUID(), // Generate UUID in Node.js
+      ...insertUpload
+    };
+    const [upload] = await db.insert(uploads).values(uploadData).returning();
     return upload;
   }
 
@@ -443,7 +467,11 @@ export class DatabaseStorage implements IStorage {
 
   // Invoice PDF operations
   async saveInvoicePdf(insertInvoicePdf: InsertInvoicePdf): Promise<InvoicePdf> {
-    const [invoicePdf] = await db.insert(invoicePdfs).values(insertInvoicePdf).returning();
+    const invoicePdfData = {
+      id: randomUUID(), // Generate UUID in Node.js
+      ...insertInvoicePdf
+    };
+    const [invoicePdf] = await db.insert(invoicePdfs).values(invoicePdfData).returning();
     return invoicePdf;
   }
 
