@@ -21,6 +21,7 @@ __export(schema_exports, {
   insertInvoicePdfSchema: () => insertInvoicePdfSchema,
   insertInvoiceSchema: () => insertInvoiceSchema,
   insertMeetingSchema: () => insertMeetingSchema,
+  insertQuickMessageSchema: () => insertQuickMessageSchema,
   insertServiceScopeSchema: () => insertServiceScopeSchema,
   insertSpendLogSchema: () => insertSpendLogSchema,
   insertTodoSchema: () => insertTodoSchema,
@@ -31,6 +32,7 @@ __export(schema_exports, {
   invoicePdfs: () => invoicePdfs,
   invoices: () => invoices,
   meetings: () => meetings,
+  quickMessages: () => quickMessages,
   serviceScopes: () => serviceScopes,
   spendLogs: () => spendLogs,
   todos: () => todos,
@@ -41,7 +43,7 @@ __export(schema_exports, {
 import { sql } from "drizzle-orm";
 import { pgTable, text, varchar, integer, jsonb, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-var clients, spendLogs, serviceScopes, meetings, todos, whatsappTemplates, companySettings, insertClientSchema, insertSpendLogSchema, insertServiceScopeSchema, websiteProjects, insertWebsiteProjectSchema, customButtons, insertCustomButtonSchema, invoices, invoiceItems, insertInvoiceSchema, insertInvoiceItemSchema, uploads, invoicePdfs, insertUploadSchema, insertInvoicePdfSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, insertCompanySettingsSchema;
+var clients, spendLogs, serviceScopes, meetings, todos, whatsappTemplates, companySettings, insertClientSchema, insertSpendLogSchema, insertServiceScopeSchema, websiteProjects, insertWebsiteProjectSchema, customButtons, insertCustomButtonSchema, invoices, invoiceItems, insertInvoiceSchema, insertInvoiceItemSchema, uploads, invoicePdfs, insertUploadSchema, insertInvoicePdfSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, quickMessages, insertQuickMessageSchema, insertCompanySettingsSchema;
 var init_schema = __esm({
   "shared/schema.ts"() {
     "use strict";
@@ -271,6 +273,25 @@ var init_schema = __esm({
       id: true,
       createdAt: true
     });
+    quickMessages = pgTable("quick_messages", {
+      id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+      title: text("title").notNull(),
+      // Message title/name
+      message: text("message").notNull(),
+      // The actual message content
+      category: text("category").default("general"),
+      // Optional categorization
+      isActive: boolean("is_active").notNull().default(true),
+      sortOrder: integer("sort_order").notNull().default(0),
+      // For ordering messages
+      createdAt: timestamp("created_at").defaultNow().notNull(),
+      updatedAt: timestamp("updated_at").defaultNow().notNull()
+    });
+    insertQuickMessageSchema = createInsertSchema(quickMessages).omit({
+      id: true,
+      createdAt: true,
+      updatedAt: true
+    });
     insertCompanySettingsSchema = createInsertSchema(companySettings).omit({
       id: true,
       createdAt: true,
@@ -279,32 +300,20 @@ var init_schema = __esm({
   }
 });
 
-// server/db-cpanel.ts
-var db_cpanel_exports = {};
-__export(db_cpanel_exports, {
+// server/db.ts
+var db_exports = {};
+__export(db_exports, {
   db: () => db,
   initializeDatabase: () => initializeDatabase
 });
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 async function initializeDatabase() {
   try {
-    console.log("Checking database connection and tables...");
-    try {
-      const existingClients = await db.select().from(clients).limit(1);
-      if (existingClients.length > 0) {
-        console.log("Database already has data, skipping initialization");
-        return;
-      }
-    } catch (error) {
-      if (error.code === "42P01") {
-        console.error("\u274C Database tables do not exist!");
-        console.log("\u{1F4CB} Please run the database setup script first:");
-        console.log("   node setup-database.js");
-        console.log("   Then restart your application");
-        throw new Error("Database tables not found. Run setup-database.js first.");
-      }
-      throw error;
+    const existingClients = await db.select().from(clients).limit(1);
+    if (existingClients.length > 0) {
+      console.log("Database already has data, skipping initialization");
+      return;
     }
     console.log("Initializing database with sample data...");
     const [client1, client2] = await db.insert(clients).values([
@@ -412,36 +421,157 @@ async function initializeDatabase() {
     throw error;
   }
 }
-var connection, db;
-var init_db_cpanel = __esm({
-  "server/db-cpanel.ts"() {
+var sql2, db;
+var init_db = __esm({
+  "server/db.ts"() {
     "use strict";
     init_schema();
     if (!process.env.DATABASE_URL) {
       throw new Error("DATABASE_URL is required");
     }
-    connection = postgres(process.env.DATABASE_URL, {
-      ssl: false,
-      // Disable SSL for cPanel hosting (most don't support SSL for internal connections)
-      max: 10,
-      idle_timeout: 20,
-      connect_timeout: 10
-    });
-    db = drizzle(connection);
+    sql2 = neon(process.env.DATABASE_URL);
+    db = drizzle(sql2);
   }
 });
 
-// server/index-cpanel.ts
-import express2 from "express";
+// vite.config.ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path2 from "path";
+import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+var vite_config_default;
+var init_vite_config = __esm({
+  async "vite.config.ts"() {
+    "use strict";
+    vite_config_default = defineConfig({
+      plugins: [
+        react(),
+        runtimeErrorOverlay(),
+        ...process.env.NODE_ENV !== "production" && process.env.REPL_ID !== void 0 ? [
+          await import("@replit/vite-plugin-cartographer").then(
+            (m) => m.cartographer()
+          ),
+          await import("@replit/vite-plugin-dev-banner").then(
+            (m) => m.devBanner()
+          )
+        ] : []
+      ],
+      resolve: {
+        alias: {
+          "@": path2.resolve(import.meta.dirname, "client", "src"),
+          "@shared": path2.resolve(import.meta.dirname, "shared"),
+          "@assets": path2.resolve(import.meta.dirname, "attached_assets")
+        }
+      },
+      root: path2.resolve(import.meta.dirname, "client"),
+      build: {
+        outDir: path2.resolve(import.meta.dirname, "dist/public"),
+        emptyOutDir: true
+      },
+      server: {
+        fs: {
+          strict: true,
+          deny: ["**/.*"]
+        }
+      }
+    });
+  }
+});
 
-// server/routes-cpanel.ts
+// server/vite.ts
+var vite_exports = {};
+__export(vite_exports, {
+  log: () => log2,
+  serveStatic: () => serveStatic2,
+  setupVite: () => setupVite
+});
+import express2 from "express";
+import fs2 from "fs";
+import path3 from "path";
+import { createServer as createViteServer, createLogger } from "vite";
+import { nanoid } from "nanoid";
+function log2(message, source = "express") {
+  const formattedTime = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  });
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
+async function setupVite(app2, server) {
+  const serverOptions = {
+    middlewareMode: true,
+    hmr: { server },
+    allowedHosts: true
+  };
+  const vite = await createViteServer({
+    ...vite_config_default,
+    configFile: false,
+    customLogger: {
+      ...viteLogger,
+      error: (msg, options) => {
+        viteLogger.error(msg, options);
+        process.exit(1);
+      }
+    },
+    server: serverOptions,
+    appType: "custom"
+  });
+  app2.use(vite.middlewares);
+  app2.use("*", async (req, res, next) => {
+    const url = req.originalUrl;
+    try {
+      const clientTemplate = path3.resolve(
+        import.meta.dirname,
+        "..",
+        "client",
+        "index.html"
+      );
+      let template = await fs2.promises.readFile(clientTemplate, "utf-8");
+      template = template.replace(
+        `src="/src/main.tsx"`,
+        `src="/src/main.tsx?v=${nanoid()}"`
+      );
+      const page = await vite.transformIndexHtml(url, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+    } catch (e) {
+      vite.ssrFixStacktrace(e);
+      next(e);
+    }
+  });
+}
+function serveStatic2(app2) {
+  const distPath = path3.resolve(import.meta.dirname, "public");
+  if (!fs2.existsSync(distPath)) {
+    throw new Error(
+      `Could not find the build directory: ${distPath}, make sure to build the client first`
+    );
+  }
+  app2.use(express2.static(distPath));
+  app2.use("*", (_req, res) => {
+    res.sendFile(path3.resolve(distPath, "index.html"));
+  });
+}
+var viteLogger;
+var init_vite = __esm({
+  async "server/vite.ts"() {
+    "use strict";
+    await init_vite_config();
+    viteLogger = createLogger();
+  }
+});
+
+// server/index.ts
+import express3 from "express";
+
+// server/routes.ts
 import { createServer } from "http";
 
-// server/db-storage-cpanel.ts
+// server/db-storage.ts
 init_schema();
-init_db_cpanel();
-import { eq, desc, sum, sql as sql2, and, gte } from "drizzle-orm";
-import { randomUUID } from "crypto";
+init_db();
+import { eq, desc, sum, sql as sql3, and, gte } from "drizzle-orm";
 var DatabaseStorage = class {
   async getClients() {
     return await db.select().from(clients).where(eq(clients.deleted, false)).orderBy(desc(clients.createdAt));
@@ -469,8 +599,6 @@ var DatabaseStorage = class {
   async createClient(insertClient) {
     const portalKey = Math.random().toString(36).slice(2, 7);
     const insertData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js instead of database
       name: insertClient.name,
       phone: insertClient.phone,
       fb: insertClient.fb || null,
@@ -492,9 +620,9 @@ var DatabaseStorage = class {
   async deleteClient(id) {
     try {
       const [spendLogsCount, meetingsCount, serviceScopesCount] = await Promise.all([
-        db.select({ count: sql2`count(*)` }).from(spendLogs).where(eq(spendLogs.clientId, id)),
-        db.select({ count: sql2`count(*)` }).from(meetings).where(eq(meetings.clientId, id)),
-        db.select({ count: sql2`count(*)` }).from(serviceScopes).where(eq(serviceScopes.clientId, id))
+        db.select({ count: sql3`count(*)` }).from(spendLogs).where(eq(spendLogs.clientId, id)),
+        db.select({ count: sql3`count(*)` }).from(meetings).where(eq(meetings.clientId, id)),
+        db.select({ count: sql3`count(*)` }).from(serviceScopes).where(eq(serviceScopes.clientId, id))
       ]);
       const dependencies = [];
       if (spendLogsCount[0].count > 0) dependencies.push(`${spendLogsCount[0].count} spend logs`);
@@ -503,8 +631,8 @@ var DatabaseStorage = class {
       if (dependencies.length > 0) {
         throw new Error(`Cannot permanently delete client with existing ${dependencies.join(", ")}. Please remove them first or use soft delete (trash) instead.`);
       }
-      const result = await db.delete(clients).where(eq(clients.id, id)).returning({ id: clients.id });
-      return result.length > 0;
+      const result = await db.delete(clients).where(eq(clients.id, id));
+      return result.rowCount > 0;
     } catch (error) {
       throw error;
     }
@@ -523,8 +651,6 @@ var DatabaseStorage = class {
     const newWalletSpent = client.walletSpent + insertSpendLog.amount;
     const balanceAfter = client.walletDeposited - newWalletSpent;
     const [spendLog] = await db.insert(spendLogs).values({
-      id: randomUUID(),
-      // Generate UUID in Node.js
       clientId: insertSpendLog.clientId,
       date: insertSpendLog.date,
       amount: insertSpendLog.amount,
@@ -532,7 +658,7 @@ var DatabaseStorage = class {
       balanceAfter
     }).returning();
     await db.update(clients).set({
-      walletSpent: sql2`${clients.walletSpent} + ${insertSpendLog.amount}`
+      walletSpent: sql3`${clients.walletSpent} + ${insertSpendLog.amount}`
     }).where(eq(clients.id, insertSpendLog.clientId));
     return spendLog;
   }
@@ -545,8 +671,6 @@ var DatabaseStorage = class {
   }
   async createMeeting(insertMeeting) {
     const meetingData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
       clientId: insertMeeting.clientId,
       title: insertMeeting.title,
       datetime: new Date(insertMeeting.datetime),
@@ -561,8 +685,8 @@ var DatabaseStorage = class {
     return updated;
   }
   async deleteMeeting(id) {
-    const result = await db.delete(meetings).where(eq(meetings.id, id)).returning({ id: meetings.id });
-    return result.length > 0;
+    const result = await db.delete(meetings).where(eq(meetings.id, id));
+    return result.rowCount > 0;
   }
   // Todo operations
   async getTodos() {
@@ -573,12 +697,7 @@ var DatabaseStorage = class {
     return result[0];
   }
   async createTodo(insertTodo) {
-    const todoData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
-      ...insertTodo
-    };
-    const [todo] = await db.insert(todos).values(todoData).returning();
+    const [todo] = await db.insert(todos).values(insertTodo).returning();
     return todo;
   }
   async updateTodo(id, updates) {
@@ -586,8 +705,8 @@ var DatabaseStorage = class {
     return updated;
   }
   async deleteTodo(id) {
-    const result = await db.delete(todos).where(eq(todos.id, id)).returning({ id: todos.id });
-    return result.length > 0;
+    const result = await db.delete(todos).where(eq(todos.id, id));
+    return result.rowCount > 0;
   }
   // WhatsApp template operations
   async getWhatsappTemplates() {
@@ -598,12 +717,7 @@ var DatabaseStorage = class {
     return result[0];
   }
   async createWhatsappTemplate(insertTemplate) {
-    const templateData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
-      ...insertTemplate
-    };
-    const [template] = await db.insert(whatsappTemplates).values(templateData).returning();
+    const [template] = await db.insert(whatsappTemplates).values(insertTemplate).returning();
     return template;
   }
   async updateWhatsappTemplate(id, updates) {
@@ -611,8 +725,8 @@ var DatabaseStorage = class {
     return updated;
   }
   async deleteWhatsappTemplate(id) {
-    const result = await db.delete(whatsappTemplates).where(eq(whatsappTemplates.id, id)).returning({ id: whatsappTemplates.id });
-    return result.length > 0;
+    const result = await db.delete(whatsappTemplates).where(eq(whatsappTemplates.id, id));
+    return result.rowCount > 0;
   }
   async getDashboardMetrics() {
     const allClients = await this.getClients();
@@ -638,13 +752,10 @@ var DatabaseStorage = class {
   }
   async createCompanySettings(insertCompanySettings) {
     await db.update(companySettings).set({ isDefault: false });
-    const settingsData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
+    const [settings] = await db.insert(companySettings).values({
       ...insertCompanySettings,
       isDefault: true
-    };
-    const [settings] = await db.insert(companySettings).values(settingsData).returning();
+    }).returning();
     return settings;
   }
   async updateCompanySettings(id, updates) {
@@ -663,12 +774,7 @@ var DatabaseStorage = class {
     return result[0];
   }
   async createServiceScope(insertServiceScope) {
-    const serviceScopeData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
-      ...insertServiceScope
-    };
-    const [serviceScope] = await db.insert(serviceScopes).values(serviceScopeData).returning();
+    const [serviceScope] = await db.insert(serviceScopes).values(insertServiceScope).returning();
     return serviceScope;
   }
   async updateServiceScope(id, updates) {
@@ -676,8 +782,8 @@ var DatabaseStorage = class {
     return updated;
   }
   async deleteServiceScope(id) {
-    const result = await db.delete(serviceScopes).where(eq(serviceScopes.id, id)).returning({ id: serviceScopes.id });
-    return result.length > 0;
+    const result = await db.delete(serviceScopes).where(eq(serviceScopes.id, id));
+    return result.rowCount > 0;
   }
   async getServiceAnalytics(serviceName) {
     const clientsWithService = await db.select().from(serviceScopes).where(eq(serviceScopes.serviceName, serviceName));
@@ -690,8 +796,8 @@ var DatabaseStorage = class {
       date: spendLogs.date,
       amount: sum(spendLogs.amount).as("amount")
     }).from(spendLogs).where(and(
-      sql2`${spendLogs.clientId} = ANY(${clientIds})`,
-      gte(sql2`DATE(${spendLogs.date})`, sevenDaysAgo.toISOString().split("T")[0])
+      sql3`${spendLogs.clientId} = ANY(${clientIds})`,
+      gte(sql3`DATE(${spendLogs.date})`, sevenDaysAgo.toISOString().split("T")[0])
     )).groupBy(spendLogs.date).orderBy(spendLogs.date);
     return {
       serviceName,
@@ -719,15 +825,12 @@ var DatabaseStorage = class {
     return await db.select().from(customButtons).where(eq(customButtons.isActive, true)).orderBy(customButtons.sortOrder, customButtons.createdAt);
   }
   async createCustomButton(insertButton) {
-    const maxOrder = await db.select({ max: sql2`max(${customButtons.sortOrder})` }).from(customButtons);
+    const maxOrder = await db.select({ max: sql3`max(${customButtons.sortOrder})` }).from(customButtons);
     const nextOrder = (maxOrder[0]?.max || 0) + 1;
-    const buttonData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
+    const [button] = await db.insert(customButtons).values({
       ...insertButton,
       sortOrder: nextOrder
-    };
-    const [button] = await db.insert(customButtons).values(buttonData).returning();
+    }).returning();
     return button;
   }
   async updateCustomButton(id, updates) {
@@ -754,12 +857,7 @@ var DatabaseStorage = class {
   }
   // File upload operations
   async saveUpload(insertUpload) {
-    const uploadData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
-      ...insertUpload
-    };
-    const [upload] = await db.insert(uploads).values(uploadData).returning();
+    const [upload] = await db.insert(uploads).values(insertUpload).returning();
     return upload;
   }
   async getUpload(id) {
@@ -772,12 +870,7 @@ var DatabaseStorage = class {
   }
   // Invoice PDF operations
   async saveInvoicePdf(insertInvoicePdf) {
-    const invoicePdfData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
-      ...insertInvoicePdf
-    };
-    const [invoicePdf] = await db.insert(invoicePdfs).values(invoicePdfData).returning();
+    const [invoicePdf] = await db.insert(invoicePdfs).values(insertInvoicePdf).returning();
     return invoicePdf;
   }
   async getInvoicePdfs() {
@@ -791,12 +884,35 @@ var DatabaseStorage = class {
     const [deleted] = await db.delete(invoicePdfs).where(eq(invoicePdfs.id, id)).returning({ id: invoicePdfs.id });
     return !!deleted;
   }
+  // Quick Message operations
+  async getQuickMessages() {
+    return await db.select().from(quickMessages).where(eq(quickMessages.isActive, true)).orderBy(desc(quickMessages.sortOrder), desc(quickMessages.createdAt));
+  }
+  async getQuickMessage(id) {
+    const result = await db.select().from(quickMessages).where(eq(quickMessages.id, id)).limit(1);
+    return result[0];
+  }
+  async createQuickMessage(insertQuickMessage) {
+    const [quickMessage] = await db.insert(quickMessages).values(insertQuickMessage).returning();
+    return quickMessage;
+  }
+  async updateQuickMessage(id, updates) {
+    const [updated] = await db.update(quickMessages).set({
+      ...updates,
+      updatedAt: sql3`now()`
+    }).where(eq(quickMessages.id, id)).returning();
+    return updated;
+  }
+  async deleteQuickMessage(id) {
+    const [deleted] = await db.delete(quickMessages).where(eq(quickMessages.id, id)).returning({ id: quickMessages.id });
+    return !!deleted;
+  }
 };
 
-// server/storage-cpanel.ts
+// server/storage.ts
 var storage = new DatabaseStorage();
 
-// server/routes-cpanel.ts
+// server/routes.ts
 init_schema();
 async function registerRoutes(app2) {
   app2.get("/api/clients", async (req, res) => {
@@ -1077,6 +1193,46 @@ ${message}`;
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to generate WhatsApp link" });
+    }
+  });
+  app2.get("/api/quick-messages", async (req, res) => {
+    try {
+      const quickMessages2 = await storage.getQuickMessages();
+      res.json(quickMessages2);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch quick messages" });
+    }
+  });
+  app2.post("/api/quick-messages", async (req, res) => {
+    try {
+      const validatedData = insertQuickMessageSchema.parse(req.body);
+      const quickMessage = await storage.createQuickMessage(validatedData);
+      res.status(201).json(quickMessage);
+    } catch (error) {
+      console.error("Quick message creation error:", error);
+      res.status(400).json({ error: "Invalid quick message data" });
+    }
+  });
+  app2.patch("/api/quick-messages/:id", async (req, res) => {
+    try {
+      const quickMessage = await storage.updateQuickMessage(req.params.id, req.body);
+      if (!quickMessage) {
+        return res.status(404).json({ error: "Quick message not found" });
+      }
+      res.json(quickMessage);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update quick message" });
+    }
+  });
+  app2.delete("/api/quick-messages/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteQuickMessage(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Quick message not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete quick message" });
     }
   });
   app2.get("/api/company-settings", async (req, res) => {
@@ -1421,13 +1577,13 @@ function serveStatic(app2) {
   });
 }
 
-// server/index-cpanel.ts
-var app = express2();
-app.use(express2.json({ limit: "50mb" }));
-app.use(express2.urlencoded({ extended: false, limit: "50mb" }));
+// server/index.ts
+var app = express3();
+app.use(express3.json({ limit: "50mb" }));
+app.use(express3.urlencoded({ extended: false, limit: "50mb" }));
 app.use((req, res, next) => {
   const start = Date.now();
-  const path2 = req.path;
+  const path4 = req.path;
   let capturedJsonResponse = void 0;
   const originalResJson = res.json;
   res.json = function(bodyJson, ...args) {
@@ -1436,8 +1592,8 @@ app.use((req, res, next) => {
   };
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path2.startsWith("/api")) {
-      let logLine = `${req.method} ${path2} ${res.statusCode} in ${duration}ms`;
+    if (path4.startsWith("/api")) {
+      let logLine = `${req.method} ${path4} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -1450,7 +1606,7 @@ app.use((req, res, next) => {
   next();
 });
 (async () => {
-  const { initializeDatabase: initializeDatabase2 } = await Promise.resolve().then(() => (init_db_cpanel(), db_cpanel_exports));
+  const { initializeDatabase: initializeDatabase2 } = await Promise.resolve().then(() => (init_db(), db_exports));
   await initializeDatabase2();
   console.log("Database initialized successfully");
   const server = await registerRoutes(app);
@@ -1460,7 +1616,12 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
     throw err;
   });
-  serveStatic(app);
+  if (process.env.NODE_ENV !== "production") {
+    const { setupVite: setupVite2 } = await init_vite().then(() => vite_exports);
+    await setupVite2(app, server);
+  } else {
+    serveStatic(app);
+  }
   const port = parseInt(process.env.PORT || "5000", 10);
   server.listen({
     port,
