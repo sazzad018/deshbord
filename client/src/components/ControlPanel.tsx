@@ -8,10 +8,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ExternalLink, Edit, Trash2, Settings, Link as LinkIcon, Palette, Globe, FileText, Users, Calendar, Briefcase, Zap, Star, Heart, Target, Trophy, Rocket, Shield, Wrench, Database } from "lucide-react";
+import { Plus, ExternalLink, Edit, Trash2, Settings, Link as LinkIcon, Palette, Globe, FileText, Users, Calendar, Briefcase, Zap, Star, Heart, Target, Trophy, Rocket, Shield, Wrench, Database, Copy, MessageSquare, Check } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { CustomButton, InsertCustomButton } from "@shared/schema";
+import type { CustomButton, InsertCustomButton, QuickMessage, InsertQuickMessage } from "@shared/schema";
 
 const iconOptions = [
   { value: "ExternalLink", label: "External Link", icon: ExternalLink },
@@ -55,8 +55,24 @@ export default function ControlPanel() {
     color: "primary",
   });
 
+  // Quick Message states
+  const [isQuickMessageDialogOpen, setIsQuickMessageDialogOpen] = useState(false);
+  const [editingQuickMessage, setEditingQuickMessage] = useState<QuickMessage | null>(null);
+  const [quickMessageFormData, setQuickMessageFormData] = useState<Partial<InsertQuickMessage>>({
+    title: "",
+    message: "",
+    category: "",
+    isActive: true,
+    sortOrder: 0,
+  });
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+
   const { data: customButtons = [], isLoading } = useQuery<CustomButton[]>({
     queryKey: ["/api/custom-buttons"],
+  });
+
+  const { data: quickMessages = [], isLoading: isLoadingQuickMessages } = useQuery<QuickMessage[]>({
+    queryKey: ["/api/quick-messages"],
   });
 
   const createButtonMutation = useMutation({
@@ -113,6 +129,66 @@ export default function ControlPanel() {
       toast({
         title: "ত্রুটি!",
         description: "বাটন ডিলিট করতে সমস্যা হয়েছে।",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Quick Message mutations
+  const createQuickMessageMutation = useMutation({
+    mutationFn: (data: InsertQuickMessage) => apiRequest("POST", "/api/quick-messages", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quick-messages"] });
+      setIsQuickMessageDialogOpen(false);
+      setQuickMessageFormData({ title: "", message: "", category: "", isActive: true, sortOrder: 0 });
+      toast({
+        title: "সফল!",
+        description: "নতুন কুইক মেসেজ যোগ করা হয়েছে।",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "ত্রুটি!",
+        description: "কুইক মেসেজ যোগ করতে সমস্যা হয়েছে।",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateQuickMessageMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<QuickMessage> }) => 
+      apiRequest("PATCH", `/api/quick-messages/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quick-messages"] });
+      setEditingQuickMessage(null);
+      setQuickMessageFormData({ title: "", message: "", category: "", isActive: true, sortOrder: 0 });
+      toast({
+        title: "সফল!",
+        description: "কুইক মেসেজ আপডেট করা হয়েছে।",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "ত্রুটি!",
+        description: "কুইক মেসেজ আপডেট করতে সমস্যা হয়েছে।",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteQuickMessageMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/quick-messages/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quick-messages"] });
+      toast({
+        title: "সফল!",
+        description: "কুইক মেসেজ ডিলিট করা হয়েছে।",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "ত্রুটি!",
+        description: "কুইক মেসেজ ডিলিট করতে সমস্যা হয়েছে।",
         variant: "destructive",
       });
     },
@@ -192,16 +268,73 @@ export default function ControlPanel() {
     return customColors[color] || "";
   };
 
+  // Quick Message handlers
+  const handleQuickMessageSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickMessageFormData.title || !quickMessageFormData.message) {
+      toast({
+        title: "ত্রুটি!",
+        description: "শিরোনাম এবং মেসেজ পূরণ করুন।",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (editingQuickMessage) {
+      updateQuickMessageMutation.mutate({ id: editingQuickMessage.id, data: quickMessageFormData });
+    } else {
+      createQuickMessageMutation.mutate(quickMessageFormData as InsertQuickMessage);
+    }
+  };
+
+  const handleQuickMessageEdit = (message: QuickMessage) => {
+    setEditingQuickMessage(message);
+    setQuickMessageFormData({
+      title: message.title,
+      message: message.message,
+      category: message.category || "",
+      isActive: message.isActive,
+      sortOrder: message.sortOrder || 0,
+    });
+    setIsQuickMessageDialogOpen(true);
+  };
+
+  const handleQuickMessageDelete = (id: string) => {
+    if (window.confirm("আপনি কি এই কুইক মেসেজটি ডিলিট করতে চান?")) {
+      deleteQuickMessageMutation.mutate(id);
+    }
+  };
+
+  const handleCopyMessage = async (message: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopiedMessageId(messageId);
+      toast({
+        title: "কপি সম্পন্ন!",
+        description: "মেসেজ ক্লিপবোর্ডে কপি করা হয়েছে।",
+      });
+      // Reset the copied state after 2 seconds
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (error) {
+      toast({
+        title: "ত্রুটি!",
+        description: "মেসেজ কপি করতে সমস্যা হয়েছে।",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <Card className="rounded-2xl shadow-sm">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-2xl font-bold text-slate-900">কন্ট্রোল প্যানেল</CardTitle>
-            <CardDescription className="text-sm text-slate-500 mt-1">
-              কাস্টম লিংক পরিচালনা
-            </CardDescription>
-          </div>
+    <div className="space-y-6">
+      <Card className="rounded-2xl shadow-sm">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl font-bold text-slate-900">কন্ট্রোল প্যানেল</CardTitle>
+              <CardDescription className="text-sm text-slate-500 mt-1">
+                কাস্টম লিংক পরিচালনা
+              </CardDescription>
+            </div>
           
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
@@ -406,6 +539,199 @@ export default function ControlPanel() {
           </div>
         )}
       </CardContent>
-    </Card>
+      </Card>
+
+      {/* Quick Message Reply Section */}
+      <Card className="rounded-2xl shadow-sm">
+        <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <MessageSquare className="h-6 w-6" />
+              কুইক মেসেজের রিপ্লাই
+            </CardTitle>
+            <CardDescription className="text-sm text-slate-500 mt-1">
+              দ্রুত উত্তরের জন্য সংরক্ষিত মেসেজ পরিচালনা
+            </CardDescription>
+          </div>
+          
+          <Dialog open={isQuickMessageDialogOpen} onOpenChange={setIsQuickMessageDialogOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                data-testid="button-add-quick-message"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => {
+                  setEditingQuickMessage(null);
+                  setQuickMessageFormData({ title: "", content: "", category: "", isActive: true, sortOrder: 0 });
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                নতুন মেসেজ
+              </Button>
+            </DialogTrigger>
+            
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="text-lg">
+                  {editingQuickMessage ? "মেসেজ সম্পাদনা" : "নতুন কুইক মেসেজ"}
+                </DialogTitle>
+              </DialogHeader>
+              
+              <form onSubmit={handleQuickMessageSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="message-title">শিরোনাম *</Label>
+                  <Input
+                    id="message-title"
+                    data-testid="input-message-title"
+                    value={quickMessageFormData.title || ""}
+                    onChange={(e) => setQuickMessageFormData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="যেমন: ধন্যবাদ বার্তা"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="message-content">মেসেজের বিষয়বস্তু *</Label>
+                  <Textarea
+                    id="message-content"
+                    data-testid="input-message-content"
+                    value={quickMessageFormData.message || ""}
+                    onChange={(e) => setQuickMessageFormData(prev => ({ ...prev, message: e.target.value }))}
+                    placeholder="আপনার মেসেজ এখানে লিখুন..."
+                    rows={4}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="message-category">ক্যাটেগরি (ঐচ্ছিক)</Label>
+                  <Input
+                    id="message-category"
+                    data-testid="input-message-category"
+                    value={quickMessageFormData.category || ""}
+                    onChange={(e) => setQuickMessageFormData(prev => ({ ...prev, category: e.target.value }))}
+                    placeholder="যেমন: সাধারণ, ব্যবসা, সাপোর্ট"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="message-sortorder">অগ্রাধিকার ক্রম</Label>
+                  <Input
+                    id="message-sortorder"
+                    data-testid="input-message-sortorder"
+                    type="number"
+                    value={quickMessageFormData.sortOrder || 0}
+                    onChange={(e) => setQuickMessageFormData(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+                
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsQuickMessageDialogOpen(false)}
+                    data-testid="button-message-cancel"
+                  >
+                    বাতিল
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    data-testid="button-message-save"
+                    disabled={createQuickMessageMutation.isPending || updateQuickMessageMutation.isPending}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {editingQuickMessage ? "আপডেট করুন" : "যোগ করুন"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="p-6">
+        {isLoadingQuickMessages ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-gray-500">মেসেজ লোড হচ্ছে...</div>
+          </div>
+        ) : quickMessages.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="flex justify-center mb-4">
+              <div className="p-3 bg-blue-100 rounded-full">
+                <MessageSquare className="h-8 w-8 text-blue-400" />
+              </div>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">কোন কুইক মেসেজ নেই</h3>
+            <p className="text-gray-500 mb-4">দ্রুত উত্তরের জন্য কুইক মেসেজ তৈরি করুন।</p>
+            <Button 
+              onClick={() => setIsQuickMessageDialogOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              প্রথম মেসেজ যোগ করুন
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {quickMessages.map((message) => (
+              <Card key={message.id} className="hover:shadow-md transition-shadow border border-blue-200 bg-blue-50/30">
+                <CardContent className="p-4 space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-slate-900 text-sm leading-tight">{message.title}</h3>
+                      {message.category && (
+                        <Badge variant="secondary" className="text-xs">
+                          {message.category}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-600 break-words whitespace-pre-wrap">{message.message}</p>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2"
+                        onClick={() => handleQuickMessageEdit(message)}
+                        data-testid={`button-edit-message-${message.id}`}
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-slate-400 hover:text-red-600"
+                        onClick={() => handleQuickMessageDelete(message.id)}
+                        data-testid={`button-delete-message-${message.id}`}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white h-7 px-3 flex items-center gap-1"
+                      onClick={() => handleCopyMessage(message.message, message.id)}
+                      data-testid={`button-copy-message-${message.id}`}
+                    >
+                      {copiedMessageId === message.id ? (
+                        <Check className="h-3 w-3" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                      {copiedMessageId === message.id ? "কপি হয়েছে" : "কপি করুন"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </CardContent>
+      </Card>
+    </div>
   );
 }

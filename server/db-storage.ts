@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type CustomButton, type InsertCustomButton, type WebsiteProject, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, clients, spendLogs, meetings, todos, whatsappTemplates, companySettings, serviceScopes, customButtons, websiteProjects, uploads, invoicePdfs } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type CustomButton, type InsertCustomButton, type WebsiteProject, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage, clients, spendLogs, meetings, todos, whatsappTemplates, companySettings, serviceScopes, customButtons, websiteProjects, uploads, invoicePdfs, quickMessages } from "@shared/schema";
 import { eq, desc, sum, count, sql, and, gte } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
@@ -461,6 +461,42 @@ export class DatabaseStorage implements IStorage {
     const [deleted] = await db.delete(invoicePdfs)
       .where(eq(invoicePdfs.id, id))
       .returning({ id: invoicePdfs.id });
+    return !!deleted;
+  }
+
+  // Quick Message operations
+  async getQuickMessages(): Promise<QuickMessage[]> {
+    return await db.select().from(quickMessages)
+      .where(eq(quickMessages.isActive, true))
+      .orderBy(desc(quickMessages.sortOrder), desc(quickMessages.createdAt));
+  }
+
+  async getQuickMessage(id: string): Promise<QuickMessage | undefined> {
+    const result = await db.select().from(quickMessages).where(eq(quickMessages.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createQuickMessage(insertQuickMessage: InsertQuickMessage): Promise<QuickMessage> {
+    const [quickMessage] = await db.insert(quickMessages).values(insertQuickMessage).returning();
+    return quickMessage;
+  }
+
+  async updateQuickMessage(id: string, updates: Partial<QuickMessage>): Promise<QuickMessage | undefined> {
+    const [updated] = await db.update(quickMessages)
+      .set({
+        ...updates,
+        updatedAt: sql`now()`,
+      })
+      .where(eq(quickMessages.id, id))
+      .returning();
+    
+    return updated;
+  }
+
+  async deleteQuickMessage(id: string): Promise<boolean> {
+    const [deleted] = await db.delete(quickMessages)
+      .where(eq(quickMessages.id, id))
+      .returning({ id: quickMessages.id });
     return !!deleted;
   }
 }

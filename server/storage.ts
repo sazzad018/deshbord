@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type WebsiteProject, type InsertWebsiteProject, type CustomButton, type InsertCustomButton, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type WebsiteProject, type InsertWebsiteProject, type CustomButton, type InsertCustomButton, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -77,6 +77,13 @@ export interface IStorage {
   getInvoicePdfs(): Promise<InvoicePdf[]>;
   getInvoicePdf(id: string): Promise<InvoicePdf | undefined>;
   deleteInvoicePdf(id: string): Promise<boolean>;
+  
+  // Quick Message operations
+  getQuickMessages(): Promise<QuickMessage[]>;
+  getQuickMessage(id: string): Promise<QuickMessage | undefined>;
+  createQuickMessage(message: InsertQuickMessage): Promise<QuickMessage>;
+  updateQuickMessage(id: string, updates: Partial<QuickMessage>): Promise<QuickMessage | undefined>;
+  deleteQuickMessage(id: string): Promise<boolean>;
 }
 
 // Note: MemStorage class removed as we're using DatabaseStorage

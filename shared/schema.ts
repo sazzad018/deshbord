@@ -232,6 +232,24 @@ export const insertWhatsappTemplateSchema = createInsertSchema(whatsappTemplates
   createdAt: true,
 });
 
+// Quick Messages Table for Control Panel
+export const quickMessages = pgTable("quick_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(), // Message title/name
+  message: text("message").notNull(), // The actual message content
+  category: text("category").default("general"), // Optional categorization
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0), // For ordering messages
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertQuickMessageSchema = createInsertSchema(quickMessages).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertCompanySettingsSchema = createInsertSchema(companySettings).omit({
   id: true,
   createdAt: true,
@@ -264,6 +282,8 @@ export type Upload = typeof uploads.$inferSelect;
 export type InsertUpload = z.infer<typeof insertUploadSchema>;
 export type InvoicePdf = typeof invoicePdfs.$inferSelect;
 export type InsertInvoicePdf = z.infer<typeof insertInvoicePdfSchema>;
+export type QuickMessage = typeof quickMessages.$inferSelect;
+export type InsertQuickMessage = z.infer<typeof insertQuickMessageSchema>;
 
 export interface ClientWithLogs extends Client {
   logs: SpendLog[];
