@@ -18,10 +18,26 @@ if (fs.existsSync(deployDir)) {
 }
 fs.mkdirSync(deployDir, { recursive: true });
 
+// Build cPanel-specific version
+console.log('🔨 Building cPanel-compatible server...');
+
+// Build the cPanel server
+const { execSync } = await import('child_process');
+try {
+  // Build React frontend first
+  execSync('vite build', { stdio: 'inherit' });
+  
+  // Build cPanel server with postgres driver
+  execSync('esbuild server/index-cpanel.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js', { stdio: 'inherit' });
+} catch (error) {
+  console.error('❌ Build failed:', error);
+  process.exit(1);
+}
+
 // Copy dist folder contents
 const distPath = path.join(__dirname, '..', 'dist');
 if (!fs.existsSync(distPath)) {
-  console.error('❌ Build not found! Run "npm run build" first.');
+  console.error('❌ Build not found! Build process failed.');
   process.exit(1);
 }
 
@@ -38,7 +54,7 @@ const productionPackage = {
     "start": "node index.js"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^0.10.4",
+    "postgres": "^3.4.5",
     "drizzle-orm": "^0.39.1",
     "drizzle-zod": "^0.7.0",
     "express": "^4.21.2",
