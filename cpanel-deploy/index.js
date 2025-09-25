@@ -441,6 +441,7 @@ import { createServer } from "http";
 init_schema();
 init_db_cpanel();
 import { eq, desc, sum, sql as sql2, and, gte } from "drizzle-orm";
+import { randomUUID } from "crypto";
 var DatabaseStorage = class {
   async getClients() {
     return await db.select().from(clients).where(eq(clients.deleted, false)).orderBy(desc(clients.createdAt));
@@ -468,6 +469,8 @@ var DatabaseStorage = class {
   async createClient(insertClient) {
     const portalKey = Math.random().toString(36).slice(2, 7);
     const insertData = {
+      id: randomUUID(),
+      // Generate UUID in Node.js instead of database
       name: insertClient.name,
       phone: insertClient.phone,
       fb: insertClient.fb || null,
@@ -500,8 +503,8 @@ var DatabaseStorage = class {
       if (dependencies.length > 0) {
         throw new Error(`Cannot permanently delete client with existing ${dependencies.join(", ")}. Please remove them first or use soft delete (trash) instead.`);
       }
-      const result = await db.delete(clients).where(eq(clients.id, id));
-      return result.rowCount > 0;
+      const result = await db.delete(clients).where(eq(clients.id, id)).returning({ id: clients.id });
+      return result.length > 0;
     } catch (error) {
       throw error;
     }
@@ -520,6 +523,8 @@ var DatabaseStorage = class {
     const newWalletSpent = client.walletSpent + insertSpendLog.amount;
     const balanceAfter = client.walletDeposited - newWalletSpent;
     const [spendLog] = await db.insert(spendLogs).values({
+      id: randomUUID(),
+      // Generate UUID in Node.js
       clientId: insertSpendLog.clientId,
       date: insertSpendLog.date,
       amount: insertSpendLog.amount,
@@ -540,6 +545,8 @@ var DatabaseStorage = class {
   }
   async createMeeting(insertMeeting) {
     const meetingData = {
+      id: randomUUID(),
+      // Generate UUID in Node.js
       clientId: insertMeeting.clientId,
       title: insertMeeting.title,
       datetime: new Date(insertMeeting.datetime),
@@ -554,8 +561,8 @@ var DatabaseStorage = class {
     return updated;
   }
   async deleteMeeting(id) {
-    const result = await db.delete(meetings).where(eq(meetings.id, id));
-    return result.rowCount > 0;
+    const result = await db.delete(meetings).where(eq(meetings.id, id)).returning({ id: meetings.id });
+    return result.length > 0;
   }
   // Todo operations
   async getTodos() {
@@ -566,7 +573,12 @@ var DatabaseStorage = class {
     return result[0];
   }
   async createTodo(insertTodo) {
-    const [todo] = await db.insert(todos).values(insertTodo).returning();
+    const todoData = {
+      id: randomUUID(),
+      // Generate UUID in Node.js
+      ...insertTodo
+    };
+    const [todo] = await db.insert(todos).values(todoData).returning();
     return todo;
   }
   async updateTodo(id, updates) {
@@ -574,8 +586,8 @@ var DatabaseStorage = class {
     return updated;
   }
   async deleteTodo(id) {
-    const result = await db.delete(todos).where(eq(todos.id, id));
-    return result.rowCount > 0;
+    const result = await db.delete(todos).where(eq(todos.id, id)).returning({ id: todos.id });
+    return result.length > 0;
   }
   // WhatsApp template operations
   async getWhatsappTemplates() {
@@ -586,7 +598,12 @@ var DatabaseStorage = class {
     return result[0];
   }
   async createWhatsappTemplate(insertTemplate) {
-    const [template] = await db.insert(whatsappTemplates).values(insertTemplate).returning();
+    const templateData = {
+      id: randomUUID(),
+      // Generate UUID in Node.js
+      ...insertTemplate
+    };
+    const [template] = await db.insert(whatsappTemplates).values(templateData).returning();
     return template;
   }
   async updateWhatsappTemplate(id, updates) {
@@ -594,8 +611,8 @@ var DatabaseStorage = class {
     return updated;
   }
   async deleteWhatsappTemplate(id) {
-    const result = await db.delete(whatsappTemplates).where(eq(whatsappTemplates.id, id));
-    return result.rowCount > 0;
+    const result = await db.delete(whatsappTemplates).where(eq(whatsappTemplates.id, id)).returning({ id: whatsappTemplates.id });
+    return result.length > 0;
   }
   async getDashboardMetrics() {
     const allClients = await this.getClients();
@@ -621,10 +638,13 @@ var DatabaseStorage = class {
   }
   async createCompanySettings(insertCompanySettings) {
     await db.update(companySettings).set({ isDefault: false });
-    const [settings] = await db.insert(companySettings).values({
+    const settingsData = {
+      id: randomUUID(),
+      // Generate UUID in Node.js
       ...insertCompanySettings,
       isDefault: true
-    }).returning();
+    };
+    const [settings] = await db.insert(companySettings).values(settingsData).returning();
     return settings;
   }
   async updateCompanySettings(id, updates) {
@@ -643,7 +663,12 @@ var DatabaseStorage = class {
     return result[0];
   }
   async createServiceScope(insertServiceScope) {
-    const [serviceScope] = await db.insert(serviceScopes).values(insertServiceScope).returning();
+    const serviceScopeData = {
+      id: randomUUID(),
+      // Generate UUID in Node.js
+      ...insertServiceScope
+    };
+    const [serviceScope] = await db.insert(serviceScopes).values(serviceScopeData).returning();
     return serviceScope;
   }
   async updateServiceScope(id, updates) {
@@ -651,8 +676,8 @@ var DatabaseStorage = class {
     return updated;
   }
   async deleteServiceScope(id) {
-    const result = await db.delete(serviceScopes).where(eq(serviceScopes.id, id));
-    return result.rowCount > 0;
+    const result = await db.delete(serviceScopes).where(eq(serviceScopes.id, id)).returning({ id: serviceScopes.id });
+    return result.length > 0;
   }
   async getServiceAnalytics(serviceName) {
     const clientsWithService = await db.select().from(serviceScopes).where(eq(serviceScopes.serviceName, serviceName));
@@ -696,10 +721,13 @@ var DatabaseStorage = class {
   async createCustomButton(insertButton) {
     const maxOrder = await db.select({ max: sql2`max(${customButtons.sortOrder})` }).from(customButtons);
     const nextOrder = (maxOrder[0]?.max || 0) + 1;
-    const [button] = await db.insert(customButtons).values({
+    const buttonData = {
+      id: randomUUID(),
+      // Generate UUID in Node.js
       ...insertButton,
       sortOrder: nextOrder
-    }).returning();
+    };
+    const [button] = await db.insert(customButtons).values(buttonData).returning();
     return button;
   }
   async updateCustomButton(id, updates) {
@@ -726,7 +754,12 @@ var DatabaseStorage = class {
   }
   // File upload operations
   async saveUpload(insertUpload) {
-    const [upload] = await db.insert(uploads).values(insertUpload).returning();
+    const uploadData = {
+      id: randomUUID(),
+      // Generate UUID in Node.js
+      ...insertUpload
+    };
+    const [upload] = await db.insert(uploads).values(uploadData).returning();
     return upload;
   }
   async getUpload(id) {
@@ -739,7 +772,12 @@ var DatabaseStorage = class {
   }
   // Invoice PDF operations
   async saveInvoicePdf(insertInvoicePdf) {
-    const [invoicePdf] = await db.insert(invoicePdfs).values(insertInvoicePdf).returning();
+    const invoicePdfData = {
+      id: randomUUID(),
+      // Generate UUID in Node.js
+      ...insertInvoicePdf
+    };
+    const [invoicePdf] = await db.insert(invoicePdfs).values(invoicePdfData).returning();
     return invoicePdf;
   }
   async getInvoicePdfs() {

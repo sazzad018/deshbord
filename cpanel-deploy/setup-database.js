@@ -16,9 +16,9 @@ function generateUUID() {
   return crypto.randomUUID();
 }
 
-// Create tables SQL - NO EXTENSIONS REQUIRED for cPanel compatibility
+// Create tables SQL - EXACT MATCH with shared/schema.ts
 const createTablesSQL = `
--- Create clients table (no extensions needed)
+-- Create clients table (matches shared/schema.ts exactly)
 CREATE TABLE IF NOT EXISTS clients (
   id VARCHAR PRIMARY KEY,
   name TEXT NOT NULL,
@@ -28,14 +28,14 @@ CREATE TABLE IF NOT EXISTS clients (
   status TEXT NOT NULL DEFAULT 'Active',
   wallet_deposited INTEGER NOT NULL DEFAULT 0,
   wallet_spent INTEGER NOT NULL DEFAULT 0,
-  scopes JSONB NOT NULL DEFAULT '[]',
+  scopes JSONB NOT NULL DEFAULT '[]'::jsonb,
   portal_key TEXT NOT NULL UNIQUE,
   admin_notes TEXT,
   deleted BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
--- Create spend_logs table  
+-- Create spend_logs table
 CREATE TABLE IF NOT EXISTS spend_logs (
   id VARCHAR PRIMARY KEY,
   client_id VARCHAR NOT NULL REFERENCES clients(id),
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS meetings (
   title TEXT NOT NULL,
   datetime TIMESTAMP NOT NULL,
   location TEXT NOT NULL,
-  reminders JSONB NOT NULL DEFAULT '[]',
+  reminders JSONB NOT NULL DEFAULT '[]'::jsonb,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
@@ -91,61 +91,101 @@ CREATE TABLE IF NOT EXISTS whatsapp_templates (
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
--- Create company_settings table
+-- Create company_settings table (exact match with schema)
 CREATE TABLE IF NOT EXISTS company_settings (
   id VARCHAR PRIMARY KEY,
-  company_name TEXT NOT NULL,
-  address TEXT,
-  phone TEXT,
-  email TEXT,
-  website TEXT,
-  logo TEXT,
-  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+  company_name TEXT NOT NULL DEFAULT 'Social Ads Expert',
+  company_email TEXT,
+  company_phone TEXT,
+  company_website TEXT,
+  company_address TEXT,
+  logo_url TEXT,
+  brand_color TEXT NOT NULL DEFAULT '#A576FF',
+  is_default BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
--- Create custom_buttons table
+-- Create custom_buttons table (exact match with schema)
 CREATE TABLE IF NOT EXISTS custom_buttons (
   id VARCHAR PRIMARY KEY,
   title TEXT NOT NULL,
+  description TEXT,
   url TEXT NOT NULL,
-  icon TEXT,
-  bg_color TEXT NOT NULL DEFAULT 'bg-blue-500',
-  text_color TEXT NOT NULL DEFAULT 'text-white',
-  order_index INTEGER NOT NULL DEFAULT 0,
+  icon TEXT DEFAULT 'ExternalLink',
+  color TEXT DEFAULT 'primary',
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  sort_order INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
--- Create website_projects table
+-- Create website_projects table (exact match with schema)
 CREATE TABLE IF NOT EXISTS website_projects (
   id VARCHAR PRIMARY KEY,
   client_id VARCHAR NOT NULL REFERENCES clients(id),
-  project_name TEXT NOT NULL,
-  domain TEXT,
-  status TEXT NOT NULL DEFAULT 'In Progress',
-  launch_date TIMESTAMP,
+  project_name VARCHAR NOT NULL,
+  portal_key VARCHAR NOT NULL UNIQUE,
+  project_status VARCHAR NOT NULL DEFAULT 'In Progress',
+  website_url VARCHAR,
   notes TEXT,
+  completed_date TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
--- Create uploads table  
+-- Create uploads table (exact match with schema)
 CREATE TABLE IF NOT EXISTS uploads (
   id VARCHAR PRIMARY KEY,
-  filename TEXT NOT NULL,
-  original_name TEXT NOT NULL,
-  file_path TEXT NOT NULL,
-  file_size INTEGER NOT NULL,
+  file_name TEXT NOT NULL,
   mime_type TEXT NOT NULL,
-  uploaded_at TIMESTAMP DEFAULT NOW() NOT NULL
+  size INTEGER NOT NULL,
+  data TEXT NOT NULL,
+  uploaded_by TEXT,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
--- Create invoice_pdfs table
+-- Create invoice_pdfs table (exact match with schema)
 CREATE TABLE IF NOT EXISTS invoice_pdfs (
   id VARCHAR PRIMARY KEY,
-  client_name TEXT NOT NULL,
-  invoice_number TEXT NOT NULL,
-  amount DECIMAL(10,2) NOT NULL,
-  filename TEXT NOT NULL,
-  file_path TEXT NOT NULL,
+  invoice_no TEXT NOT NULL,
+  client_id VARCHAR NOT NULL REFERENCES clients(id),
+  file_name TEXT NOT NULL,
+  mime_type TEXT NOT NULL DEFAULT 'application/pdf',
+  size INTEGER NOT NULL,
+  data TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+-- Create invoices table (exact match with schema)
+CREATE TABLE IF NOT EXISTS invoices (
+  id VARCHAR PRIMARY KEY,
+  invoice_no TEXT NOT NULL UNIQUE,
+  client_id VARCHAR NOT NULL REFERENCES clients(id),
+  company_id VARCHAR REFERENCES company_settings(id),
+  issue_date TEXT NOT NULL,
+  start_date TEXT,
+  end_date TEXT,
+  currency TEXT NOT NULL DEFAULT 'BDT',
+  sub_total INTEGER NOT NULL DEFAULT 0,
+  discount_pct INTEGER NOT NULL DEFAULT 0,
+  discount_amt INTEGER NOT NULL DEFAULT 0,
+  vat_pct INTEGER NOT NULL DEFAULT 0,
+  vat_amt INTEGER NOT NULL DEFAULT 0,
+  grand_total INTEGER NOT NULL DEFAULT 0,
+  notes TEXT,
+  status TEXT NOT NULL DEFAULT 'Draft',
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+-- Create invoice_items table (exact match with schema)
+CREATE TABLE IF NOT EXISTS invoice_items (
+  id VARCHAR PRIMARY KEY,
+  invoice_id VARCHAR NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+  description TEXT NOT NULL,
+  quantity INTEGER NOT NULL DEFAULT 1,
+  rate INTEGER NOT NULL DEFAULT 0,
+  amount INTEGER NOT NULL DEFAULT 0,
+  sort_order INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 `;
@@ -166,11 +206,11 @@ async function insertSampleData(sql) {
     const client1Id = generateUUID();
     const client2Id = generateUUID();
 
-    // Insert sample clients with generated UUIDs
+    // Insert sample clients with generated UUIDs (using exact column names)
     await sql`
       INSERT INTO clients (id, name, phone, fb, status, wallet_deposited, wallet_spent, scopes, portal_key) VALUES
-      (${client1Id}, 'রিয়াদ ট্রেডার্স', '+8801XXXXXXXXX', 'https://fb.com/riyadtraders', 'Active', 50000, 10000, '["Facebook Marketing", "Landing Page Design"]', 'rt-8x1'),
-      (${client2Id}, 'মীরা ফুডস', '+8801YYYYYYYYY', 'https://fb.com/mirafoods', 'Active', 120000, 92000, '["Facebook Marketing", "Business Consultancy"]', 'mf-3k9')
+      (${client1Id}, 'রিয়াদ ট্রেডার্স', '+8801XXXXXXXXX', 'https://fb.com/riyadtraders', 'Active', 50000, 10000, '["Facebook Marketing", "Landing Page Design"]'::jsonb, 'rt-8x1'),
+      (${client2Id}, 'মীরা ফুডস', '+8801YYYYYYYYY', 'https://fb.com/mirafoods', 'Active', 120000, 92000, '["Facebook Marketing", "Business Consultancy"]'::jsonb, 'mf-3k9')
     `;
 
     // Insert sample WhatsApp templates
@@ -181,9 +221,9 @@ async function insertSampleData(sql) {
       (${generateUUID()}, 'প্রোজেক্ট কমপ্লিট', 'আপনার প্রোজেক্ট সফলভাবে সম্পন্ন হয়েছে। ফিডব্যাক দিতে এই লিংকে ক্লিক করুন।', false)
     `;
 
-    // Insert default company settings  
+    // Insert default company settings (using exact column names)
     await sql`
-      INSERT INTO company_settings (id, company_name, address, phone, email) VALUES
+      INSERT INTO company_settings (id, company_name, company_address, company_phone, company_email) VALUES
       (${generateUUID()}, 'Social Ads Expert', 'Dhaka, Bangladesh', '+880XXXXXXXXX', 'info@example.com')
     `;
 
@@ -208,7 +248,7 @@ async function setupDatabase() {
     });
 
     console.log('✅ Connected successfully!');
-    console.log('🔧 Creating database tables (no extensions required)...');
+    console.log('🔧 Creating database tables (exact schema match)...');
 
     // Execute the SQL to create tables
     await sql.unsafe(createTablesSQL);
