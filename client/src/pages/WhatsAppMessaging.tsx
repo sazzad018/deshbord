@@ -179,6 +179,14 @@ export default function WhatsAppMessaging() {
     templateForm.reset();
   };
 
+  const handleTemplateDialogChange = (open: boolean) => {
+    if (open) {
+      setIsTemplateDialogOpen(true);
+    } else {
+      closeTemplateDialog();
+    }
+  };
+
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
     
@@ -237,7 +245,7 @@ export default function WhatsAppMessaging() {
         </div>
 
         <div className="flex gap-2">
-          <Dialog open={isTemplateDialogOpen} onOpenChange={closeTemplateDialog}>
+          <Dialog open={isTemplateDialogOpen} onOpenChange={handleTemplateDialogChange}>
             <DialogTrigger asChild>
               <Button variant="outline" data-testid="button-create-template">
                 <Plus className="h-4 w-4 mr-2" />
