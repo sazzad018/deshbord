@@ -54,7 +54,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedClient = await storage.updateClient(req.params.id, { 
-        isActive: !currentClient.isActive 
+        status: currentClient.status === "Active" ? "Inactive" : "Active"
       });
       
       res.json(updatedClient);

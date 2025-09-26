@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import type { ChangeEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -137,7 +138,7 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -439,10 +440,11 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
                 ) : (
                   paginatedClients.map((client) => {
                     const balance = client.walletDeposited - client.walletSpent;
+                    const isInactive = client.status !== "Active";
                     return (
                       <TableRow 
                         key={client.id} 
-                        className={`${selectedClientId === client.id ? "bg-slate-50" : ""} ${!client.isActive ? "opacity-60 bg-gray-50" : ""}`}
+                        className={`${selectedClientId === client.id ? "bg-slate-50" : ""} ${isInactive ? "opacity-60 bg-gray-50" : ""}`}
                         data-testid={`row-client-${client.id}`}
                       >
                         <TableCell className="font-medium" data-testid={`text-client-name-${client.id}`}>
@@ -483,13 +485,13 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Switch
-                              checked={client.isActive || false}
+                              checked={client.status === "Active"}
                               onCheckedChange={() => toggleActiveStatusMutation.mutate(client.id)}
                               disabled={toggleActiveStatusMutation.isPending}
                               data-testid={`switch-client-active-${client.id}`}
                             />
-                            <span className={`text-sm ${client.isActive ? "text-green-600" : "text-gray-500"}`}>
-                              {client.isActive ? "সক্রিয়" : "নিষ্ক্রিয়"}
+                            <span className={`text-sm ${client.status === "Active" ? "text-green-600" : "text-gray-500"}`}>
+                              {client.status === "Active" ? "সক্রিয়" : "নিষ্ক্রিয়"}
                             </span>
                           </div>
                         </TableCell>

@@ -7,6 +7,8 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -84,6 +86,7 @@ function SortableWrapper({ id, children }: SortableWrapperProps) {
 export default function Dashboard() {
   const [query, setQuery] = useState("");
   const [selectedClientId, setSelectedClientId] = useState("");
+  const [activeId, setActiveId] = useState<string | null>(null);
   
   // Component ordering state
   const [leftColumnOrder, setLeftColumnOrder] = useState([
@@ -126,7 +129,11 @@ export default function Dashboard() {
   }, [rightColumnOrder]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px tolerance
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -161,8 +168,16 @@ export default function Dashboard() {
     "control-panel": <ControlPanel />,
   };
 
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(event.active.id as string);
+    console.log('Drag started:', event.active.id);
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+    
+    console.log('Drag ended:', { active: active.id, over: over?.id });
+    setActiveId(null);
 
     if (!over) return;
 
@@ -173,22 +188,47 @@ export default function Dashboard() {
       const overIsLeftColumn = leftColumnOrder.includes(over.id as string);
       const overIsRightColumn = rightColumnOrder.includes(over.id as string);
 
+      console.log('Column check:', { isLeftColumn, isRightColumn, overIsLeftColumn, overIsRightColumn });
+
       if (isLeftColumn && overIsLeftColumn) {
         // Reorder within left column
+        console.log('Reordering within left column');
         setLeftColumnOrder((items) => {
           const oldIndex = items.indexOf(active.id as string);
           const newIndex = items.indexOf(over.id as string);
+          console.log('Left column move:', { oldIndex, newIndex });
           return arrayMove(items, oldIndex, newIndex);
         });
       } else if (isRightColumn && overIsRightColumn) {
         // Reorder within right column
+        console.log('Reordering within right column');
         setRightColumnOrder((items) => {
           const oldIndex = items.indexOf(active.id as string);
           const newIndex = items.indexOf(over.id as string);
+          console.log('Right column move:', { oldIndex, newIndex });
           return arrayMove(items, oldIndex, newIndex);
         });
+      } else if (isLeftColumn && overIsRightColumn) {
+        // Move from left to right column
+        console.log('Moving from left to right column');
+        setLeftColumnOrder((items) => items.filter(item => item !== active.id));
+        setRightColumnOrder((items) => {
+          const newIndex = items.indexOf(over.id as string);
+          const newItems = [...items];
+          newItems.splice(newIndex, 0, active.id as string);
+          return newItems;
+        });
+      } else if (isRightColumn && overIsLeftColumn) {
+        // Move from right to left column
+        console.log('Moving from right to left column');
+        setRightColumnOrder((items) => items.filter(item => item !== active.id));
+        setLeftColumnOrder((items) => {
+          const newIndex = items.indexOf(over.id as string);
+          const newItems = [...items];
+          newItems.splice(newIndex, 0, active.id as string);
+          return newItems;
+        });
       }
-      // Cross-column drag is disabled for now to maintain layout
     }
   }
 
@@ -202,6 +242,7 @@ export default function Dashboard() {
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
@@ -233,6 +274,17 @@ export default function Dashboard() {
               </SortableContext>
             </div>
           </div>
+          
+          <DragOverlay>
+            {activeId ? (
+              <div className="opacity-80 rotate-3">
+                <MinimizableCard id={activeId}>
+                  {leftColumnComponents[activeId as keyof typeof leftColumnComponents] || 
+                   rightColumnComponents[activeId as keyof typeof rightColumnComponents]}
+                </MinimizableCard>
+              </div>
+            ) : null}
+          </DragOverlay>
         </DndContext>
       </div>
     </div>
