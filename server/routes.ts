@@ -46,6 +46,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/clients/:id/toggle-active", async (req, res) => {
+    try {
+      const currentClient = await storage.getClient(req.params.id);
+      if (!currentClient) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+      
+      const updatedClient = await storage.updateClient(req.params.id, { 
+        isActive: !currentClient.isActive 
+      });
+      
+      res.json(updatedClient);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to toggle client status" });
+    }
+  });
+
   app.patch("/api/clients/:id", async (req, res) => {
     try {
       const client = await storage.updateClient(req.params.id, req.body);

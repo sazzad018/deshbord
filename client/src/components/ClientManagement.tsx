@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Trash2, Upload, X } from "lucide-react";
+import { Plus, Trash2, Upload, X, Power, PowerOff } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/utils-dashboard";
 import { createClient } from "@/lib/api";
 import { apiRequest } from "@/lib/queryClient";
@@ -78,6 +79,25 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
       toast({
         title: "ত্রুটি",
         description: "ক্লায়েন্ট ট্র্যাশে পাঠাতে সমস্যা হয়েছে",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleActiveStatusMutation = useMutation({
+    mutationFn: (clientId: string) => apiRequest("PATCH", `/api/clients/${clientId}/toggle-active`, undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
+      toast({
+        title: "সফল",
+        description: "ক্লায়েন্টের স্ট্যাটাস পরিবর্তন করা হয়েছে",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "ত্রুটি",
+        description: "ক্লায়েন্টের স্ট্যাটাস পরিবর্তন করতে সমস্যা হয়েছে",
         variant: "destructive",
       });
     },
@@ -385,6 +405,7 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
                 <TableRow>
                   <TableHead>নাম</TableHead>
                   <TableHead>স্ট্যাটাস</TableHead>
+                  <TableHead>অ্যাক্টিভ</TableHead>
                   <TableHead>জমা</TableHead>
                   <TableHead>খরচ</TableHead>
                   <TableHead>ব্যালেন্স</TableHead>
@@ -394,7 +415,7 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
               <TableBody>
                 {filteredClients.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-slate-500 py-8" data-testid="text-no-clients">
+                    <TableCell colSpan={7} className="text-center text-slate-500 py-8" data-testid="text-no-clients">
                       কোন ক্লায়েন্ট পাওয়া যায়নি
                     </TableCell>
                   </TableRow>
@@ -404,7 +425,7 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
                     return (
                       <TableRow 
                         key={client.id} 
-                        className={selectedClientId === client.id ? "bg-slate-50" : ""}
+                        className={`${selectedClientId === client.id ? "bg-slate-50" : ""} ${!client.isActive ? "opacity-60 bg-gray-50" : ""}`}
                         data-testid={`row-client-${client.id}`}
                       >
                         <TableCell className="font-medium" data-testid={`text-client-name-${client.id}`}>
@@ -435,9 +456,25 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className="bg-green-100 text-green-800" data-testid={`badge-client-status-${client.id}`}>
+                          <Badge 
+                            className={client.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"} 
+                            data-testid={`badge-client-status-${client.id}`}
+                          >
                             {client.status}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={client.isActive || false}
+                              onCheckedChange={() => toggleActiveStatusMutation.mutate(client.id)}
+                              disabled={toggleActiveStatusMutation.isPending}
+                              data-testid={`switch-client-active-${client.id}`}
+                            />
+                            <span className={`text-sm ${client.isActive ? "text-green-600" : "text-gray-500"}`}>
+                              {client.isActive ? "সক্রিয়" : "নিষ্ক্রিয়"}
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell data-testid={`text-client-deposited-${client.id}`}>
                           {formatCurrency(client.walletDeposited)}

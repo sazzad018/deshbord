@@ -10,6 +10,7 @@ export const clients = pgTable("clients", {
   fb: text("fb"),
   profilePicture: text("profile_picture"),
   status: text("status").notNull().default("Active"),
+  isActive: boolean("is_active").notNull().default(true),
   walletDeposited: integer("wallet_deposited").notNull().default(0),
   walletSpent: integer("wallet_spent").notNull().default(0),
   scopes: jsonb("scopes").$type<string[]>().notNull().default([]),
