@@ -10,6 +10,7 @@ import WhatsAppMessaging from "@/pages/WhatsAppMessaging";
 import SavedPDFs from "@/pages/SavedPDFs";
 import InvoiceMakerPage from "@/pages/InvoiceMaker";
 import ClientManagementPage from "@/pages/ClientManagement";
+import WebsiteProjectsPage from "@/pages/WebsiteProjectsPage";
 import ControlPanel from "@/components/ControlPanel";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/todo-list" component={TodoList} />
       <Route path="/whatsapp-messaging" component={WhatsAppMessaging} />
       <Route path="/saved-pdfs" component={SavedPDFs} />
+      <Route path="/website-projects" component={WebsiteProjectsPage} />
       <Route path="/control-panel" component={ControlPanel} />
       <Route path="/portal/:portalKey" component={ClientPortal} />
     </Switch>
