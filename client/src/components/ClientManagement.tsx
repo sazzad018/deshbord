@@ -461,7 +461,7 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
                                 <div className="flex flex-wrap gap-1">
                                   {client.scopes.slice(0, 3).map((scope, index) => (
                                     <Badge key={index} variant="outline" className="text-xs px-1 py-0">
-                                      {scope}
+                                      {scope.length > 6 ? scope.substring(0, 6) : scope}
                                     </Badge>
                                   ))}
                                   {client.scopes.length > 3 && (

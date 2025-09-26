@@ -245,10 +245,33 @@ export const quickMessages = pgTable("quick_messages", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Payment Requests Table - Client portal payment requests
+export const paymentRequests = pgTable("payment_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().references(() => clients.id),
+  amount: integer("amount").notNull(), // Amount in paisa/cents
+  paymentMethod: text("payment_method").notNull(), // "Bank", "bKash", "Nagad"
+  accountNumber: text("account_number"), // Bank account, bKash/Nagad number
+  transactionId: text("transaction_id"), // Transaction/Reference ID from payment
+  status: text("status").notNull().default("Pending"), // "Pending", "Approved", "Rejected"
+  note: text("note"), // Client's note/message
+  adminNote: text("admin_note"), // Admin's note when approving/rejecting
+  requestDate: timestamp("request_date").defaultNow().notNull(),
+  processedDate: timestamp("processed_date"), // When admin approved/rejected
+  processedBy: text("processed_by"), // Admin who processed the request
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertQuickMessageSchema = createInsertSchema(quickMessages).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+export const insertPaymentRequestSchema = createInsertSchema(paymentRequests).omit({
+  id: true,
+  createdAt: true,
+  requestDate: true,
 });
 
 export const insertCompanySettingsSchema = createInsertSchema(companySettings).omit({
@@ -285,6 +308,8 @@ export type InvoicePdf = typeof invoicePdfs.$inferSelect;
 export type InsertInvoicePdf = z.infer<typeof insertInvoicePdfSchema>;
 export type QuickMessage = typeof quickMessages.$inferSelect;
 export type InsertQuickMessage = z.infer<typeof insertQuickMessageSchema>;
+export type PaymentRequest = typeof paymentRequests.$inferSelect;
+export type InsertPaymentRequest = z.infer<typeof insertPaymentRequestSchema>;
 
 export interface ClientWithLogs extends Client {
   logs: SpendLog[];
