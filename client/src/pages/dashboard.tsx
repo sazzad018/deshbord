@@ -7,6 +7,7 @@ import AIQuerySystem from "@/components/AIQuerySystem";
 import SpendChart from "@/components/SpendChart";
 import ClientDetailsPanel from "@/components/ClientDetailsPanel";
 import WebsiteServicesSection from "@/components/WebsiteServicesSection";
+import { ClientWebsiteProjectsPanel } from "@/components/ClientWebsiteProjectsPanel";
 import QuickActions from "@/components/QuickActions";
 import ControlPanel from "@/components/ControlPanel";
 import InvoiceMaker from "@/components/InvoiceMaker";
@@ -33,7 +34,7 @@ export default function Dashboard() {
             />
             <AIQuerySystem />
             <SpendChart />
-            <WebsiteServicesSection selectedClientId={selectedClientId} />
+            <ClientWebsiteProjectsPanel selectedClientId={selectedClientId} />
             <InvoiceMaker />
           </div>
           
