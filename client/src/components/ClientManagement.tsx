@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Trash2, Upload, X, Power, PowerOff } from "lucide-react";
+import { Plus, Trash2, Upload, X, Power, PowerOff, ChevronLeft, ChevronRight } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/utils-dashboard";
 import { createClient } from "@/lib/api";
@@ -26,6 +26,7 @@ interface ClientManagementProps {
 export default function ClientManagement({ query, selectedClientId, onSelectClient }: ClientManagementProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [newClient, setNewClient] = useState({
     name: "",
     phone: "",
@@ -36,6 +37,7 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
   const [uploadedImagePreview, setUploadedImagePreview] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   
+  const CLIENTS_PER_PAGE = 20;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -232,6 +234,21 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
     );
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredClients.length / CLIENTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * CLIENTS_PER_PAGE;
+  const endIndex = startIndex + CLIENTS_PER_PAGE;
+  const paginatedClients = filteredClients.slice(startIndex, endIndex);
+
+  // Reset to first page when query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query]);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
   return (
     <Card className="rounded-2xl shadow-sm">
       <CardHeader className="pb-2 flex-row items-center justify-between">
@@ -413,14 +430,14 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredClients.length === 0 ? (
+                {paginatedClients.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-slate-500 py-8" data-testid="text-no-clients">
                       কোন ক্লায়েন্ট পাওয়া যায়নি
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredClients.map((client) => {
+                  paginatedClients.map((client) => {
                     const balance = client.walletDeposited - client.walletSpent;
                     return (
                       <TableRow 
@@ -520,6 +537,67 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
                 )}
               </TableBody>
             </Table>
+            
+            {/* Pagination UI */}
+            {filteredClients.length > CLIENTS_PER_PAGE && (
+              <div className="flex items-center justify-between mt-4 px-2">
+                <div className="text-sm text-slate-600">
+                  মোট {filteredClients.length}টি ক্লায়েন্ট, পেজ {currentPage} of {totalPages}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage <= 1}
+                    data-testid="button-prev-page"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    পূর্ববর্তী
+                  </Button>
+                  
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else {
+                        const start = Math.max(1, currentPage - 2);
+                        const end = Math.min(totalPages, start + 4);
+                        pageNum = start + i;
+                        if (pageNum > end) return null;
+                      }
+                      
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => goToPage(pageNum)}
+                          className="w-8 h-8 p-0"
+                          data-testid={`button-page-${pageNum}`}
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage >= totalPages}
+                    data-testid="button-next-page"
+                  >
+                    পরবর্তী
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
