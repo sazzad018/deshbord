@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type WebsiteProject, type InsertWebsiteProject, type CustomButton, type InsertCustomButton, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type WebsiteProject, type InsertWebsiteProject, type CustomButton, type InsertCustomButton, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage, type PaymentRequest, type InsertPaymentRequest } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -89,6 +89,15 @@ export interface IStorage {
   createQuickMessage(message: InsertQuickMessage): Promise<QuickMessage>;
   updateQuickMessage(id: string, updates: Partial<QuickMessage>): Promise<QuickMessage | undefined>;
   deleteQuickMessage(id: string): Promise<boolean>;
+
+  // Payment Request operations
+  getPaymentRequests(): Promise<PaymentRequest[]>;
+  getPaymentRequest(id: string): Promise<PaymentRequest | undefined>;
+  getClientPaymentRequests(clientId: string): Promise<PaymentRequest[]>;
+  createPaymentRequest(request: InsertPaymentRequest): Promise<PaymentRequest>;
+  updatePaymentRequest(id: string, updates: Partial<PaymentRequest>): Promise<PaymentRequest | undefined>;
+  approvePaymentRequest(id: string, adminNote?: string, processedBy?: string): Promise<PaymentRequest | undefined>;
+  rejectPaymentRequest(id: string, adminNote?: string, processedBy?: string): Promise<PaymentRequest | undefined>;
 }
 
 // Note: MemStorage class removed as we're using DatabaseStorage

@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type CustomButton, type InsertCustomButton, type WebsiteProject, type InsertWebsiteProject, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage, clients, spendLogs, meetings, todos, whatsappTemplates, companySettings, serviceScopes, customButtons, websiteProjects, uploads, invoicePdfs, quickMessages } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type CustomButton, type InsertCustomButton, type WebsiteProject, type InsertWebsiteProject, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage, type PaymentRequest, type InsertPaymentRequest, clients, spendLogs, meetings, todos, whatsappTemplates, companySettings, serviceScopes, customButtons, websiteProjects, uploads, invoicePdfs, quickMessages, paymentRequests } from "@shared/schema";
 import { eq, desc, sum, count, sql, and, gte } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
@@ -534,5 +534,82 @@ export class DatabaseStorage implements IStorage {
       .where(eq(quickMessages.id, id))
       .returning({ id: quickMessages.id });
     return !!deleted;
+  }
+
+  // Payment Request operations
+  async getPaymentRequests(): Promise<PaymentRequest[]> {
+    return await db.select().from(paymentRequests)
+      .orderBy(desc(paymentRequests.requestDate));
+  }
+
+  async getPaymentRequest(id: string): Promise<PaymentRequest | undefined> {
+    const result = await db.select().from(paymentRequests).where(eq(paymentRequests.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getClientPaymentRequests(clientId: string): Promise<PaymentRequest[]> {
+    return await db.select().from(paymentRequests)
+      .where(eq(paymentRequests.clientId, clientId))
+      .orderBy(desc(paymentRequests.requestDate));
+  }
+
+  async createPaymentRequest(insertPaymentRequest: InsertPaymentRequest): Promise<PaymentRequest> {
+    const [paymentRequest] = await db.insert(paymentRequests).values(insertPaymentRequest).returning();
+    return paymentRequest;
+  }
+
+  async updatePaymentRequest(id: string, updates: Partial<PaymentRequest>): Promise<PaymentRequest | undefined> {
+    const [updated] = await db.update(paymentRequests)
+      .set(updates)
+      .where(eq(paymentRequests.id, id))
+      .returning();
+    
+    return updated;
+  }
+
+  async approvePaymentRequest(id: string, adminNote?: string, processedBy?: string): Promise<PaymentRequest | undefined> {
+    // First get the payment request
+    const paymentRequest = await this.getPaymentRequest(id);
+    if (!paymentRequest || paymentRequest.status !== "Pending") {
+      return undefined;
+    }
+
+    // Update client balance
+    const client = await this.getClient(paymentRequest.clientId);
+    if (!client) {
+      return undefined;
+    }
+
+    // Update client wallet balance
+    await this.updateClient(paymentRequest.clientId, {
+      walletDeposited: client.walletDeposited + paymentRequest.amount
+    });
+
+    // Update payment request status
+    const [updated] = await db.update(paymentRequests)
+      .set({
+        status: "Approved",
+        adminNote: adminNote || null,
+        processedBy: processedBy || null,
+        processedDate: sql`now()`,
+      })
+      .where(eq(paymentRequests.id, id))
+      .returning();
+    
+    return updated;
+  }
+
+  async rejectPaymentRequest(id: string, adminNote?: string, processedBy?: string): Promise<PaymentRequest | undefined> {
+    const [updated] = await db.update(paymentRequests)
+      .set({
+        status: "Rejected",
+        adminNote: adminNote || null,
+        processedBy: processedBy || null,
+        processedDate: sql`now()`,
+      })
+      .where(eq(paymentRequests.id, id))
+      .returning();
+    
+    return updated;
   }
 }
