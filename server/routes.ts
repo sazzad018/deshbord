@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertClientSchema, insertSpendLogSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, insertCustomButtonSchema, insertUploadSchema, insertInvoicePdfSchema, insertQuickMessageSchema } from "@shared/schema";
+import { insertClientSchema, insertSpendLogSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, insertCustomButtonSchema, insertUploadSchema, insertInvoicePdfSchema, insertQuickMessageSchema, insertWebsiteProjectSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Client routes
@@ -747,6 +747,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete invoice PDF" });
+    }
+  });
+
+  // Website Project routes
+  app.get("/api/website-projects", async (req, res) => {
+    try {
+      const projects = await storage.getAllWebsiteProjects();
+      res.json(projects);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch website projects" });
+    }
+  });
+
+  app.get("/api/website-projects/client/:clientId", async (req, res) => {
+    try {
+      const projects = await storage.getWebsiteProjects(req.params.clientId);
+      res.json(projects);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch client website projects" });
+    }
+  });
+
+  app.get("/api/website-projects/:id", async (req, res) => {
+    try {
+      const project = await storage.getWebsiteProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ error: "Website project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch website project" });
+    }
+  });
+
+  app.post("/api/website-projects", async (req, res) => {
+    try {
+      const validatedData = insertWebsiteProjectSchema.parse(req.body);
+      const project = await storage.createWebsiteProject(validatedData);
+      res.status(201).json(project);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid website project data" });
+    }
+  });
+
+  app.patch("/api/website-projects/:id", async (req, res) => {
+    try {
+      const project = await storage.updateWebsiteProject(req.params.id, req.body);
+      if (!project) {
+        return res.status(404).json({ error: "Website project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update website project" });
+    }
+  });
+
+  app.delete("/api/website-projects/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteWebsiteProject(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Website project not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete website project" });
     }
   });
 

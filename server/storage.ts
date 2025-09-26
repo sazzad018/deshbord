@@ -66,6 +66,11 @@ export interface IStorage {
 
   // Website Project operations  
   getWebsiteProjects(clientId: string): Promise<WebsiteProject[]>;
+  getAllWebsiteProjects(): Promise<WebsiteProject[]>;
+  getWebsiteProject(id: string): Promise<WebsiteProject | undefined>;
+  createWebsiteProject(project: InsertWebsiteProject): Promise<WebsiteProject>;
+  updateWebsiteProject(id: string, updates: Partial<WebsiteProject>): Promise<WebsiteProject | undefined>;
+  deleteWebsiteProject(id: string): Promise<boolean>;
   
   // File upload operations
   saveUpload(insertUpload: InsertUpload): Promise<Upload>;

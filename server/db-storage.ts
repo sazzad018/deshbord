@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type CustomButton, type InsertCustomButton, type WebsiteProject, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage, clients, spendLogs, meetings, todos, whatsappTemplates, companySettings, serviceScopes, customButtons, websiteProjects, uploads, invoicePdfs, quickMessages } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type CustomButton, type InsertCustomButton, type WebsiteProject, type InsertWebsiteProject, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage, clients, spendLogs, meetings, todos, whatsappTemplates, companySettings, serviceScopes, customButtons, websiteProjects, uploads, invoicePdfs, quickMessages } from "@shared/schema";
 import { eq, desc, sum, count, sql, and, gte } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
@@ -421,6 +421,42 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(websiteProjects)
       .where(eq(websiteProjects.clientId, clientId))
       .orderBy(desc(websiteProjects.createdAt));
+  }
+
+  async getAllWebsiteProjects(): Promise<WebsiteProject[]> {
+    return await db.select().from(websiteProjects)
+      .orderBy(desc(websiteProjects.createdAt));
+  }
+
+  async getWebsiteProject(id: string): Promise<WebsiteProject | undefined> {
+    const [project] = await db.select().from(websiteProjects)
+      .where(eq(websiteProjects.id, id));
+    return project;
+  }
+
+  async createWebsiteProject(insertProject: InsertWebsiteProject): Promise<WebsiteProject> {
+    // Generate unique portal key if not provided
+    const portalKey = insertProject.portalKey || `${insertProject.projectName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+    
+    const [project] = await db.insert(websiteProjects)
+      .values({ ...insertProject, portalKey })
+      .returning();
+    return project;
+  }
+
+  async updateWebsiteProject(id: string, updates: Partial<WebsiteProject>): Promise<WebsiteProject | undefined> {
+    const [project] = await db.update(websiteProjects)
+      .set(updates)
+      .where(eq(websiteProjects.id, id))
+      .returning();
+    return project;
+  }
+
+  async deleteWebsiteProject(id: string): Promise<boolean> {
+    const [deleted] = await db.delete(websiteProjects)
+      .where(eq(websiteProjects.id, id))
+      .returning({ id: websiteProjects.id });
+    return !!deleted;
   }
 
   // File upload operations
