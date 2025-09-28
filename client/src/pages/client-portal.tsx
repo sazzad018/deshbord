@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { ClientWithDetails, PaymentRequest } from "@shared/schema";
+import type { ClientWithDetails, PaymentRequest, CompanySettings } from "@shared/schema";
+import { calculateUsdFromBdtInput, createDualCurrencyDisplay, DEFAULT_USD_RATE } from "@shared/currency-utils";
 
 export default function ClientPortal() {
   const [match, params] = useRoute("/portal/:portalKey");
@@ -30,6 +31,14 @@ export default function ClientPortal() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch company settings for USD exchange rate
+  const { data: companySettings } = useQuery<CompanySettings>({ 
+    queryKey: ['/api/company-settings'] 
+  });
+
+  const exchangeRate = companySettings?.usdExchangeRate || DEFAULT_USD_RATE;
+  const usdFromBdt = paymentForm.amount ? calculateUsdFromBdtInput(parseFloat(paymentForm.amount) || 0, exchangeRate) : 0;
 
   // Fetch payment requests for this client
   const { data: paymentRequests = [] } = useQuery<PaymentRequest[]>({
@@ -211,6 +220,11 @@ export default function ClientPortal() {
               <div className="text-3xl font-bold text-emerald-800 tracking-tight">
                 ৳{clientData.walletDeposited.toLocaleString()}
               </div>
+              {exchangeRate && (
+                <div className="text-sm text-emerald-600 font-medium mt-1">
+                  ${createDualCurrencyDisplay(clientData.walletDeposited * 100, exchangeRate).usdRaw.toFixed(2)} USD
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -227,6 +241,11 @@ export default function ClientPortal() {
               <div className="text-3xl font-bold text-rose-800 tracking-tight">
                 ৳{clientData.walletSpent.toLocaleString()}
               </div>
+              {exchangeRate && (
+                <div className="text-sm text-rose-600 font-medium mt-1">
+                  ${createDualCurrencyDisplay(clientData.walletSpent * 100, exchangeRate).usdRaw.toFixed(2)} USD
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -243,6 +262,11 @@ export default function ClientPortal() {
               <div className={`text-3xl font-bold tracking-tight ${currentBalance >= 0 ? 'text-blue-800' : 'text-rose-800'}`}>
                 ৳{currentBalance.toLocaleString()}
               </div>
+              {exchangeRate && (
+                <div className={`text-sm font-medium mt-1 ${currentBalance >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
+                  ${createDualCurrencyDisplay(currentBalance * 100, exchangeRate).usdRaw.toFixed(2)} USD
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -279,12 +303,25 @@ export default function ClientPortal() {
                       <label className="text-sm font-medium">পরিমাণ (টাকা)</label>
                       <Input
                         type="number"
-                        placeholder="উদাহরণ: 5000"
+                        placeholder="উদাহরণ: 14500"
                         value={paymentForm.amount}
                         onChange={(e) => setPaymentForm(prev => ({ ...prev, amount: e.target.value }))}
                         required
                         data-testid="input-payment-amount"
                       />
+                      {paymentForm.amount && usdFromBdt > 0 && (
+                        <div className="mt-2 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-lg bg-green-100">
+                              <Globe className="h-4 w-4 text-green-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-green-800">USD এ: ${usdFromBdt.toFixed(2)}</p>
+                              <p className="text-xs text-green-600">বর্তমান রেট: ১ USD = ৳{(exchangeRate / 100).toFixed(2)}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
                     <div>
@@ -385,7 +422,16 @@ export default function ClientPortal() {
                         .map((request) => (
                         <TableRow key={request.id} data-testid={`row-payment-request-${request.id}`}>
                           <TableCell>{new Date(request.requestDate).toLocaleDateString()}</TableCell>
-                          <TableCell className="font-medium">৳{request.amount.toLocaleString()}</TableCell>
+                          <TableCell className="font-medium">
+                            <div>
+                              <div className="text-lg">৳{request.amount.toLocaleString()}</div>
+                              {exchangeRate && (
+                                <div className="text-sm text-gray-500">
+                                  ${createDualCurrencyDisplay(request.amount * 100, exchangeRate).usdRaw.toFixed(2)} USD
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell>{request.paymentMethod}</TableCell>
                           <TableCell>{getStatusBadge(request.status)}</TableCell>
                           <TableCell className="text-sm text-gray-600">
