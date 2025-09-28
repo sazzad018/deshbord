@@ -832,6 +832,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Payment Request routes
+  app.get("/api/payment-requests", async (req, res) => {
+    try {
+      const paymentRequests = await storage.getPaymentRequests();
+      res.json(paymentRequests);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch payment requests" });
+    }
+  });
+
+  app.get("/api/payment-requests/:id", async (req, res) => {
+    try {
+      const paymentRequest = await storage.getPaymentRequest(req.params.id);
+      if (!paymentRequest) {
+        return res.status(404).json({ error: "Payment request not found" });
+      }
+      res.json(paymentRequest);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch payment request" });
+    }
+  });
+
+  app.get("/api/clients/:clientId/payment-requests", async (req, res) => {
+    try {
+      const paymentRequests = await storage.getClientPaymentRequests(req.params.clientId);
+      res.json(paymentRequests);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch client payment requests" });
+    }
+  });
+
+  app.post("/api/payment-requests", async (req, res) => {
+    try {
+      const validatedData = insertPaymentRequestSchema.parse(req.body);
+      const paymentRequest = await storage.createPaymentRequest(validatedData);
+      res.status(201).json(paymentRequest);
+    } catch (error) {
+      console.error("Payment request creation error:", error);
+      res.status(400).json({ error: "Invalid payment request data" });
+    }
+  });
+
+  app.patch("/api/payment-requests/:id", async (req, res) => {
+    try {
+      const paymentRequest = await storage.updatePaymentRequest(req.params.id, req.body);
+      if (!paymentRequest) {
+        return res.status(404).json({ error: "Payment request not found" });
+      }
+      res.json(paymentRequest);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update payment request" });
+    }
+  });
+
+  app.patch("/api/payment-requests/:id/approve", async (req, res) => {
+    try {
+      const { adminNote, processedBy } = req.body;
+      const paymentRequest = await storage.approvePaymentRequest(req.params.id, adminNote, processedBy);
+      if (!paymentRequest) {
+        return res.status(404).json({ error: "Payment request not found or already processed" });
+      }
+      res.json(paymentRequest);
+    } catch (error) {
+      console.error("Payment approval error:", error);
+      res.status(500).json({ error: "Failed to approve payment request" });
+    }
+  });
+
+  app.patch("/api/payment-requests/:id/reject", async (req, res) => {
+    try {
+      const { adminNote, processedBy } = req.body;
+      const paymentRequest = await storage.rejectPaymentRequest(req.params.id, adminNote, processedBy);
+      if (!paymentRequest) {
+        return res.status(404).json({ error: "Payment request not found or already processed" });
+      }
+      res.json(paymentRequest);
+    } catch (error) {
+      console.error("Payment rejection error:", error);
+      res.status(500).json({ error: "Failed to reject payment request" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
