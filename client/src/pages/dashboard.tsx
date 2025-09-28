@@ -94,14 +94,14 @@ export default function Dashboard() {
   
   // Component ordering state
   const [leftColumnOrder, setLeftColumnOrder] = useState([
+    "running-projects",
+    "admin-project-management", 
+    "project-list",
+    "salary-management",
     "client-management",
     "ai-query", 
     "spend-chart",
     "website-projects",
-    "running-projects",
-    "admin-project-management",
-    "project-list",
-    "salary-management",
     "invoice-maker"
   ]);
   
