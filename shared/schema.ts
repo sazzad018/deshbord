@@ -341,6 +341,113 @@ export interface DashboardMetrics {
   activeClients: number;
 }
 
+// Project Management Tables
+export const projects = pgTable("projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // "website" or "landing_page"
+  clientId: varchar("client_id").references(() => clients.id),
+  description: text("description"),
+  totalAmount: integer("total_amount").notNull().default(0), // Total project cost
+  advanceReceived: integer("advance_received").notNull().default(0), // Advance from client
+  dueAmount: integer("due_amount").notNull().default(0), // Remaining amount
+  status: text("status").notNull().default("pending"), // "pending", "in_progress", "completed", "cancelled"
+  progress: integer("progress").notNull().default(0), // Progress percentage (0-100)
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  publicUrl: text("public_url"), // Live project URL
+  features: jsonb("features").$type<string[]>().notNull().default([]), // List of features
+  completedFeatures: jsonb("completed_features").$type<string[]>().notNull().default([]), // Completed features
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const employees = pgTable("employees", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  role: text("role").notNull().default("developer"), // "developer", "designer", "manager"
+  totalIncome: integer("total_income").notNull().default(0), // Total earned
+  totalAdvance: integer("total_advance").notNull().default(0), // Total advance taken
+  totalDue: integer("total_due").notNull().default(0), // Amount due to them
+  isActive: boolean("is_active").notNull().default(true),
+  portalKey: text("portal_key").notNull(), // For employee portal access
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const projectAssignments = pgTable("project_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => projects.id),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id),
+  assignedFeatures: jsonb("assigned_features").$type<string[]>().notNull().default([]), // Features assigned to this employee
+  completedFeatures: jsonb("completed_features").$type<string[]>().notNull().default([]), // Features completed by this employee
+  hourlyRate: integer("hourly_rate").notNull().default(0), // Payment per hour/feature
+  totalEarned: integer("total_earned").notNull().default(0), // Total earned from this project
+  status: text("status").notNull().default("assigned"), // "assigned", "working", "completed"
+  assignedDate: timestamp("assigned_date").defaultNow().notNull(),
+  completedDate: timestamp("completed_date"),
+});
+
+export const projectPayments = pgTable("project_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => projects.id),
+  amount: integer("amount").notNull(),
+  paymentMethod: text("payment_method"), // "bKash", "Nagad", "Bank", etc.
+  transactionId: text("transaction_id"),
+  paymentDate: timestamp("payment_date").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const salaryPayments = pgTable("salary_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id),
+  projectId: varchar("project_id").references(() => projects.id), // Optional: for project-specific payments
+  amount: integer("amount").notNull(),
+  type: text("type").notNull(), // "salary", "advance", "bonus", "project_payment"
+  paymentMethod: text("payment_method"),
+  transactionId: text("transaction_id"),
+  paymentDate: timestamp("payment_date").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Types for the new tables
+export type Project = typeof projects.$inferSelect;
+export type InsertProject = typeof projects.$inferInsert;
+
+export type Employee = typeof employees.$inferSelect;
+export type InsertEmployee = typeof employees.$inferInsert;
+
+export type ProjectAssignment = typeof projectAssignments.$inferSelect;
+export type InsertProjectAssignment = typeof projectAssignments.$inferInsert;
+
+export type ProjectPayment = typeof projectPayments.$inferSelect;
+export type InsertProjectPayment = typeof projectPayments.$inferInsert;
+
+export type SalaryPayment = typeof salaryPayments.$inferSelect;
+export type InsertSalaryPayment = typeof salaryPayments.$inferInsert;
+
+// Insert schemas for validation
+export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
+export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true });
+export const insertProjectAssignmentSchema = createInsertSchema(projectAssignments).omit({ id: true, assignedDate: true });
+export const insertProjectPaymentSchema = createInsertSchema(projectPayments).omit({ id: true, createdAt: true });
+export const insertSalaryPaymentSchema = createInsertSchema(salaryPayments).omit({ id: true, createdAt: true });
+
+// Extended types with relations
+export interface ProjectWithDetails extends Project {
+  client?: Client;
+  assignments?: (ProjectAssignment & { employee: Employee })[];
+  payments?: ProjectPayment[];
+}
+
+export interface EmployeeWithDetails extends Employee {
+  assignments?: (ProjectAssignment & { project: Project })[];
+  salaryPayments?: SalaryPayment[];
+}
+
 export interface AIQueryResult {
   columns: { key: string; label: string }[];
   results: any[];

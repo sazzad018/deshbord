@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type WebsiteProject, type InsertWebsiteProject, type CustomButton, type InsertCustomButton, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage, type PaymentRequest, type InsertPaymentRequest } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type WebsiteProject, type InsertWebsiteProject, type CustomButton, type InsertCustomButton, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage, type PaymentRequest, type InsertPaymentRequest, type Project, type InsertProject, type ProjectWithDetails, type Employee, type InsertEmployee, type EmployeeWithDetails, type ProjectAssignment, type InsertProjectAssignment, type ProjectPayment, type InsertProjectPayment, type SalaryPayment, type InsertSalaryPayment } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -98,6 +98,44 @@ export interface IStorage {
   updatePaymentRequest(id: string, updates: Partial<PaymentRequest>): Promise<PaymentRequest | undefined>;
   approvePaymentRequest(id: string, adminNote?: string, processedBy?: string): Promise<PaymentRequest | undefined>;
   rejectPaymentRequest(id: string, adminNote?: string, processedBy?: string): Promise<PaymentRequest | undefined>;
+
+  // Project operations
+  getProjects(): Promise<Project[]>;
+  getProject(id: string): Promise<Project | undefined>;
+  getProjectWithDetails(id: string): Promise<ProjectWithDetails | undefined>;
+  getClientProjects(clientId: string): Promise<Project[]>;
+  createProject(project: InsertProject): Promise<Project>;
+  updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined>;
+  deleteProject(id: string): Promise<boolean>;
+
+  // Employee operations
+  getEmployees(): Promise<Employee[]>;
+  getEmployee(id: string): Promise<Employee | undefined>;
+  getEmployeeWithDetails(id: string): Promise<EmployeeWithDetails | undefined>;
+  getEmployeeByPortalKey(portalKey: string): Promise<Employee | undefined>;
+  createEmployee(employee: InsertEmployee): Promise<Employee>;
+  updateEmployee(id: string, updates: Partial<Employee>): Promise<Employee | undefined>;
+  deleteEmployee(id: string): Promise<boolean>;
+
+  // Project Assignment operations
+  getProjectAssignments(projectId: string): Promise<ProjectAssignment[]>;
+  getEmployeeAssignments(employeeId: string): Promise<ProjectAssignment[]>;
+  createProjectAssignment(assignment: InsertProjectAssignment): Promise<ProjectAssignment>;
+  updateProjectAssignment(id: string, updates: Partial<ProjectAssignment>): Promise<ProjectAssignment | undefined>;
+  deleteProjectAssignment(id: string): Promise<boolean>;
+
+  // Project Payment operations
+  getProjectPayments(projectId: string): Promise<ProjectPayment[]>;
+  createProjectPayment(payment: InsertProjectPayment): Promise<ProjectPayment>;
+  updateProjectPayment(id: string, updates: Partial<ProjectPayment>): Promise<ProjectPayment | undefined>;
+  deleteProjectPayment(id: string): Promise<boolean>;
+
+  // Salary Payment operations
+  getSalaryPayments(employeeId: string): Promise<SalaryPayment[]>;
+  getAllSalaryPayments(): Promise<SalaryPayment[]>;
+  createSalaryPayment(payment: InsertSalaryPayment): Promise<SalaryPayment>;
+  updateSalaryPayment(id: string, updates: Partial<SalaryPayment>): Promise<SalaryPayment | undefined>;
+  deleteSalaryPayment(id: string): Promise<boolean>;
 }
 
 // Note: MemStorage class removed as we're using DatabaseStorage
