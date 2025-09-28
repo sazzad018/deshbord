@@ -84,11 +84,11 @@ export default function PaymentManagement() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "Approved":
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />অনুমোদিত</Badge>;
+        return <Badge className="bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 border border-emerald-300/60 shadow-sm font-semibold rounded-xl"><CheckCircle className="w-4 h-4 mr-1.5" />অনুমোদিত</Badge>;
       case "Rejected":
-        return <Badge className="bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />প্রত্যাখ্যাত</Badge>;
+        return <Badge className="bg-gradient-to-r from-rose-100 to-rose-200 text-rose-800 border border-rose-300/60 shadow-sm font-semibold rounded-xl"><XCircle className="w-4 h-4 mr-1.5" />প্রত্যাখ্যাত</Badge>;
       default:
-        return <Badge className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />অপেক্ষমান</Badge>;
+        return <Badge className="bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 border border-amber-300/60 shadow-sm font-semibold rounded-xl"><Clock className="w-4 h-4 mr-1.5" />অপেক্ষমান</Badge>;
     }
   };
 
@@ -135,12 +135,16 @@ export default function PaymentManagement() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-900">
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-center mb-2 flex items-center justify-center gap-3">
-            <CreditCard className="h-8 w-8 text-purple-600" />
-            পেমেন্ট ম্যানেজমেন্ট
-          </h1>
-          <p className="text-center text-gray-600">ক্লায়েন্টদের পেমেন্ট রিকোয়েস্ট দেখুন এবং অনুমোদন/প্রত্যাখ্যান করুন</p>
+        <div className="mb-10 text-center">
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <div className="p-4 bg-gradient-to-br from-purple-400 via-violet-500 to-purple-600 rounded-3xl shadow-xl ring-4 ring-white/30">
+              <CreditCard className="h-10 w-10 text-white drop-shadow-lg" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-violet-600 to-purple-700 bg-clip-text text-transparent">পেমেন্ট ম্যানেজমেন্ট</h1>
+              <p className="text-slate-600 mt-2 text-lg">ক্লায়েন্টদের পেমেন্ট রিকোয়েস্ট দেখুন এবং অনুমোদন/প্রত্যাখ্যান করুন</p>
+            </div>
+          </div>
         </div>
 
         {/* Summary Cards */}

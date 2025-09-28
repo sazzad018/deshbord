@@ -26,19 +26,19 @@ export default function TopBar({ query, setQuery }: TopBarProps) {
   ];
 
   return (
-    <div className="sticky top-0 z-50 bg-gradient-to-r from-white via-blue-50/30 to-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 border-b border-blue-200/50 shadow-sm">
+    <div className="sticky top-0 z-50 bg-gradient-to-r from-blue-50/80 via-white/95 to-violet-50/80 backdrop-blur supports-[backdrop-filter]:bg-white/90 border-b border-blue-200/60 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
-                  <Bot className="h-5 w-5 text-white" />
+                <div className="p-2 rounded-2xl bg-gradient-to-br from-blue-500 via-violet-500 to-blue-600 shadow-xl ring-2 ring-white/20">
+                  <Bot className="h-5 w-5 text-white drop-shadow-sm" />
                 </div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-slate-800 to-blue-600 bg-clip-text text-transparent">Social Ads Expert</h1>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-violet-600 to-blue-700 bg-clip-text text-transparent">Social Ads Expert</h1>
               </div>
-              <Badge variant="secondary" className="rounded-2xl bg-blue-100 text-blue-700 border-blue-200">MVP</Badge>
-              <Badge className="rounded-2xl bg-emerald-100 text-emerald-700 border-emerald-200">Asia/Dhaka</Badge>
+              <Badge variant="secondary" className="rounded-2xl bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border-blue-300/60 shadow-sm font-semibold">MVP</Badge>
+              <Badge className="rounded-2xl bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 border-emerald-300/60 shadow-sm font-semibold">Asia/Dhaka</Badge>
             </div>
             
             {/* Navigation */}
@@ -52,10 +52,10 @@ export default function TopBar({ query, setQuery }: TopBarProps) {
                     <Button
                       variant={isActive ? "default" : "ghost"}
                       size="sm"
-                      className={`flex items-center gap-2 transition-all duration-200 ${
+                      className={`flex items-center gap-2 transition-all duration-300 rounded-xl ${
                         isActive 
-                          ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md hover:from-blue-600 hover:to-blue-700" 
-                          : "hover:bg-blue-50 hover:text-blue-700"
+                          ? "bg-gradient-to-r from-blue-500 via-violet-500 to-blue-600 text-white shadow-lg hover:shadow-xl hover:from-blue-600 hover:via-violet-600 hover:to-blue-700 ring-2 ring-white/20" 
+                          : "hover:bg-gradient-to-r hover:from-blue-50 hover:to-violet-50 hover:text-blue-700 hover:shadow-md border border-transparent hover:border-blue-200/50"
                       }`}
                       data-testid={`nav-${item.path.replace("/", "")}`}
                     >
@@ -70,21 +70,21 @@ export default function TopBar({ query, setQuery }: TopBarProps) {
           
           <div className="flex items-center gap-3">
             <div className="relative w-80">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-500" />
               <Input
                 data-testid="input-global-search"
                 type="text"
                 placeholder="খুঁজুন: ক্লায়েন্ট/প্রোফাইল/স্কোপ"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-gradient-to-r from-blue-50/50 to-violet-50/50 border-blue-200/60 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 rounded-xl"
               />
             </div>
             
             <Button 
               data-testid="button-refresh"
               variant="outline" 
-              className="flex items-center gap-2" 
+              className="flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-700 hover:from-emerald-100 hover:to-emerald-200 hover:border-emerald-300 shadow-sm rounded-xl" 
               onClick={handleRefresh}
             >
               <RefreshCw className="h-4 w-4" />
@@ -93,7 +93,7 @@ export default function TopBar({ query, setQuery }: TopBarProps) {
             
             <Button 
               data-testid="button-export"
-              className="flex items-center gap-2" 
+              className="flex items-center gap-2 bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 shadow-lg hover:shadow-xl rounded-xl ring-2 ring-white/20" 
               onClick={exportAllData}
             >
               <Download className="h-4 w-4" />
