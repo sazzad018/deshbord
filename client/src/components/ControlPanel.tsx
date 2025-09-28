@@ -330,7 +330,7 @@ export default function ControlPanel() {
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl font-bold text-slate-900">কন্ট্রোল প্যানেল</CardTitle>
+              <CardTitle className="text-lg font-semibold text-slate-900">কন্ট্রোল প্যানেল</CardTitle>
               <CardDescription className="text-sm text-slate-500 mt-1">
                 কাস্টম লিংক পরিচালনা
               </CardDescription>
@@ -546,7 +546,7 @@ export default function ControlPanel() {
         <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <CardTitle className="text-lg font-semibold text-slate-900 flex items-center gap-2">
               <MessageSquare className="h-6 w-6" />
               কুইক মেসেজের রিপ্লাই
             </CardTitle>
