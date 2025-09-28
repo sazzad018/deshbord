@@ -173,19 +173,22 @@ export default function ClientPortal() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
       {/* Header */}
-      <div className="bg-white border-b shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="bg-gradient-to-r from-violet-50/80 via-white/95 to-purple-50/80 border-b border-violet-200/60 shadow-lg">
+        <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-purple-100 p-2 rounded-lg">
-                <User className="h-6 w-6 text-purple-600" />
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-br from-purple-400 via-violet-500 to-purple-600 p-3 rounded-2xl shadow-xl ring-4 ring-white/30">
+                <User className="h-8 w-8 text-white drop-shadow-lg" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">স্বাগতম, {clientData.name}</h1>
-                <p className="text-gray-600">আপনার প্রজেক্ট এবং ব্যালেন্সের বিস্তারিত তথ্য</p>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-violet-600 to-purple-700 bg-clip-text text-transparent">স্বাগতম, {clientData.name}</h1>
+                <p className="text-slate-600 mt-1 text-lg">আপনার প্রজেক্ট এবং ব্যালেন্সের বিস্তারিত তথ্য</p>
               </div>
             </div>
-            <Badge variant={clientData.status === "Active" ? "default" : "secondary"}>
+            <Badge 
+              variant={clientData.status === "Active" ? "default" : "secondary"}
+              className="bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 border border-emerald-300/60 shadow-sm font-semibold rounded-xl px-4 py-2 text-lg"
+            >
               {clientData.status === "Active" ? "সক্রিয়" : "নিষ্ক্রিয়"}
             </Badge>
           </div>
@@ -194,44 +197,50 @@ export default function ClientPortal() {
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Balance Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="rounded-2xl shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+          <Card className="rounded-3xl shadow-lg border-2 border-emerald-200/60 bg-emerald-50/70 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                <Wallet className="h-4 w-4" />
-                মোট জমা
+              <CardTitle className="text-sm font-medium flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-md ring-2 ring-white/20">
+                  <Wallet className="h-5 w-5 text-white drop-shadow-sm" />
+                </div>
+                <span className="text-emerald-700 font-semibold">মোট জমা</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-3xl font-bold text-emerald-800 tracking-tight">
                 ৳{clientData.walletDeposited.toLocaleString()}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl shadow-sm">
+          <Card className="rounded-3xl shadow-lg border-2 border-rose-200/60 bg-rose-50/70 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                <Receipt className="h-4 w-4" />
-                মোট খরচ
+              <CardTitle className="text-sm font-medium flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-gradient-to-br from-rose-400 to-rose-500 shadow-md ring-2 ring-white/20">
+                  <Receipt className="h-5 w-5 text-white drop-shadow-sm" />
+                </div>
+                <span className="text-rose-700 font-semibold">মোট খরচ</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="text-2xl font-bold text-red-600">
+              <div className="text-3xl font-bold text-rose-800 tracking-tight">
                 ৳{clientData.walletSpent.toLocaleString()}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl shadow-sm">
+          <Card className="rounded-3xl shadow-lg border-2 border-blue-200/60 bg-blue-50/70 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                বর্তমান ব্যালেন্স
+              <CardTitle className="text-sm font-medium flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-500 shadow-md ring-2 ring-white/20">
+                  <TrendingUp className="h-5 w-5 text-white drop-shadow-sm" />
+                </div>
+                <span className="text-blue-700 font-semibold">বর্তমান ব্যালেন্স</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className={`text-2xl font-bold ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <div className={`text-3xl font-bold tracking-tight ${currentBalance >= 0 ? 'text-blue-800' : 'text-rose-800'}`}>
                 ৳{currentBalance.toLocaleString()}
               </div>
             </CardContent>
@@ -239,13 +248,15 @@ export default function ClientPortal() {
         </div>
 
         {/* Payment Request Section */}
-        <Card className="rounded-2xl shadow-sm mb-8">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              পেমেন্ট রিকোয়েস্ট
+        <Card className="rounded-3xl shadow-lg border-2 border-purple-200/60 bg-gradient-to-br from-purple-50/70 to-violet-50/70 mb-10 backdrop-blur-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl font-bold flex items-center gap-4">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-purple-400 via-violet-500 to-purple-600 shadow-xl ring-2 ring-white/20">
+                <CreditCard className="h-6 w-6 text-white drop-shadow-sm" />
+              </div>
+              <span className="bg-gradient-to-r from-purple-600 via-violet-600 to-purple-700 bg-clip-text text-transparent">পেমেন্ট রিকোয়েস্ট</span>
             </CardTitle>
-            <p className="text-sm text-gray-600">আপনার অ্যাকাউন্টে টাকা জমা দিতে রিকোয়েস্ট পাঠান</p>
+            <p className="text-slate-600 text-base ml-16">আপনার অ্যাকাউন্টে টাকা জমা দিতে রিকোয়েস্ট পাঠান</p>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4">
