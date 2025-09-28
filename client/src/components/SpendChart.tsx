@@ -1,11 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import type { SpendLog, CompanySettings } from "@shared/schema";
 import { createDualCurrencyDisplay, DEFAULT_USD_RATE } from "@shared/currency-utils";
 
 export default function SpendChart() {
+  const [selectedCurrency, setSelectedCurrency] = useState<'BDT' | 'USD'>('BDT');
+  
   const { data: allSpendLogs = [] } = useQuery<SpendLog[]>({
     queryKey: ["/api/spend-logs/all"],
   });
@@ -28,18 +32,24 @@ export default function SpendChart() {
       const dateString = date.toISOString().split('T')[0];
       
       // Get spending for this date
-      const daySpending = allSpendLogs
+      const daySpendingBDT = allSpendLogs
         .filter(log => {
           const logDate = new Date(log.date).toISOString().split('T')[0];
           return logDate === dateString;
         })
         .reduce((total, log) => total + log.amount, 0);
       
+      // Convert to selected currency
+      const daySpending = selectedCurrency === 'USD' 
+        ? createDualCurrencyDisplay(daySpendingBDT * 100, exchangeRate).usdRaw
+        : daySpendingBDT;
+      
       const dayNames = ["রবি", "সোম", "মঙ্গল", "বুধ", "বৃহস্পতি", "শুক্র", "শনি"];
       
       last7Days.push({
         day: dayNames[date.getDay()],
         spend: daySpending,
+        spendBDT: daySpendingBDT, // Keep original BDT for tooltip
         fullDate: date.toLocaleDateString()
       });
     }
@@ -52,11 +62,24 @@ export default function SpendChart() {
     <Card className="rounded-2xl shadow-sm">
       <CardHeader className="pb-2 flex-row items-center justify-between">
         <CardTitle className="text-lg font-semibold">৭ দিনের খরচ বিশ্লেষণ</CardTitle>
-        <Badge variant="secondary" className="rounded-2xl">All Clients</Badge>
+        <div className="flex items-center gap-3">
+          <Select value={selectedCurrency} onValueChange={(value: 'BDT' | 'USD') => setSelectedCurrency(value)}>
+            <SelectTrigger className="w-20 h-8 rounded-xl border-blue-200 bg-blue-50/50">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="BDT">৳ BDT</SelectItem>
+              <SelectItem value="USD">$ USD</SelectItem>
+            </SelectContent>
+          </Select>
+          <Badge variant="secondary" className="rounded-2xl">All Clients</Badge>
+        </div>
       </CardHeader>
       
       <CardContent className="pt-0">
-        <p className="text-sm text-muted-foreground mb-4">গত সপ্তাহের দৈনিক খরচের ট্রেন্ড</p>
+        <p className="text-sm text-muted-foreground mb-4">
+          গত সপ্তাহের দৈনিক খরচের ট্রেন্ড ({selectedCurrency === 'USD' ? 'ডলারে' : 'টাকায়'})
+        </p>
         
         <div className="h-64" data-testid="chart-spend-analytics">
           <ResponsiveContainer width="100%" height="100%">
@@ -72,18 +95,35 @@ export default function SpendChart() {
               <YAxis 
                 tickLine={false} 
                 axisLine={false}
-                tickFormatter={(value) => `৳${(value / 1000)}k`}
+                tickFormatter={(value) => {
+                  if (selectedCurrency === 'USD') {
+                    return `$${value < 1000 ? value.toFixed(0) : (value / 1000).toFixed(1) + 'k'}`;
+                  }
+                  return `৳${(value / 1000)}k`;
+                }}
               />
               <Tooltip 
-                formatter={(value: number) => {
-                  const usdValue = createDualCurrencyDisplay(value * 100, exchangeRate).usdRaw.toFixed(2);
-                  return [
-                    <div key="tooltip">
-                      <div>৳{value.toLocaleString()}</div>
-                      <div className="text-xs text-gray-500">${usdValue} USD</div>
-                    </div>, 
-                    "দৈনিক খরচ"
-                  ];
+                formatter={(value: number, name: any, props: any) => {
+                  const spendBDT = props.payload?.spendBDT || 0;
+                  const usdValue = createDualCurrencyDisplay(spendBDT * 100, exchangeRate).usdRaw;
+                  
+                  if (selectedCurrency === 'USD') {
+                    return [
+                      <div key="tooltip">
+                        <div className="font-semibold">${value.toFixed(2)} USD</div>
+                        <div className="text-xs text-gray-500">৳{spendBDT.toLocaleString()} BDT</div>
+                      </div>, 
+                      "দৈনিক খরচ"
+                    ];
+                  } else {
+                    return [
+                      <div key="tooltip">
+                        <div className="font-semibold">৳{value.toLocaleString()} BDT</div>
+                        <div className="text-xs text-gray-500">${usdValue.toFixed(2)} USD</div>
+                      </div>, 
+                      "দৈনিক খরচ"
+                    ];
+                  }
                 }}
                 labelStyle={{ color: "#64748b" }}
                 contentStyle={{ 
