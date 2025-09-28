@@ -35,6 +35,7 @@ import QuickActions from "@/components/QuickActions";
 import ControlPanel from "@/components/ControlPanel";
 import InvoiceMaker from "@/components/InvoiceMaker";
 import RunningProjectsPanel from "@/components/RunningProjectsPanel";
+import AdminProjectManagement from "@/components/AdminProjectManagement";
 import TodoListShort from "@/components/TodoListShort";
 import WhatsAppShortcut from "@/components/WhatsAppShortcut";
 import { MinimizableCard } from "@/components/MinimizableCard";
@@ -96,6 +97,7 @@ export default function Dashboard() {
     "spend-chart",
     "website-projects",
     "running-projects",
+    "admin-project-management",
     "invoice-maker"
   ]);
   
@@ -154,6 +156,7 @@ export default function Dashboard() {
     "spend-chart": <SpendChart />,
     "website-projects": <ClientWebsiteProjectsPanel selectedClientId={selectedClientId} />,
     "running-projects": <RunningProjectsPanel />,
+    "admin-project-management": <AdminProjectManagement />,
     "invoice-maker": <InvoiceMaker />,
   };
 
