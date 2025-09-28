@@ -7,6 +7,7 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import NotificationContainer from "@/components/NotificationContainer";
 import Dashboard from "@/pages/dashboard";
 import ClientPortal from "@/pages/client-portal";
+import EmployeePortal from "@/pages/employee-portal";
 import TodoList from "@/pages/TodoList";
 import WhatsAppMessaging from "@/pages/WhatsAppMessaging";
 import SavedPDFs from "@/pages/SavedPDFs";
@@ -41,6 +42,9 @@ function Router() {
     <Switch>
       {/* Client portal doesn't need notifications */}
       <Route path="/portal/:portalKey" component={ClientPortal} />
+      
+      {/* Employee portal doesn't need notifications */}
+      <Route path="/employee-portal" component={EmployeePortal} />
       
       {/* All admin routes wrapped with notifications */}
       <Route>
