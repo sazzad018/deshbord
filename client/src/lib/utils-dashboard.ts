@@ -1,4 +1,5 @@
 import type { Client, AIQueryResult } from "@shared/schema";
+import * as XLSX from 'xlsx';
 
 export function formatCurrency(amount: number): string {
   // Format in English numbers with BDT symbol
@@ -121,17 +122,67 @@ export function exportClientData(clientId: string) {
   URL.revokeObjectURL(link.href);
 }
 
-export function exportAllData() {
-  const data = {
-    exportDate: new Date().toISOString(),
-    note: "Dashboard data export"
-  };
+export async function exportAllData() {
+  try {
+    // Fetch all clients data
+    const response = await fetch('/api/clients');
+    if (!response.ok) {
+      throw new Error('Failed to fetch clients data');
+    }
+    
+    const clients: Client[] = await response.json();
+    
+    // Prepare data for Excel export
+    const excelData = clients.map((client, index) => ({
+      'ক্রমিক নং': index + 1,
+      'নাম': client.name,
+      'মোবাইল নম্বর': client.phone,
+      'Facebook Page Link': client.fb || 'N/A',
+      'স্ট্যাটাস': client.status === 'Active' ? 'সক্রিয়' : 'নিষ্ক্রিয়',
+      'মোট জমা (৳)': client.walletDeposited.toLocaleString(),
+      'মোট খরচ (৳)': client.walletSpent.toLocaleString(),
+      'বর্তমান ব্যালেন্স (৳)': (client.walletDeposited - client.walletSpent).toLocaleString(),
+      'সার্ভিস স্কোপ': (client.scopes || []).join(', '),
+      'Portal Key': client.portalKey,
+      'তৈরির তারিখ': new Date(client.createdAt).toLocaleDateString('bn-BD')
+    }));
 
-  const json = JSON.stringify(data, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `dashboard_export_${new Date().toISOString().slice(0, 10)}.json`;
-  link.click();
-  URL.revokeObjectURL(link.href);
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // Set column widths for better readability
+    const columnWidths = [
+      { wch: 8 },   // ক্রমিক নং
+      { wch: 20 },  // নাম
+      { wch: 15 },  // মোবাইল নম্বর
+      { wch: 40 },  // Facebook Page Link
+      { wch: 10 },  // স্ট্যাটাস
+      { wch: 15 },  // মোট জমা
+      { wch: 15 },  // মোট খরচ
+      { wch: 18 },  // বর্তমান ব্যালেন্স
+      { wch: 30 },  // সার্ভিস স্কোপ
+      { wch: 12 },  // Portal Key
+      { wch: 15 }   // তৈরির তারিখ
+    ];
+    ws['!cols'] = columnWidths;
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Client Data');
+
+    // Generate Excel file and trigger download
+    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `clients_export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    
+    console.log(`Successfully exported ${clients.length} clients to Excel`);
+  } catch (error) {
+    console.error('Export failed:', error);
+    alert('এক্সপোর্ট করতে সমস্যা হয়েছে। দয়া করে আবার চেষ্টা করুন।');
+  }
 }
