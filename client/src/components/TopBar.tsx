@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, RefreshCw, Download, Bot, FileText, CheckSquare, MessageCircle, BarChart3 } from "lucide-react";
+import { Search, RefreshCw, Download, Bot, FileText, CheckSquare, MessageCircle, BarChart3, CreditCard } from "lucide-react";
 import { exportAllData } from "@/lib/utils-dashboard";
 import { Link, useLocation } from "wouter";
 
@@ -20,6 +20,7 @@ export default function TopBar({ query, setQuery }: TopBarProps) {
   const navItems = [
     { path: "/dashboard", label: "ড্যাশবোর্ড", icon: BarChart3 },
     { path: "/website-projects", label: "প্রজেক্ট", icon: FileText },
+    { path: "/payment-management", label: "পেমেন্ট", icon: CreditCard },
     { path: "/todo-list", label: "টু-ডু", icon: CheckSquare },
     { path: "/whatsapp-messaging", label: "হোয়াটসঅ্যাপ", icon: MessageCircle },
   ];
