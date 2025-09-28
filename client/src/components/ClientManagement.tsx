@@ -455,18 +455,20 @@ export default function ClientManagement({ query, selectedClientId, onSelectClie
                                 {client.name.charAt(0)}
                               </AvatarFallback>
                             </Avatar>
-                            <div className="space-y-1">
-                              <div>{client.name}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium text-gray-900 truncate max-w-[200px]" title={client.name}>
+                                {client.name}
+                              </div>
                               {client.scopes && client.scopes.length > 0 && (
-                                <div className="flex flex-wrap gap-1">
-                                  {client.scopes.slice(0, 3).map((scope, index) => (
-                                    <Badge key={index} variant="outline" className="text-xs px-1 py-0">
-                                      {scope.length > 6 ? scope.substring(0, 6) : scope}
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {client.scopes.slice(0, 2).map((scope, index) => (
+                                    <Badge key={index} variant="outline" className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-700 border-blue-200 whitespace-nowrap">
+                                      {scope.length > 8 ? scope.substring(0, 8) + '...' : scope}
                                     </Badge>
                                   ))}
-                                  {client.scopes.length > 3 && (
-                                    <Badge variant="outline" className="text-xs px-1 py-0">
-                                      +{client.scopes.length - 3}
+                                  {client.scopes.length > 2 && (
+                                    <Badge variant="outline" className="text-xs px-1.5 py-0.5 bg-gray-50 text-gray-600 border-gray-200">
+                                      +{client.scopes.length - 2}
                                     </Badge>
                                   )}
                                 </div>

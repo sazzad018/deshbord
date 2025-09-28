@@ -45,8 +45,8 @@ export default function MetricsOverview() {
 
   if (isLoading) {
     return (
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[...Array(4)].map((_, i) => {
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(3)].map((_, i) => {
           const cardColors = getCardColors(i);
           return (
             <Card key={i} className={`rounded-3xl shadow-lg border-2 ${cardColors.borderColor} ${cardColors.bgColor}`}>
@@ -68,12 +68,7 @@ export default function MetricsOverview() {
   }
 
   const metricCards = [
-    {
-      title: "মোট জমা",
-      value: formatCurrency(metrics?.totalDeposited || 0),
-      icon: Wallet,
-      subtitle: `Active: ${metrics?.activeClients || 0}`,
-    },
+    // Note: "মোট জমা" (Total Deposit) card hidden as requested
     {
       title: "মোট খরচ",
       value: formatCurrency(metrics?.totalSpent || 0),
@@ -95,7 +90,7 @@ export default function MetricsOverview() {
   ];
 
   return (
-    <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {metricCards.map((metric, index) => {
         const IconComponent = metric.icon;
         const cardColors = getCardColors(index);
