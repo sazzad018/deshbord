@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type CustomButton, type InsertCustomButton, type WebsiteProject, type InsertWebsiteProject, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage, type PaymentRequest, type InsertPaymentRequest, clients, spendLogs, meetings, todos, whatsappTemplates, companySettings, serviceScopes, customButtons, websiteProjects, uploads, invoicePdfs, quickMessages, paymentRequests } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type CustomButton, type InsertCustomButton, type WebsiteProject, type InsertWebsiteProject, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage, type PaymentRequest, type InsertPaymentRequest, type Project, type InsertProject, type ProjectWithDetails, type Employee, type InsertEmployee, type EmployeeWithDetails, type ProjectAssignment, type InsertProjectAssignment, type ProjectPayment, type InsertProjectPayment, type SalaryPayment, type InsertSalaryPayment, clients, spendLogs, meetings, todos, whatsappTemplates, companySettings, serviceScopes, customButtons, websiteProjects, uploads, invoicePdfs, quickMessages, paymentRequests, projects, employees, projectAssignments, projectPayments, salaryPayments } from "@shared/schema";
 import { eq, desc, sum, count, sql, and, gte } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
@@ -611,5 +611,231 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updated;
+  }
+
+  // Project Management Methods
+
+  // Project operations
+  async getProjects(): Promise<Project[]> {
+    return await db.select().from(projects)
+      .orderBy(desc(projects.createdAt));
+  }
+
+  async getProject(id: string): Promise<Project | undefined> {
+    const result = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getProjectWithDetails(id: string): Promise<ProjectWithDetails | undefined> {
+    const project = await this.getProject(id);
+    if (!project) return undefined;
+
+    const [client, assignments, payments] = await Promise.all([
+      project.clientId ? this.getClient(project.clientId) : Promise.resolve(undefined),
+      this.getProjectAssignments(id),
+      this.getProjectPayments(id)
+    ]);
+
+    // Get employee details for assignments
+    const assignmentsWithEmployees = await Promise.all(
+      assignments.map(async (assignment) => {
+        const employee = await this.getEmployee(assignment.employeeId);
+        return { ...assignment, employee: employee! };
+      })
+    );
+
+    return { ...project, client, assignments: assignmentsWithEmployees, payments };
+  }
+
+  async getClientProjects(clientId: string): Promise<Project[]> {
+    return await db.select().from(projects)
+      .where(eq(projects.clientId, clientId))
+      .orderBy(desc(projects.createdAt));
+  }
+
+  async createProject(insertProject: InsertProject): Promise<Project> {
+    const [created] = await db.insert(projects).values(insertProject).returning();
+    return created;
+  }
+
+  async updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
+    const [updated] = await db.update(projects)
+      .set(updates)
+      .where(eq(projects.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteProject(id: string): Promise<boolean> {
+    const result = await db.delete(projects).where(eq(projects.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Employee operations
+  async getEmployees(): Promise<Employee[]> {
+    return await db.select().from(employees)
+      .where(eq(employees.isActive, true))
+      .orderBy(desc(employees.createdAt));
+  }
+
+  async getEmployee(id: string): Promise<Employee | undefined> {
+    const result = await db.select().from(employees).where(eq(employees.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getEmployeeWithDetails(id: string): Promise<EmployeeWithDetails | undefined> {
+    const employee = await this.getEmployee(id);
+    if (!employee) return undefined;
+
+    const [assignments, salaryPayments] = await Promise.all([
+      this.getEmployeeAssignments(id),
+      this.getSalaryPayments(id)
+    ]);
+
+    // Get project details for assignments
+    const assignmentsWithProjects = await Promise.all(
+      assignments.map(async (assignment) => {
+        const project = await this.getProject(assignment.projectId);
+        return { ...assignment, project: project! };
+      })
+    );
+
+    return { ...employee, assignments: assignmentsWithProjects, salaryPayments };
+  }
+
+  async getEmployeeByPortalKey(portalKey: string): Promise<Employee | undefined> {
+    const result = await db.select().from(employees)
+      .where(eq(employees.portalKey, portalKey))
+      .limit(1);
+    return result[0];
+  }
+
+  async createEmployee(insertEmployee: InsertEmployee): Promise<Employee> {
+    const portalKey = insertEmployee.portalKey || Math.random().toString(36).slice(2, 7);
+    const [created] = await db.insert(employees).values({
+      ...insertEmployee,
+      portalKey
+    }).returning();
+    return created;
+  }
+
+  async updateEmployee(id: string, updates: Partial<Employee>): Promise<Employee | undefined> {
+    const [updated] = await db.update(employees)
+      .set(updates)
+      .where(eq(employees.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteEmployee(id: string): Promise<boolean> {
+    const result = await db.update(employees)
+      .set({ isActive: false })
+      .where(eq(employees.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Project Assignment operations
+  async getProjectAssignments(projectId: string): Promise<ProjectAssignment[]> {
+    return await db.select().from(projectAssignments)
+      .where(eq(projectAssignments.projectId, projectId))
+      .orderBy(desc(projectAssignments.assignedDate));
+  }
+
+  async getEmployeeAssignments(employeeId: string): Promise<ProjectAssignment[]> {
+    return await db.select().from(projectAssignments)
+      .where(eq(projectAssignments.employeeId, employeeId))
+      .orderBy(desc(projectAssignments.assignedDate));
+  }
+
+  async createProjectAssignment(insertAssignment: InsertProjectAssignment): Promise<ProjectAssignment> {
+    const [created] = await db.insert(projectAssignments).values(insertAssignment).returning();
+    return created;
+  }
+
+  async updateProjectAssignment(id: string, updates: Partial<ProjectAssignment>): Promise<ProjectAssignment | undefined> {
+    const [updated] = await db.update(projectAssignments)
+      .set(updates)
+      .where(eq(projectAssignments.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteProjectAssignment(id: string): Promise<boolean> {
+    const result = await db.delete(projectAssignments).where(eq(projectAssignments.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Project Payment operations
+  async getProjectPayments(projectId: string): Promise<ProjectPayment[]> {
+    return await db.select().from(projectPayments)
+      .where(eq(projectPayments.projectId, projectId))
+      .orderBy(desc(projectPayments.createdAt));
+  }
+
+  async createProjectPayment(insertPayment: InsertProjectPayment): Promise<ProjectPayment> {
+    const [created] = await db.insert(projectPayments).values(insertPayment).returning();
+    return created;
+  }
+
+  async updateProjectPayment(id: string, updates: Partial<ProjectPayment>): Promise<ProjectPayment | undefined> {
+    const [updated] = await db.update(projectPayments)
+      .set(updates)
+      .where(eq(projectPayments.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteProjectPayment(id: string): Promise<boolean> {
+    const result = await db.delete(projectPayments).where(eq(projectPayments.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Salary Payment operations
+  async getSalaryPayments(employeeId: string): Promise<SalaryPayment[]> {
+    return await db.select().from(salaryPayments)
+      .where(eq(salaryPayments.employeeId, employeeId))
+      .orderBy(desc(salaryPayments.createdAt));
+  }
+
+  async getAllSalaryPayments(): Promise<SalaryPayment[]> {
+    return await db.select().from(salaryPayments)
+      .orderBy(desc(salaryPayments.createdAt));
+  }
+
+  async createSalaryPayment(insertPayment: InsertSalaryPayment): Promise<SalaryPayment> {
+    const [created] = await db.insert(salaryPayments).values(insertPayment).returning();
+    
+    // Update employee totals based on payment type
+    const employee = await this.getEmployee(insertPayment.employeeId);
+    if (employee) {
+      let updates: Partial<Employee> = {};
+      
+      if (insertPayment.type === "advance") {
+        updates.totalAdvance = employee.totalAdvance + insertPayment.amount;
+      } else if (insertPayment.type === "salary" || insertPayment.type === "project_payment" || insertPayment.type === "bonus") {
+        updates.totalIncome = employee.totalIncome + insertPayment.amount;
+        // Reduce due amount if this is a payment
+        updates.totalDue = Math.max(0, employee.totalDue - insertPayment.amount);
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        await this.updateEmployee(insertPayment.employeeId, updates);
+      }
+    }
+    
+    return created;
+  }
+
+  async updateSalaryPayment(id: string, updates: Partial<SalaryPayment>): Promise<SalaryPayment | undefined> {
+    const [updated] = await db.update(salaryPayments)
+      .set(updates)
+      .where(eq(salaryPayments.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteSalaryPayment(id: string): Promise<boolean> {
+    const result = await db.delete(salaryPayments).where(eq(salaryPayments.id, id));
+    return result.rowCount > 0;
   }
 }

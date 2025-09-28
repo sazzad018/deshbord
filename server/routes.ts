@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { notificationService } from "./websocket";
-import { insertClientSchema, insertSpendLogSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, insertCustomButtonSchema, insertUploadSchema, insertInvoicePdfSchema, insertQuickMessageSchema, insertWebsiteProjectSchema, insertPaymentRequestSchema } from "@shared/schema";
+import { insertClientSchema, insertSpendLogSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, insertCustomButtonSchema, insertUploadSchema, insertInvoicePdfSchema, insertQuickMessageSchema, insertWebsiteProjectSchema, insertPaymentRequestSchema, insertProjectSchema, insertEmployeeSchema, insertProjectAssignmentSchema, insertProjectPaymentSchema, insertSalaryPaymentSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Client routes
@@ -926,6 +926,290 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Payment rejection error:", error);
       res.status(500).json({ error: "Failed to reject payment request" });
+    }
+  });
+
+  // Project Management Routes
+  // Projects
+  app.get("/api/projects", async (req, res) => {
+    try {
+      const projects = await storage.getProjects();
+      res.json(projects);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch projects" });
+    }
+  });
+
+  app.get("/api/projects/:id", async (req, res) => {
+    try {
+      const project = await storage.getProjectWithDetails(req.params.id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project" });
+    }
+  });
+
+  app.get("/api/clients/:clientId/projects", async (req, res) => {
+    try {
+      const projects = await storage.getClientProjects(req.params.clientId);
+      res.json(projects);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch client projects" });
+    }
+  });
+
+  app.post("/api/projects", async (req, res) => {
+    try {
+      const validatedData = insertProjectSchema.parse(req.body);
+      const project = await storage.createProject(validatedData);
+      res.status(201).json(project);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid project data" });
+    }
+  });
+
+  app.patch("/api/projects/:id", async (req, res) => {
+    try {
+      const project = await storage.updateProject(req.params.id, req.body);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update project" });
+    }
+  });
+
+  app.delete("/api/projects/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteProject(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete project" });
+    }
+  });
+
+  // Employees
+  app.get("/api/employees", async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      res.json(employees);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch employees" });
+    }
+  });
+
+  app.get("/api/employees/:id", async (req, res) => {
+    try {
+      const employee = await storage.getEmployeeWithDetails(req.params.id);
+      if (!employee) {
+        return res.status(404).json({ error: "Employee not found" });
+      }
+      res.json(employee);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch employee" });
+    }
+  });
+
+  app.get("/api/employees/portal/:portalKey", async (req, res) => {
+    try {
+      const employee = await storage.getEmployeeByPortalKey(req.params.portalKey);
+      if (!employee) {
+        return res.status(404).json({ error: "Employee not found" });
+      }
+      res.json(employee);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch employee by portal key" });
+    }
+  });
+
+  app.post("/api/employees", async (req, res) => {
+    try {
+      const validatedData = insertEmployeeSchema.parse(req.body);
+      const employee = await storage.createEmployee(validatedData);
+      res.status(201).json(employee);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid employee data" });
+    }
+  });
+
+  app.patch("/api/employees/:id", async (req, res) => {
+    try {
+      const employee = await storage.updateEmployee(req.params.id, req.body);
+      if (!employee) {
+        return res.status(404).json({ error: "Employee not found" });
+      }
+      res.json(employee);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update employee" });
+    }
+  });
+
+  app.delete("/api/employees/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteEmployee(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Employee not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete employee" });
+    }
+  });
+
+  // Project Assignments
+  app.get("/api/projects/:projectId/assignments", async (req, res) => {
+    try {
+      const assignments = await storage.getProjectAssignments(req.params.projectId);
+      res.json(assignments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project assignments" });
+    }
+  });
+
+  app.get("/api/employees/:employeeId/assignments", async (req, res) => {
+    try {
+      const assignments = await storage.getEmployeeAssignments(req.params.employeeId);
+      res.json(assignments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch employee assignments" });
+    }
+  });
+
+  app.post("/api/project-assignments", async (req, res) => {
+    try {
+      const validatedData = insertProjectAssignmentSchema.parse(req.body);
+      const assignment = await storage.createProjectAssignment(validatedData);
+      res.status(201).json(assignment);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid assignment data" });
+    }
+  });
+
+  app.patch("/api/project-assignments/:id", async (req, res) => {
+    try {
+      const assignment = await storage.updateProjectAssignment(req.params.id, req.body);
+      if (!assignment) {
+        return res.status(404).json({ error: "Assignment not found" });
+      }
+      res.json(assignment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update assignment" });
+    }
+  });
+
+  app.delete("/api/project-assignments/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteProjectAssignment(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Assignment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete assignment" });
+    }
+  });
+
+  // Project Payments
+  app.get("/api/projects/:projectId/payments", async (req, res) => {
+    try {
+      const payments = await storage.getProjectPayments(req.params.projectId);
+      res.json(payments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project payments" });
+    }
+  });
+
+  app.post("/api/project-payments", async (req, res) => {
+    try {
+      const validatedData = insertProjectPaymentSchema.parse(req.body);
+      const payment = await storage.createProjectPayment(validatedData);
+      res.status(201).json(payment);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid payment data" });
+    }
+  });
+
+  app.patch("/api/project-payments/:id", async (req, res) => {
+    try {
+      const payment = await storage.updateProjectPayment(req.params.id, req.body);
+      if (!payment) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+      res.json(payment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update payment" });
+    }
+  });
+
+  app.delete("/api/project-payments/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteProjectPayment(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete payment" });
+    }
+  });
+
+  // Salary Payments
+  app.get("/api/employees/:employeeId/salary-payments", async (req, res) => {
+    try {
+      const payments = await storage.getSalaryPayments(req.params.employeeId);
+      res.json(payments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch salary payments" });
+    }
+  });
+
+  app.get("/api/salary-payments", async (req, res) => {
+    try {
+      const payments = await storage.getAllSalaryPayments();
+      res.json(payments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch all salary payments" });
+    }
+  });
+
+  app.post("/api/salary-payments", async (req, res) => {
+    try {
+      const validatedData = insertSalaryPaymentSchema.parse(req.body);
+      const payment = await storage.createSalaryPayment(validatedData);
+      res.status(201).json(payment);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid salary payment data" });
+    }
+  });
+
+  app.patch("/api/salary-payments/:id", async (req, res) => {
+    try {
+      const payment = await storage.updateSalaryPayment(req.params.id, req.body);
+      if (!payment) {
+        return res.status(404).json({ error: "Salary payment not found" });
+      }
+      res.json(payment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update salary payment" });
+    }
+  });
+
+  app.delete("/api/salary-payments/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteSalaryPayment(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Salary payment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete salary payment" });
     }
   });
 
