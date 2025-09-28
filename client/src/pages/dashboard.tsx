@@ -23,6 +23,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import TopBar from "@/components/TopBar";
+import Sidebar from "@/components/Sidebar";
 import MetricsOverview from "@/components/MetricsOverview";
 import ClientManagement from "@/components/ClientManagement";
 import MeetingScheduler from "@/components/MeetingScheduler";
@@ -91,6 +92,7 @@ export default function Dashboard() {
   const [query, setQuery] = useState("");
   const [selectedClientId, setSelectedClientId] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Component ordering state
   const [leftColumnOrder, setLeftColumnOrder] = useState([
@@ -246,7 +248,16 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-900">
-      <TopBar query={query} setQuery={setQuery} />
+      <TopBar 
+        query={query} 
+        setQuery={setQuery} 
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
+      />
+      
+      <Sidebar 
+        isOpen={isSidebarOpen}
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+      />
       
       <div className="max-w-7xl mx-auto px-4 py-6">
         <MetricsOverview />

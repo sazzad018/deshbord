@@ -1,16 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, RefreshCw, Download, Bot, FileText, CheckSquare, MessageCircle, BarChart3, CreditCard } from "lucide-react";
+import { Search, RefreshCw, Download, Bot, FileText, CheckSquare, MessageCircle, BarChart3, CreditCard, Menu } from "lucide-react";
 import { exportAllData } from "@/lib/utils-dashboard";
 import { Link, useLocation } from "wouter";
 
 interface TopBarProps {
   query: string;
   setQuery: (query: string) => void;
+  onToggleSidebar: () => void;
 }
 
-export default function TopBar({ query, setQuery }: TopBarProps) {
+export default function TopBar({ query, setQuery, onToggleSidebar }: TopBarProps) {
   const [location] = useLocation();
   
   const handleRefresh = () => {
@@ -30,6 +31,17 @@ export default function TopBar({ query, setQuery }: TopBarProps) {
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
+            {/* Sidebar Toggle Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleSidebar}
+              className="p-2 hover:bg-gradient-to-r hover:from-blue-50 hover:to-violet-50 hover:text-blue-700 rounded-xl"
+              data-testid="button-toggle-sidebar"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-2xl bg-gradient-to-br from-blue-500 via-violet-500 to-blue-600 shadow-xl ring-2 ring-white/20">
