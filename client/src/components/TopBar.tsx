@@ -69,7 +69,7 @@ export default function TopBar({ query, setQuery }: TopBarProps) {
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="relative w-80">
+            <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-500" />
               <Input
                 data-testid="input-global-search"
