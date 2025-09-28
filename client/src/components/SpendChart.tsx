@@ -2,12 +2,20 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import type { SpendLog } from "@shared/schema";
+import type { SpendLog, CompanySettings } from "@shared/schema";
+import { createDualCurrencyDisplay, DEFAULT_USD_RATE } from "@shared/currency-utils";
 
 export default function SpendChart() {
   const { data: allSpendLogs = [] } = useQuery<SpendLog[]>({
     queryKey: ["/api/spend-logs/all"],
   });
+
+  // Fetch company settings for USD exchange rate
+  const { data: companySettings } = useQuery<CompanySettings>({ 
+    queryKey: ['/api/company-settings'] 
+  });
+
+  const exchangeRate = companySettings?.usdExchangeRate || DEFAULT_USD_RATE;
 
   // Generate last 7 days data from real spend logs
   const generateLast7DaysData = () => {
@@ -67,7 +75,16 @@ export default function SpendChart() {
                 tickFormatter={(value) => `৳${(value / 1000)}k`}
               />
               <Tooltip 
-                formatter={(value: number) => [`৳${value.toLocaleString()}`, "দৈনিক খরচ"]}
+                formatter={(value: number) => {
+                  const usdValue = createDualCurrencyDisplay(value * 100, exchangeRate).usdRaw.toFixed(2);
+                  return [
+                    <div key="tooltip">
+                      <div>৳{value.toLocaleString()}</div>
+                      <div className="text-xs text-gray-500">${usdValue} USD</div>
+                    </div>, 
+                    "দৈনিক খরচ"
+                  ];
+                }}
                 labelStyle={{ color: "#64748b" }}
                 contentStyle={{ 
                   backgroundColor: "white", 

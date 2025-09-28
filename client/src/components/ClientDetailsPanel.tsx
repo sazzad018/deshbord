@@ -13,7 +13,8 @@ import { formatCurrency } from "@/lib/utils-dashboard";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import type { Client, ClientWithLogs, ClientWithDetails, ServiceScope } from "@shared/schema";
+import type { Client, ClientWithLogs, ClientWithDetails, ServiceScope, CompanySettings } from "@shared/schema";
+import { createDualCurrencyDisplay, DEFAULT_USD_RATE } from "@shared/currency-utils";
 
 interface ClientDetailsPanelProps {
   selectedClientId: string;
@@ -39,6 +40,13 @@ export default function ClientDetailsPanel({ selectedClientId, onSelectClient }:
     queryKey: ["/api/clients", selectedClientId, "details"],
     enabled: !!selectedClientId,
   });
+
+  // Fetch company settings for USD exchange rate
+  const { data: companySettings } = useQuery<CompanySettings>({ 
+    queryKey: ['/api/company-settings'] 
+  });
+
+  const exchangeRate = companySettings?.usdExchangeRate || DEFAULT_USD_RATE;
 
 
   const createServiceScopeMutation = useMutation({
@@ -149,12 +157,16 @@ export default function ClientDetailsPanel({ selectedClientId, onSelectClient }:
               
               <div>
                 <label className="text-sm font-medium text-muted-foreground">ব্যালেন্স</label>
-                <p 
-                  className={`font-semibold ${(selectedClient.walletDeposited - selectedClient.walletSpent) < 0 ? 'text-red-600' : 'text-green-600'}`}
-                  data-testid="text-client-details-balance"
-                >
-                  {formatCurrency(selectedClient.walletDeposited - selectedClient.walletSpent)}
-                </p>
+                <div className={`font-semibold ${(selectedClient.walletDeposited - selectedClient.walletSpent) < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  <p data-testid="text-client-details-balance">
+                    {formatCurrency(selectedClient.walletDeposited - selectedClient.walletSpent)}
+                  </p>
+                  {exchangeRate && (
+                    <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                      {createDualCurrencyDisplay((selectedClient.walletDeposited - selectedClient.walletSpent) * 100, exchangeRate).usd}
+                    </p>
+                  )}
+                </div>
               </div>
               
               <div>
