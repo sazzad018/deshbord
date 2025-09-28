@@ -45,12 +45,12 @@ export default function MetricsOverview() {
 
   if (isLoading) {
     return (
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(3)].map((_, i) => {
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => {
           const cardColors = getCardColors(i);
           return (
-            <Card key={i} className={`rounded-3xl shadow-lg border-2 ${cardColors.borderColor} ${cardColors.bgColor}`}>
-              <CardContent className="p-6">
+            <Card key={i} className={`rounded-2xl shadow-md border-2 ${cardColors.borderColor} ${cardColors.bgColor}`}>
+              <CardContent className="p-4">
                 <div className="animate-pulse space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="h-9 w-9 bg-gradient-to-br from-slate-200 to-slate-300 rounded-2xl"></div>
@@ -68,7 +68,12 @@ export default function MetricsOverview() {
   }
 
   const metricCards = [
-    // Note: "মোট জমা" (Total Deposit) card hidden as requested
+    {
+      title: "মোট জমা",
+      value: formatCurrency(metrics?.totalDeposited || 0),
+      icon: Wallet,
+      subtitle: `Active: ${metrics?.activeClients || 0}`,
+    },
     {
       title: "মোট খরচ",
       value: formatCurrency(metrics?.totalSpent || 0),
@@ -90,29 +95,29 @@ export default function MetricsOverview() {
   ];
 
   return (
-    <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {metricCards.map((metric, index) => {
         const IconComponent = metric.icon;
         const cardColors = getCardColors(index);
         return (
           <Card 
             key={index} 
-            className={`rounded-3xl shadow-lg border-2 ${cardColors.borderColor} ${cardColors.bgColor} hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl backdrop-blur-sm`} 
+            className={`rounded-2xl shadow-md border-2 ${cardColors.borderColor} ${cardColors.bgColor} hover:shadow-lg transition-all duration-300 hover:scale-[1.01] hover:shadow-xl backdrop-blur-sm`} 
             data-testid={`card-metric-${index}`}
           >
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-3">
-                <div className={`p-2.5 rounded-2xl bg-gradient-to-br ${cardColors.gradient} shadow-md ring-2 ring-white/20`}>
-                  <IconComponent className={`h-5 w-5 text-white drop-shadow-sm`} />
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium flex items-center gap-2">
+                <div className={`p-2 rounded-xl bg-gradient-to-br ${cardColors.gradient} shadow-sm ring-1 ring-white/20`}>
+                  <IconComponent className={`h-4 w-4 text-white drop-shadow-sm`} />
                 </div>
-                <span className={`${cardColors.textColor} font-semibold`}>{metric.title}</span>
+                <span className={`${cardColors.textColor} font-semibold text-sm`}>{metric.title}</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0 space-y-3">
-              <div className={`text-3xl font-bold ${cardColors.valueColor} tracking-tight`} data-testid={`text-metric-value-${index}`}>
+            <CardContent className="pt-0 space-y-2">
+              <div className={`text-2xl font-bold ${cardColors.valueColor} tracking-tight`} data-testid={`text-metric-value-${index}`}>
                 {metric.value}
               </div>
-              <p className={`text-xs font-medium mt-2 ${cardColors.bgColor} ${cardColors.textColor}/70 px-3 py-2 rounded-xl inline-block border ${cardColors.borderColor}`} data-testid={`text-metric-subtitle-${index}`}>
+              <p className={`text-xs font-medium ${cardColors.bgColor} ${cardColors.textColor}/70 px-2 py-1 rounded-lg inline-block border ${cardColors.borderColor}`} data-testid={`text-metric-subtitle-${index}`}>
                 {metric.subtitle}
               </p>
             </CardContent>
