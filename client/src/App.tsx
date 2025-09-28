@@ -3,6 +3,8 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { NotificationProvider } from "@/contexts/NotificationContext";
+import NotificationContainer from "@/components/NotificationContainer";
 import Dashboard from "@/pages/dashboard";
 import ClientPortal from "@/pages/client-portal";
 import TodoList from "@/pages/TodoList";
@@ -14,20 +16,36 @@ import WebsiteProjectsPage from "@/pages/WebsiteProjectsPage";
 import PaymentManagement from "@/pages/PaymentManagement";
 import ControlPanel from "@/components/ControlPanel";
 
+function AdminRoutes() {
+  return (
+    <NotificationProvider role="admin" userId="admin">
+      <NotificationContainer />
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/clients" component={ClientManagementPage} />
+        <Route path="/invoice-maker" component={InvoiceMakerPage} />
+        <Route path="/todo-list" component={TodoList} />
+        <Route path="/whatsapp-messaging" component={WhatsAppMessaging} />
+        <Route path="/saved-pdfs" component={SavedPDFs} />
+        <Route path="/website-projects" component={WebsiteProjectsPage} />
+        <Route path="/payment-management" component={PaymentManagement} />
+        <Route path="/control-panel" component={ControlPanel} />
+      </Switch>
+    </NotificationProvider>
+  );
+}
+
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/clients" component={ClientManagementPage} />
-      <Route path="/invoice-maker" component={InvoiceMakerPage} />
-      <Route path="/todo-list" component={TodoList} />
-      <Route path="/whatsapp-messaging" component={WhatsAppMessaging} />
-      <Route path="/saved-pdfs" component={SavedPDFs} />
-      <Route path="/website-projects" component={WebsiteProjectsPage} />
-      <Route path="/payment-management" component={PaymentManagement} />
-      <Route path="/control-panel" component={ControlPanel} />
+      {/* Client portal doesn't need notifications */}
       <Route path="/portal/:portalKey" component={ClientPortal} />
+      
+      {/* All admin routes wrapped with notifications */}
+      <Route>
+        <AdminRoutes />
+      </Route>
     </Switch>
   );
 }

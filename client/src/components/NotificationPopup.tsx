@@ -8,13 +8,13 @@ import type { PaymentRequest, Client } from "@shared/schema";
 
 interface NotificationData {
   id: string;
-  type: 'payment_request';
+  type: 'payment_request' | 'payment_approved' | 'payment_rejected';
   title: string;
   message: string;
   timestamp: string;
   data: {
-    paymentRequest: PaymentRequest;
-    client: Client;
+    paymentRequest?: PaymentRequest;
+    client?: Client;
   };
 }
 
@@ -59,6 +59,11 @@ export default function NotificationPopup({ notification, onDismiss, onViewDetai
   }
 
   const { paymentRequest, client } = notification.data;
+  
+  // Return null if required data is missing
+  if (!paymentRequest || !client) {
+    return null;
+  }
 
   return (
     <div className="fixed top-4 right-4 z-[9999] animate-in slide-in-from-top-2 fade-in-0 duration-500">
