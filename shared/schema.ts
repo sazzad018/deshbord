@@ -82,6 +82,9 @@ export const companySettings = pgTable("company_settings", {
   companyAddress: text("company_address"),
   logoUrl: text("logo_url"),
   brandColor: text("brand_color").notNull().default("#A576FF"),
+  usdExchangeRate: integer("usd_exchange_rate").notNull().default(14500), // USD to BDT rate in paisa (145.00 BDT = 1 USD)
+  baseCurrency: text("base_currency").notNull().default("USD"), // Base currency for calculations
+  displayCurrency: text("display_currency").notNull().default("BDT"), // Display currency for users
   isDefault: boolean("is_default").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
