@@ -69,9 +69,9 @@ app.use((req, res, next) => {
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
   
-  // Initialize WebSocket server on port 5001 for notifications
-  const wsPort = port + 1;
-  notificationService.initialize(wsPort);
+  // WebSocket server disabled - only port 5000 is accessible in Replit environment
+  // const wsPort = port + 1;
+  // notificationService.initialize(wsPort);
   
   server.listen({
     port,
@@ -79,6 +79,6 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
-    log(`WebSocket notifications on port ${wsPort}`);
+    // log(`WebSocket notifications on port ${wsPort}`);
   });
 })();

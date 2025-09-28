@@ -124,10 +124,10 @@ export function NotificationProvider({ children, role = 'admin', userId = 'admin
   };
 
   useEffect(() => {
-    // Only connect WebSocket for admin users
-    if (role === 'admin') {
-      connectWebSocket();
-    }
+    // WebSocket connections disabled - only port 5000 is accessible in Replit environment
+    // if (role === 'admin') {
+    //   connectWebSocket();
+    // }
 
     return () => {
       if (ws) {
