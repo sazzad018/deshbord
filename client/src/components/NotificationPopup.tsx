@@ -33,8 +33,8 @@ export default function NotificationPopup({ notification, onDismiss, onViewDetai
   };
 
   const handleViewDetails = () => {
-    if (onViewDetails) {
-      onViewDetails(notification.data.paymentRequest);
+    if (onViewDetails && paymentRequest) {
+      onViewDetails(paymentRequest);
     }
     handleDismiss();
   };
