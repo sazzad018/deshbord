@@ -549,11 +549,25 @@ export default function ClientPortal() {
                     <TableRow key={log.id}>
                       <TableCell>{new Date(log.date).toLocaleDateString()}</TableCell>
                       <TableCell className="text-red-600 font-medium">
-                        -৳{log.amount.toLocaleString()}
+                        <div>
+                          <div className="text-base">-৳{log.amount.toLocaleString()}</div>
+                          {exchangeRate && (
+                            <div className="text-sm text-rose-500 font-normal">
+                              -${createDualCurrencyDisplay(log.amount * 100, exchangeRate).usdRaw.toFixed(2)} USD
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-sm">{log.note || "—"}</TableCell>
                       <TableCell className={`text-right font-medium ${log.balanceAfter >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        ৳{log.balanceAfter.toLocaleString()}
+                        <div>
+                          <div className="text-base">৳{log.balanceAfter.toLocaleString()}</div>
+                          {exchangeRate && (
+                            <div className={`text-sm font-normal ${log.balanceAfter >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                              ${createDualCurrencyDisplay(log.balanceAfter * 100, exchangeRate).usdRaw.toFixed(2)} USD
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
