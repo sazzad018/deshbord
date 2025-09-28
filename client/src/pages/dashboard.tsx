@@ -37,6 +37,7 @@ import InvoiceMaker from "@/components/InvoiceMaker";
 import RunningProjectsPanel from "@/components/RunningProjectsPanel";
 import AdminProjectManagement from "@/components/AdminProjectManagement";
 import ProjectListPanel from "@/components/ProjectListPanel";
+import SalaryManagementPanel from "@/components/SalaryManagementPanel";
 import TodoListShort from "@/components/TodoListShort";
 import WhatsAppShortcut from "@/components/WhatsAppShortcut";
 import { MinimizableCard } from "@/components/MinimizableCard";
@@ -100,6 +101,7 @@ export default function Dashboard() {
     "running-projects",
     "admin-project-management",
     "project-list",
+    "salary-management",
     "invoice-maker"
   ]);
   
@@ -160,6 +162,7 @@ export default function Dashboard() {
     "running-projects": <RunningProjectsPanel />,
     "admin-project-management": <AdminProjectManagement />,
     "project-list": <ProjectListPanel />,
+    "salary-management": <SalaryManagementPanel />,
     "invoice-maker": <InvoiceMaker />,
   };
 
