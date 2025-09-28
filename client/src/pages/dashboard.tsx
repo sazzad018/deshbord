@@ -36,6 +36,7 @@ import ControlPanel from "@/components/ControlPanel";
 import InvoiceMaker from "@/components/InvoiceMaker";
 import RunningProjectsPanel from "@/components/RunningProjectsPanel";
 import AdminProjectManagement from "@/components/AdminProjectManagement";
+import ProjectListPanel from "@/components/ProjectListPanel";
 import TodoListShort from "@/components/TodoListShort";
 import WhatsAppShortcut from "@/components/WhatsAppShortcut";
 import { MinimizableCard } from "@/components/MinimizableCard";
@@ -98,6 +99,7 @@ export default function Dashboard() {
     "website-projects",
     "running-projects",
     "admin-project-management",
+    "project-list",
     "invoice-maker"
   ]);
   
@@ -157,6 +159,7 @@ export default function Dashboard() {
     "website-projects": <ClientWebsiteProjectsPanel selectedClientId={selectedClientId} />,
     "running-projects": <RunningProjectsPanel />,
     "admin-project-management": <AdminProjectManagement />,
+    "project-list": <ProjectListPanel />,
     "invoice-maker": <InvoiceMaker />,
   };
 
