@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { notificationService } from "./websocket";
 import { insertClientSchema, insertSpendLogSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, insertCustomButtonSchema, insertUploadSchema, insertInvoicePdfSchema, insertQuickMessageSchema, insertWebsiteProjectSchema, insertPaymentRequestSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -867,6 +868,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertPaymentRequestSchema.parse(req.body);
       const paymentRequest = await storage.createPaymentRequest(validatedData);
+      
+      // Send real-time notification to admins
+      try {
+        const client = await storage.getClient(paymentRequest.clientId);
+        if (client) {
+          const notification = notificationService.createPaymentRequestNotification(paymentRequest, client);
+          const sentCount = notificationService.notifyAdmins(notification);
+          console.log(`[Notification] Payment request notification sent to ${sentCount} admin(s)`);
+        }
+      } catch (notificationError) {
+        console.error("Failed to send payment request notification:", notificationError);
+        // Don't fail the request if notification fails
+      }
+      
       res.status(201).json(paymentRequest);
     } catch (error) {
       console.error("Payment request creation error:", error);
