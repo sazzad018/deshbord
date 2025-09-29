@@ -1,8 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -63,6 +66,8 @@ const PAYMENT_TYPE_CONFIG = {
 };
 
 export default function EmployeePortal() {
+  const { toast } = useToast();
+  
   // Get employee ID from URL parameters
   const [location] = useLocation();
   // Use window.location.search for query parameters since wouter's location doesn't include query string
@@ -85,9 +90,42 @@ export default function EmployeePortal() {
   }
 
   // Fetch employee data using employee ID
-  const { data: employee, isLoading, error } = useQuery<EmployeeWithDetails>({
+  const { data: employee, isLoading, error, refetch } = useQuery<EmployeeWithDetails>({
     queryKey: ["/api/employees", employeeId],
     enabled: !!employeeId,
+  });
+
+  // Mark feature as complete mutation
+  const markFeatureCompleteMutation = useMutation({
+    mutationFn: async ({ assignmentId, feature }: { assignmentId: string; feature: string }) => {
+      const assignment = employee?.assignments?.find(a => a.id === assignmentId);
+      if (!assignment) throw new Error("Assignment not found");
+      
+      const completedFeatures = [...(assignment.completedFeatures || [])];
+      if (!completedFeatures.includes(feature)) {
+        completedFeatures.push(feature);
+      }
+
+      return apiRequest("PATCH", `/api/project-assignments/${assignmentId}`, {
+        completedFeatures,
+        status: completedFeatures.length === assignment.assignedFeatures?.length ? "completed" : "working"
+      });
+    },
+    onSuccess: () => {
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ["/api/project-assignments"] });
+      toast({
+        title: "সফল!",
+        description: "ফিচার সম্পূর্ণ হিসেবে চিহ্নিত করা হয়েছে",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "ত্রুটি!",
+        description: "ফিচার আপডেট করতে সমস্যা হয়েছে",
+        variant: "destructive",
+      });
+    },
   });
 
   // Loading state
@@ -252,7 +290,7 @@ export default function EmployeePortal() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
                   <Briefcase className="h-5 w-5 text-blue-600" />
-                  সক্রিয় প্রজেক্টসমূহ
+                  ডেভেলপার প্রজেক্ট ড্যাশবোর্ড
                   <Badge variant="secondary" className="ml-2">
                     {activeProjects.length}টি
                   </Badge>
@@ -263,10 +301,11 @@ export default function EmployeePortal() {
               {activeProjects.length === 0 ? (
                 <div className="text-center text-gray-500 py-8">
                   <Briefcase className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                  <p className="text-sm">কোন সক্রিয় প্রজেক্ট নেই</p>
+                  <p className="text-sm">কোন assigned প্রজেক্ট নেই</p>
+                  <p className="text-xs text-gray-400 mt-1">Admin আপনাকে প্রজেক্ট assign করলে এখানে দেখা যাবে</p>
                 </div>
               ) : (
-                <div className="space-y-4 max-h-96 overflow-y-auto">
+                <div className="space-y-6 max-h-96 overflow-y-auto">
                   {activeProjects.map((assignment) => {
                     const project = assignment.project;
                     if (!project) return null;
@@ -311,34 +350,57 @@ export default function EmployeePortal() {
                           <Progress value={progress} className="h-2 bg-gray-200" />
                         </div>
 
-                        {/* Features */}
+                        {/* Assigned Features with Completion */}
                         {assignment.assignedFeatures && assignment.assignedFeatures.length > 0 && (
-                          <div className="mb-3">
-                            <p className="text-xs text-gray-600 mb-2">
-                              ফিচারসমূহ ({completedFeatures}/{totalFeatures})
-                            </p>
-                            <div className="flex flex-wrap gap-1">
-                              {assignment.assignedFeatures.slice(0, 3).map((feature, index) => {
+                          <div className="mb-4">
+                            <h5 className="font-medium text-gray-800 mb-3">
+                              নির্ধারিত ফিচারসমূহ ({completedFeatures}/{totalFeatures})
+                            </h5>
+                            <div className="space-y-2">
+                              {assignment.assignedFeatures.map((feature, index) => {
                                 const isCompleted = assignment.completedFeatures?.includes(feature);
+                                
                                 return (
-                                  <Badge 
-                                    key={index}
-                                    variant={isCompleted ? "default" : "outline"}
-                                    className={`text-xs ${
+                                  <div 
+                                    key={index} 
+                                    className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
                                       isCompleted 
-                                        ? "bg-green-100 text-green-700 border-green-300" 
-                                        : "bg-gray-100 text-gray-600 border-gray-300"
+                                        ? 'bg-green-50 border-green-200' 
+                                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
                                     }`}
+                                    data-testid={`feature-${assignment.id}-${index}`}
                                   >
-                                    {feature}
-                                  </Badge>
+                                    <div className="flex items-center gap-3">
+                                      {isCompleted ? (
+                                        <CheckCircle className="h-5 w-5 text-green-600" />
+                                      ) : (
+                                        <Clock className="h-5 w-5 text-gray-400" />
+                                      )}
+                                      <span className={`${isCompleted ? 'text-green-800 line-through' : 'text-gray-800'}`}>
+                                        {feature}
+                                      </span>
+                                    </div>
+                                    {!isCompleted && (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => markFeatureCompleteMutation.mutate({ 
+                                          assignmentId: assignment.id, 
+                                          feature 
+                                        })}
+                                        disabled={markFeatureCompleteMutation.isPending}
+                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                        data-testid={`button-complete-${assignment.id}-${index}`}
+                                      >
+                                        {markFeatureCompleteMutation.isPending ? (
+                                          <Clock className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          "সম্পূর্ণ"
+                                        )}
+                                      </Button>
+                                    )}
+                                  </div>
                                 );
                               })}
-                              {assignment.assignedFeatures.length > 3 && (
-                                <Badge variant="outline" className="text-xs bg-gray-50 text-gray-500">
-                                  +{assignment.assignedFeatures.length - 3}
-                                </Badge>
-                              )}
                             </div>
                           </div>
                         )}
