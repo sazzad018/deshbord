@@ -101,7 +101,7 @@ export default function AdminProjectManagement() {
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isAssignDeveloperOpen, setIsAssignDeveloperOpen] = useState(false);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
-  const [categoryFeatures, setCategoryFeatures] = useState<Record<string, { id: string; name: string; icon: any }[]>>({});
+  const [categoryFeatures, setCategoryFeatures] = useState<Record<string, { id: string; name: string; icon: any; category: string }[]>>({});
   const [newFeatureInputs, setNewFeatureInputs] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
@@ -125,6 +125,7 @@ export default function AdminProjectManagement() {
       id: newFeatureId,
       name: newFeatureName,
       icon: Plus, // Default icon for custom features
+      category: category,
     };
 
     setCategoryFeatures(prev => ({

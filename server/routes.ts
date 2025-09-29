@@ -968,9 +968,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Validated data:', validatedData);
       const project = await storage.createProject(validatedData);
       res.status(201).json(project);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Project creation error:', error);
-      res.status(400).json({ error: "Invalid project data", details: error.message });
+      res.status(400).json({ error: "Invalid project data", details: error?.message || "Unknown error" });
     }
   });
 
