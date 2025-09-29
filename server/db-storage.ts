@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type CustomButton, type InsertCustomButton, type WebsiteProject, type InsertWebsiteProject, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage, type PaymentRequest, type InsertPaymentRequest, type Project, type InsertProject, type ProjectWithDetails, type Employee, type InsertEmployee, type EmployeeWithDetails, type ProjectAssignment, type InsertProjectAssignment, type ProjectPayment, type InsertProjectPayment, type SalaryPayment, type InsertSalaryPayment, clients, spendLogs, meetings, todos, whatsappTemplates, companySettings, serviceScopes, customButtons, websiteProjects, uploads, invoicePdfs, quickMessages, paymentRequests, projects, employees, projectAssignments, projectPayments, salaryPayments } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type CustomButton, type InsertCustomButton, type WebsiteProject, type InsertWebsiteProject, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage, type PaymentRequest, type InsertPaymentRequest, type ProjectType, type InsertProjectType, type Project, type InsertProject, type ProjectWithDetails, type Employee, type InsertEmployee, type EmployeeWithDetails, type ProjectAssignment, type InsertProjectAssignment, type ProjectPayment, type InsertProjectPayment, type SalaryPayment, type InsertSalaryPayment, clients, spendLogs, meetings, todos, whatsappTemplates, companySettings, serviceScopes, customButtons, websiteProjects, uploads, invoicePdfs, quickMessages, paymentRequests, projectTypes, projects, employees, projectAssignments, projectPayments, salaryPayments } from "@shared/schema";
 import { eq, desc, sum, count, sql, and, gte } from "drizzle-orm";
 import { db } from "./db";
 import { IStorage } from "./storage";
@@ -614,6 +614,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Project Management Methods
+
+  // Project Type operations
+  async getProjectTypes(): Promise<ProjectType[]> {
+    return await db.select().from(projectTypes)
+      .where(eq(projectTypes.isActive, true))
+      .orderBy(desc(projectTypes.isDefault), desc(projectTypes.createdAt));
+  }
+
+  async getProjectType(id: string): Promise<ProjectType | undefined> {
+    const result = await db.select().from(projectTypes).where(eq(projectTypes.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createProjectType(insertProjectType: InsertProjectType): Promise<ProjectType> {
+    const [projectType] = await db.insert(projectTypes)
+      .values(insertProjectType)
+      .returning();
+    return projectType;
+  }
+
+  async updateProjectType(id: string, updates: Partial<ProjectType>): Promise<ProjectType | undefined> {
+    const [updated] = await db.update(projectTypes)
+      .set(updates)
+      .where(eq(projectTypes.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteProjectType(id: string): Promise<boolean> {
+    const result = await db.delete(projectTypes).where(eq(projectTypes.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
 
   // Project operations
   async getProjects(): Promise<Project[]> {

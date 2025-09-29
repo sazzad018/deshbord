@@ -171,6 +171,101 @@ export default function EmployeeListPanel() {
                 নতুন ইমপ্লয়ী
               </Button>
             </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>নতুন ইমপ্লয়ী যোগ করুন</DialogTitle>
+              </DialogHeader>
+              <Form {...employeeForm}>
+                <form onSubmit={employeeForm.handleSubmit((data) => createEmployeeMutation.mutate(data))} className="space-y-4">
+                  <FormField
+                    control={employeeForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>নাম *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ইমপ্লয়ীর নাম লিখুন" {...field} data-testid="input-employee-name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={employeeForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ইমেইল</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ইমেইল ঠিকানা" type="email" {...field} data-testid="input-employee-email" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={employeeForm.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ফোন নম্বর *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ফোন নম্বর" {...field} data-testid="input-employee-phone" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={employeeForm.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ভূমিকা *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-employee-role">
+                              <SelectValue placeholder="ভূমিকা নির্বাচন করুন" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="frontend developer">Frontend Developer</SelectItem>
+                            <SelectItem value="backend developer">Backend Developer</SelectItem>
+                            <SelectItem value="designer">Designer</SelectItem>
+                            <SelectItem value="manager">Manager</SelectItem>
+                            <SelectItem value="developer">Developer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsCreateDialogOpen(false)}
+                      className="flex-1"
+                      data-testid="button-cancel-employee"
+                    >
+                      বাতিল
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={createEmployeeMutation.isPending}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      data-testid="button-submit-employee"
+                    >
+                      {createEmployeeMutation.isPending ? "যোগ করছি..." : "যোগ করুন"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
           </Dialog>
         </div>
       </CardHeader>
@@ -327,103 +422,6 @@ export default function EmployeeListPanel() {
           </div>
         )}
       </CardContent>
-
-      {/* Employee Creation Dialog */}
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>নতুন ইমপ্লয়ী যোগ করুন</DialogTitle>
-        </DialogHeader>
-        <Form {...employeeForm}>
-          <form onSubmit={employeeForm.handleSubmit((data) => createEmployeeMutation.mutate(data))} className="space-y-4">
-            <FormField
-              control={employeeForm.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>নাম *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="ইমপ্লয়ীর নাম লিখুন" {...field} data-testid="input-employee-name" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={employeeForm.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ইমেইল</FormLabel>
-                  <FormControl>
-                    <Input placeholder="ইমেইল ঠিকানা" type="email" {...field} data-testid="input-employee-email" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={employeeForm.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ফোন নম্বর *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="ফোন নম্বর" {...field} data-testid="input-employee-phone" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={employeeForm.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ভূমিকা *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger data-testid="select-employee-role">
-                        <SelectValue placeholder="ভূমিকা নির্বাচন করুন" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="frontend developer">Frontend Developer</SelectItem>
-                      <SelectItem value="backend developer">Backend Developer</SelectItem>
-                      <SelectItem value="designer">Designer</SelectItem>
-                      <SelectItem value="manager">Manager</SelectItem>
-                      <SelectItem value="developer">Developer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsCreateDialogOpen(false)}
-                className="flex-1"
-                data-testid="button-cancel-employee"
-              >
-                বাতিল
-              </Button>
-              <Button
-                type="submit"
-                disabled={createEmployeeMutation.isPending}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-                data-testid="button-submit-employee"
-              >
-                {createEmployeeMutation.isPending ? "যোগ করছি..." : "যোগ করুন"}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
     </Card>
   );
 }

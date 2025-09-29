@@ -45,6 +45,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Project, Client, Employee, ProjectAssignment, ProjectType } from "@shared/schema";
+import EmployeeListPanel from "./EmployeeListPanel";
 
 // Form schemas
 const projectFormSchema = z.object({
@@ -284,13 +285,15 @@ export default function AdminProjectManagement() {
   const unassignedProjects = projects.filter(p => !assignedProjectIds.has(p.id));
 
   return (
-    <Card className="rounded-2xl shadow-sm border-0 bg-gradient-to-br from-white to-slate-50">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-bold flex items-center gap-2 text-gray-800">
-            <Settings className="h-6 w-6 text-blue-600" />
-            প্রজেক্ট ম্যানেজমেন্ট
-          </CardTitle>
+    <div className="space-y-6">
+      {/* Project Management Section */}
+      <Card className="rounded-2xl shadow-sm border-0 bg-gradient-to-br from-white to-slate-50">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl font-bold flex items-center gap-2 text-gray-800">
+              <Settings className="h-6 w-6 text-blue-600" />
+              প্রজেক্ট ম্যানেজমেন্ট
+            </CardTitle>
           <div className="flex gap-2">
             <Dialog open={isCreateProjectOpen} onOpenChange={setIsCreateProjectOpen}>
               <DialogTrigger asChild>
@@ -840,6 +843,10 @@ export default function AdminProjectManagement() {
           </div>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+
+      {/* Employee Management Section */}
+      <EmployeeListPanel />
+    </div>
   );
 }
