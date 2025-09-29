@@ -97,7 +97,7 @@ export default function AdminProjectManagement() {
   // Mutations
   const createProjectMutation = useMutation({
     mutationFn: (data: ProjectFormData) => 
-      apiRequest("/api/projects", "POST", {
+      apiRequest("POST", "/api/projects", {
         ...data,
         features: data.features ? data.features.split(',').map(f => f.trim()) : [],
         endDate: data.deadline ? new Date(data.deadline).toISOString() : null,
@@ -122,7 +122,7 @@ export default function AdminProjectManagement() {
 
   const assignDeveloperMutation = useMutation({
     mutationFn: (data: AssignmentFormData) =>
-      apiRequest("/api/project-assignments", "POST", {
+      apiRequest("POST", "/api/project-assignments", {
         ...data,
         assignedFeatures: data.assignedFeatures ? data.assignedFeatures.split(',').map(f => f.trim()) : [],
         status: "assigned",
