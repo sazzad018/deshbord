@@ -409,10 +409,28 @@ export default function EmployeePortal() {
   const totalDue = employee?.totalDue || 0;
   const netBalance = totalEarned - totalAdvance;
 
-  // Get active projects
-  const activeProjects = employee?.assignments?.filter(assignment => 
-    assignment.status === "assigned" || assignment.status === "working"
-  ) || [];
+  // Helper function to check if all assigned features are completed
+  const isProjectCompleted = (assignment: any) => {
+    if (!assignment.assignedFeatures || assignment.assignedFeatures.length === 0) {
+      return false; // No features assigned, not completed
+    }
+    if (!assignment.completedFeatures) {
+      return false; // No completed features
+    }
+    return assignment.assignedFeatures.every((feature: string) => 
+      assignment.completedFeatures.includes(feature)
+    );
+  };
+
+  // Get active and completed projects
+  const allAssignments = employee?.assignments || [];
+  const activeProjects = allAssignments.filter(assignment => 
+    (assignment.status === "assigned" || assignment.status === "working") && 
+    !isProjectCompleted(assignment)
+  );
+  const completedProjects = allAssignments.filter(assignment => 
+    isProjectCompleted(assignment)
+  );
 
   // Get recent payments
   const recentPayments = employee?.salaryPayments?.slice(0, 5) || [];
@@ -504,14 +522,15 @@ export default function EmployeePortal() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Projects Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Active Projects */}
           <Card className="rounded-2xl shadow-sm">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
                   <Briefcase className="h-5 w-5 text-blue-600" />
-                  ডেভেলপার প্রজেক্ট ড্যাশবোর্ড
+                  চলমান প্রজেক্ট
                   <Badge variant="secondary" className="ml-2">
                     {activeProjects.length}টি
                   </Badge>
@@ -653,6 +672,122 @@ export default function EmployeePortal() {
             </CardContent>
           </Card>
 
+          {/* Completed Projects */}
+          <Card className="rounded-2xl shadow-sm">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  সম্পন্ন প্রজেক্ট
+                  <Badge variant="secondary" className="ml-2 bg-green-100 text-green-700">
+                    {completedProjects.length}টি
+                  </Badge>
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {completedProjects.length === 0 ? (
+                <div className="text-center text-gray-500 py-8">
+                  <CheckCircle className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                  <p className="text-sm">কোন সম্পন্ন প্রজেক্ট নেই</p>
+                  <p className="text-xs text-gray-400 mt-1">সব টাস্ক complete করলে এখানে দেখা যাবে</p>
+                </div>
+              ) : (
+                <div className="space-y-6 max-h-96 overflow-y-auto">
+                  {completedProjects.map((assignment) => {
+                    const project = assignment.project;
+                    if (!project) return null;
+
+                    const completedFeatures = assignment.completedFeatures?.length || 0;
+                    const totalFeatures = assignment.assignedFeatures?.length || 0;
+
+                    return (
+                      <div 
+                        key={assignment.id} 
+                        className="p-4 rounded-lg border-2 bg-green-50 border-green-200"
+                        data-testid={`completed-assignment-card-${assignment.id}`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900">{project.name}</h4>
+                            <div className="flex items-center gap-2 text-xs text-gray-600 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {project.type === "website" ? "ওয়েবসাইট" : "ল্যান্ডিং পেজ"}
+                              </Badge>
+                              <span>• ৳{assignment.hourlyRate}/ঘন্টা</span>
+                            </div>
+                          </div>
+                          <Badge 
+                            variant="secondary" 
+                            className="bg-green-100 text-green-700 border-0 text-xs"
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            সম্পূর্ণ
+                          </Badge>
+                        </div>
+
+                        {/* Completed Badge */}
+                        <div className="mb-3">
+                          <div className="flex items-center justify-between text-xs text-green-700 mb-1">
+                            <span className="font-medium">✅ সব টাস্ক সম্পূর্ণ হয়েছে</span>
+                            <span className="font-medium">100%</span>
+                          </div>
+                          <Progress value={100} className="h-2 bg-green-200" />
+                        </div>
+
+                        {/* Completed Features List */}
+                        {assignment.assignedFeatures && assignment.assignedFeatures.length > 0 && (
+                          <div className="mb-4">
+                            <h5 className="font-medium text-green-800 mb-3">
+                              সম্পন্ন ফিচারসমূহ ({completedFeatures}/{totalFeatures})
+                            </h5>
+                            <div className="space-y-2">
+                              {assignment.assignedFeatures.map((feature, index) => (
+                                <div 
+                                  key={index} 
+                                  className="flex items-center gap-3 p-3 rounded-lg bg-green-100 border border-green-200"
+                                  data-testid={`completed-feature-${assignment.id}-${index}`}
+                                >
+                                  <CheckCircle className="h-5 w-5 text-green-600" />
+                                  <span className="text-green-800 line-through">
+                                    {feature}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Earnings */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1 text-xs text-green-700">
+                            <DollarSign className="h-3 w-3" />
+                            <span className="font-medium">আয়: {formatCurrency(assignment.totalEarned)}</span>
+                          </div>
+                          {project.publicUrl && (
+                            <a 
+                              href={project.publicUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-xs text-green-600 hover:underline font-medium"
+                              data-testid={`completed-project-url-${project.id}`}
+                            >
+                              <Eye className="h-3 w-3" />
+                              লাইভ দেখুন
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Payments Section */}
+        <div className="grid grid-cols-1 gap-8">
           {/* Recent Payments */}
           <Card className="rounded-2xl shadow-sm">
             <CardHeader>
