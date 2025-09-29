@@ -368,6 +368,32 @@ export default function RichClients() {
     },
   });
 
+  // Handle full client information update
+  const updateClientMutation = useMutation({
+    mutationFn: ({ clientId, clientData }: { clientId: string; clientData: any }) =>
+      apiRequest("PATCH", `/api/clients/${clientId}`, {
+        name: clientData.name,
+        phone: clientData.phone,
+        category: clientData.category,
+        adminNotes: clientData.notes
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({
+        title: "সফল!",
+        description: "ক্লায়েন্টের তথ্য আপডেট করা হয়েছে",
+      });
+    },
+    onError: (error) => {
+      console.error("Client update error:", error);
+      toast({
+        title: "ত্রুটি!",
+        description: "ক্লায়েন্টের তথ্য আপডেট করতে সমস্যা হয়েছে",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handle adding new client
   const addClientMutation = useMutation({
     mutationFn: (clientData: any) => {
@@ -699,17 +725,17 @@ export default function RichClients() {
               <Button 
                 onClick={() => {
                   if (selectedClient) {
-                    changeCategoryMutation.mutate({
+                    updateClientMutation.mutate({
                       clientId: selectedClient.id,
-                      newCategory: clientFormData.category
+                      clientData: clientFormData
                     });
                   }
                   setEditDialogOpen(false);
                 }}
                 className="flex-1"
-                disabled={changeCategoryMutation.isPending}
+                disabled={updateClientMutation.isPending}
               >
-                {changeCategoryMutation.isPending ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ"}
+                {updateClientMutation.isPending ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ"}
               </Button>
             </div>
           </div>
