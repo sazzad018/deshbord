@@ -262,10 +262,7 @@ export default function Dashboard() {
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
       />
       
-      <div className={cn(
-        "max-w-7xl mx-auto px-4 py-6 transition-all duration-300 ease-in-out",
-        "lg:ml-80 lg:max-w-none"
-      )}>
+      <div className="max-w-7xl mx-auto px-4 py-6">
         <MetricsOverview />
         
         <DndContext
