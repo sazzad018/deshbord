@@ -444,7 +444,10 @@ export type InsertSalaryPayment = typeof salaryPayments.$inferInsert;
 
 // Insert schemas for validation
 export const insertProjectTypeSchema = createInsertSchema(projectTypes).omit({ id: true, createdAt: true });
-export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
+export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true }).extend({
+  startDate: z.union([z.date(), z.string().datetime(), z.null()]).transform((val) => val ? new Date(val) : null).optional(),
+  endDate: z.union([z.date(), z.string().datetime(), z.null()]).transform((val) => val ? new Date(val) : null).optional()
+});
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true });
 export const insertProjectAssignmentSchema = createInsertSchema(projectAssignments).omit({ id: true, assignedDate: true });
 export const insertProjectPaymentSchema = createInsertSchema(projectPayments).omit({ id: true, createdAt: true });

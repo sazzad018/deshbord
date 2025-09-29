@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
@@ -220,7 +220,7 @@ export default function AdminProjectManagement() {
       const projectData = {
         ...data,
         features: selectedFeatures,
-        endDate: data.deadline ? new Date(data.deadline).toISOString() : null,
+        endDate: data.deadline ? new Date(data.deadline) : null,
       };
       console.log('Submitting project data:', projectData);
       return apiRequest("POST", "/api/projects", projectData);
@@ -312,6 +312,9 @@ export default function AdminProjectManagement() {
                     <FolderPlus className="h-5 w-5 text-blue-600" />
                     নতুন প্রজেক্ট তৈরি করুন
                   </DialogTitle>
+                  <DialogDescription>
+                    নতুন প্রজেক্ট তৈরি করার জন্য নিচের তথ্যগুলো পূরণ করুন। প্রজেক্টের ধরন অনুযায়ী উপযুক্ত ফিচার নির্বাচন করুন।
+                  </DialogDescription>
                 </DialogHeader>
                 <Form {...projectForm}>
                   <form onSubmit={projectForm.handleSubmit((data) => createProjectMutation.mutate(data))} className="space-y-4">
@@ -604,6 +607,9 @@ export default function AdminProjectManagement() {
                     <UserPlus className="h-5 w-5 text-green-600" />
                     ডেভেলপার এসাইন করুন
                   </DialogTitle>
+                  <DialogDescription>
+                    প্রজেক্টে কাজ করার জন্য একজন ডেভেলপার নির্বাচন করুন। ঘন্টার হার এবং এসাইন করা ফিচার নির্ধারণ করুন।
+                  </DialogDescription>
                 </DialogHeader>
                 <Form {...assignmentForm}>
                   <form onSubmit={assignmentForm.handleSubmit((data) => assignDeveloperMutation.mutate(data))} className="space-y-4">
