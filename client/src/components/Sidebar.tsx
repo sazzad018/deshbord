@@ -45,6 +45,8 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
     { path: "/todo-list", label: "টু-ডু লিস্ট", icon: CheckSquare, description: "কাজের তালিকা" },
     { path: "/whatsapp-messaging", label: "হোয়াটসঅ্যাপ মেসেজিং", icon: MessageCircle, description: "গ্রাহক যোগাযোগ" },
     { path: "/employee-portal", label: "কর্মচারী পোর্টাল", icon: UserPlus, description: "কর্মচারী ম্যানেজমেন্ট" },
+    { path: "/clients", label: "ক্লায়েন্ট ম্যানেজমেন্ট", icon: Users, description: "ক্লায়েন্ট তথ্য ব্যবস্থাপনা" },
+    { path: "/invoice-maker", label: "ইনভয়েস মেকার", icon: FileText, description: "বিল ও ইনভয়েস তৈরি" },
   ];
 
   const quickActions = [

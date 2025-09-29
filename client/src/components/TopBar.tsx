@@ -22,8 +22,6 @@ export default function TopBar({ query, setQuery, onToggleSidebar }: TopBarProps
     { path: "/dashboard", label: "ড্যাশবোর্ড", icon: BarChart3 },
     { path: "/website-projects", label: "প্রজেক্ট", icon: FileText },
     { path: "/payment-management", label: "পেমেন্ট", icon: CreditCard },
-    { path: "/todo-list", label: "টু-ডু", icon: CheckSquare },
-    { path: "/whatsapp-messaging", label: "হোয়াটসঅ্যাপ", icon: MessageCircle },
   ];
 
   return (
