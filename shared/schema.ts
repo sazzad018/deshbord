@@ -434,7 +434,9 @@ export const insertProjectSchema = createInsertSchema(projects).omit({ id: true,
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true });
 export const insertProjectAssignmentSchema = createInsertSchema(projectAssignments).omit({ id: true, assignedDate: true });
 export const insertProjectPaymentSchema = createInsertSchema(projectPayments).omit({ id: true, createdAt: true });
-export const insertSalaryPaymentSchema = createInsertSchema(salaryPayments).omit({ id: true, createdAt: true });
+export const insertSalaryPaymentSchema = createInsertSchema(salaryPayments).omit({ id: true, createdAt: true }).extend({
+  paymentDate: z.union([z.date(), z.string().datetime()]).transform((val) => new Date(val))
+});
 
 // Extended types with relations
 export interface ProjectWithDetails extends Project {

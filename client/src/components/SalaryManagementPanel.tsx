@@ -120,7 +120,7 @@ export default function SalaryManagementPanel() {
     mutationFn: (data: SalaryPaymentFormData) =>
       apiRequest("/api/salary-payments", "POST", {
         ...data,
-        paymentDate: new Date(data.paymentDate).toISOString(),
+        paymentDate: new Date(data.paymentDate),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/salary-payments"] });
