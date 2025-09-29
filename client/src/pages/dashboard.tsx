@@ -103,6 +103,7 @@ export default function Dashboard() {
   
   const [rightColumnOrder, setRightColumnOrder] = useState([
     "client-details",
+    "recent-projects",
     "quick-actions",
     "meeting-scheduler",
     "todo-list",
@@ -124,7 +125,12 @@ export default function Dashboard() {
       setLeftColumnOrder(parsedLeftOrder);
     }
     if (savedRightOrder) {
-      setRightColumnOrder(JSON.parse(savedRightOrder));
+      const parsedRightOrder = JSON.parse(savedRightOrder);
+      // Ensure recent-projects is included if it's missing
+      if (!parsedRightOrder.includes('recent-projects')) {
+        parsedRightOrder.splice(1, 0, 'recent-projects'); // Add after client-details
+      }
+      setRightColumnOrder(parsedRightOrder);
     }
   }, []);
 
@@ -170,6 +176,7 @@ export default function Dashboard() {
         onSelectClient={setSelectedClientId}
       />
     ),
+    "recent-projects": <RecentProjectsSummary />,
     "quick-actions": <QuickActions selectedClientId={selectedClientId} />,
     "meeting-scheduler": <MeetingScheduler selectedClientId={selectedClientId} />,
     "todo-list": <TodoListShort selectedClientId={selectedClientId} />,
