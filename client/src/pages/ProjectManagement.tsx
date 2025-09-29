@@ -116,16 +116,6 @@ export default function ProjectManagement() {
   // Initialize dashboard cards with their configurations
   const [dashboardCards, setDashboardCards] = useState<DashboardCard[]>([
     {
-      id: "running-projects",
-      title: "চলমান প্রোজেক্টসমূহ",
-      icon: Clock,
-      component: "RunningProjectsPanel",
-      borderColor: "border-2 border-green-200",
-      bgColor: "bg-green-50",
-      iconColor: "text-green-800",
-      isMinimized: false,
-    },
-    {
       id: "client-info",
       title: "ক্লায়েন্ট তালিকা ও প্রোজেক্ট সমূহ",
       icon: Users,
