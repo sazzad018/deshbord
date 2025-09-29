@@ -38,6 +38,7 @@ import InvoiceMaker from "@/components/InvoiceMaker";
 import RecentProjectsSummary from "@/components/RecentProjectsSummary";
 import TodoListShort from "@/components/TodoListShort";
 import WhatsAppShortcut from "@/components/WhatsAppShortcut";
+import ProjectTypesShortcuts from "@/components/ProjectTypesShortcuts";
 import { MinimizableCard } from "@/components/MinimizableCard";
 import { GripVertical } from "lucide-react";
 
@@ -93,6 +94,7 @@ export default function Dashboard() {
   
   // Component ordering state
   const [leftColumnOrder, setLeftColumnOrder] = useState([
+    "project-types-shortcuts",
     "recent-projects-summary",
     "client-management",
     "ai-query", 
@@ -116,7 +118,12 @@ export default function Dashboard() {
     const savedRightOrder = localStorage.getItem('dashboard-right-order');
     
     if (savedLeftOrder) {
-      setLeftColumnOrder(JSON.parse(savedLeftOrder));
+      const parsedLeftOrder = JSON.parse(savedLeftOrder);
+      // Ensure project-types-shortcuts is included if it's missing
+      if (!parsedLeftOrder.includes('project-types-shortcuts')) {
+        parsedLeftOrder.unshift('project-types-shortcuts');
+      }
+      setLeftColumnOrder(parsedLeftOrder);
     }
     if (savedRightOrder) {
       setRightColumnOrder(JSON.parse(savedRightOrder));
@@ -145,6 +152,7 @@ export default function Dashboard() {
 
   // Component mapping
   const leftColumnComponents = {
+    "project-types-shortcuts": <ProjectTypesShortcuts />,
     "client-management": (
       <ClientManagement
         query={query}
