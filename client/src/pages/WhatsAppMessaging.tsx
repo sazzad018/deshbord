@@ -238,13 +238,13 @@ export default function WhatsAppMessaging() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">হোয়াটসঅ্যাপ মেসেজিং</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">হোয়াটসঅ্যাপ মেসেজিং</h1>
           <p className="text-muted-foreground">ক্লায়েন্টদের সাথে দ্রুত যোগাযোগের জন্য প্রি-ফিল্ড মেসেজ তৈরি করুন</p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <Dialog open={isTemplateDialogOpen} onOpenChange={handleTemplateDialogChange}>
             <DialogTrigger asChild>
               <Button variant="outline" data-testid="button-create-template">
@@ -327,12 +327,13 @@ export default function WhatsAppMessaging() {
                     )}
                   />
 
-                  <div className="flex justify-end gap-2">
+                  <div className="flex flex-col sm:flex-row justify-end gap-2">
                     <Button 
                       type="button" 
                       variant="outline" 
                       onClick={closeTemplateDialog}
                       data-testid="button-cancel-template"
+                      className="w-full sm:w-auto"
                     >
                       বাতিল
                     </Button>
@@ -340,6 +341,7 @@ export default function WhatsAppMessaging() {
                       type="submit" 
                       disabled={createTemplateMutation.isPending || updateTemplateMutation.isPending}
                       data-testid="button-submit-template"
+                      className="w-full sm:w-auto"
                     >
                       {(createTemplateMutation.isPending || updateTemplateMutation.isPending) ? "সেভ হচ্ছে..." : 
                        editingTemplate ? "আপডেট করুন" : "টেমপ্লেট তৈরি করুন"}
@@ -368,7 +370,7 @@ export default function WhatsAppMessaging() {
 
               <Form {...messagingForm}>
                 <form onSubmit={messagingForm.handleSubmit(onMessageSubmit)} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       control={messagingForm.control}
                       name="clientId"
@@ -475,41 +477,47 @@ export default function WhatsAppMessaging() {
                       <Label className="text-sm font-semibold text-green-800 dark:text-green-300">
                         হোয়াটসঅ্যাপ লিংক তৈরি হয়েছে:
                       </Label>
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-2">
                         <Input 
                           value={generatedLink} 
                           readOnly 
-                          className="bg-white dark:bg-gray-800"
+                          className="bg-white dark:bg-gray-800 flex-1"
                           data-testid="input-generated-link"
                         />
-                        <Button 
-                          type="button"
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => copyToClipboard(generatedLink)}
-                          data-testid="button-copy-link"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          type="button"
-                          size="sm"
-                          onClick={openWhatsApp}
-                          data-testid="button-open-whatsapp"
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          খুলুন
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            type="button"
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => copyToClipboard(generatedLink)}
+                            data-testid="button-copy-link"
+                            className="flex-1 sm:flex-none"
+                          >
+                            <Copy className="h-4 w-4" />
+                            <span className="ml-2 sm:hidden">কপি</span>
+                          </Button>
+                          <Button 
+                            type="button"
+                            size="sm"
+                            onClick={openWhatsApp}
+                            data-testid="button-open-whatsapp"
+                            className="flex-1 sm:flex-none"
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            খুলুন
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  <div className="flex justify-end gap-2">
+                  <div className="flex flex-col sm:flex-row justify-end gap-2">
                     <Button 
                       type="button" 
                       variant="outline" 
                       onClick={() => setIsMessageDialogOpen(false)}
                       data-testid="button-cancel-message"
+                      className="w-full sm:w-auto"
                     >
                       বাতিল
                     </Button>
@@ -517,6 +525,7 @@ export default function WhatsAppMessaging() {
                       type="submit" 
                       disabled={generateLinkMutation.isPending}
                       data-testid="button-generate-link"
+                      className="w-full sm:w-auto"
                     >
                       <Send className="h-4 w-4 mr-2" />
                       {generateLinkMutation.isPending ? "তৈরি হচ্ছে..." : "লিংক তৈরি করুন"}
@@ -559,7 +568,7 @@ export default function WhatsAppMessaging() {
           ) : (
             (templates as WhatsAppTemplate[]).map((template: WhatsAppTemplate) => (
               <Card key={template.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0 pb-4">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-lg" data-testid={`text-template-name-${template.id}`}>
                       {template.name}
@@ -571,7 +580,7 @@ export default function WhatsAppMessaging() {
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 self-start sm:self-center">
                     <Button
                       variant="outline"
                       size="sm"
