@@ -65,12 +65,13 @@ const PAYMENT_TYPE_CONFIG = {
 export default function EmployeePortal() {
   // Get employee ID from URL parameters
   const [location] = useLocation();
-  const urlParams = new URLSearchParams(location.split('?')[1]);
+  // Use window.location.search for query parameters since wouter's location doesn't include query string
+  const urlParams = new URLSearchParams(window.location.search);
   const employeeId = urlParams.get('id');
 
   // Fetch employee data using employee ID
   const { data: employee, isLoading, error } = useQuery<EmployeeWithDetails>({
-    queryKey: ["/api/employees", employeeId, "details"],
+    queryKey: ["/api/employees", employeeId],
     enabled: !!employeeId,
   });
 
