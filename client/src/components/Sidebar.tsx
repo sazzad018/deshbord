@@ -79,7 +79,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
                     ? "bg-gradient-to-r from-blue-500 via-violet-500 to-blue-600 text-white shadow-lg" 
                     : "hover:bg-gradient-to-r hover:from-blue-50 hover:to-violet-50 hover:text-blue-700"
                 )}
-                onClick={() => onToggle()}
+                onClick={() => window.innerWidth < 1024 && onToggle()}
                 data-testid={`sidebar-nav-${item.path.replace("/", "")}`}
               >
                 <Icon className="h-5 w-5 flex-shrink-0" />
@@ -104,7 +104,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
 
   return (
     <>
-      {/* Overlay */}
+      {/* Mobile Overlay */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
@@ -114,8 +114,9 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       
       {/* Sidebar */}
       <div className={cn(
-        "fixed top-0 left-0 h-full w-80 bg-white border-r border-gray-200 shadow-xl z-50 transform transition-transform duration-300 ease-in-out",
-        isOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed top-0 left-0 h-screen w-80 bg-white border-r border-gray-200 shadow-xl z-50 transition-transform duration-300 ease-in-out",
+        "lg:translate-x-0 lg:static lg:h-full lg:shadow-none lg:z-auto",
+        isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         {/* Header */}
         <div className="p-4 border-b border-gray-200">
@@ -147,7 +148,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6 max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-160px)]">
           {renderNavSection("প্রধান মেনু", mainNavItems)}
           <Separator />
           {renderNavSection("প্রজেক্ট ম্যানেজমেন্ট", projectNavItems)}
@@ -158,7 +159,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200">
+        <div className="flex-shrink-0 p-4 border-t border-gray-200">
           <div className="bg-gradient-to-r from-blue-50 to-violet-50 rounded-xl p-3">
             <div className="flex items-center gap-2 text-sm">
               <Building2 className="h-4 w-4 text-blue-600" />

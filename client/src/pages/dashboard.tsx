@@ -41,6 +41,7 @@ import WhatsAppShortcut from "@/components/WhatsAppShortcut";
 import RunningProjectsPanel from "@/components/RunningProjectsPanel";
 import { MinimizableCard } from "@/components/MinimizableCard";
 import { GripVertical } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // Component wrapper for making items sortable
 interface SortableWrapperProps {
@@ -261,7 +262,10 @@ export default function Dashboard() {
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
       />
       
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className={cn(
+        "max-w-7xl mx-auto px-4 py-6 transition-all duration-300 ease-in-out",
+        "lg:ml-80 lg:max-w-none"
+      )}>
         <MetricsOverview />
         
         <DndContext

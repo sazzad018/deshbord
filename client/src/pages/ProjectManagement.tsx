@@ -31,6 +31,7 @@ import {
   SortableContext as SortableProvider,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { cn } from "@/lib/utils";
 
 // Define card types for drag-and-drop
 interface DashboardCard {
@@ -210,7 +211,10 @@ export default function ProjectManagement() {
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
       />
       
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className={cn(
+        "max-w-7xl mx-auto px-4 py-6 transition-all duration-300 ease-in-out",
+        "lg:ml-80 lg:max-w-none"
+      )}>
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-slate-900 mb-2 flex items-center gap-3">
