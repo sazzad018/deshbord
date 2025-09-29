@@ -156,7 +156,7 @@ export default function RecentProjectsSummary() {
       };
     })
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 7); // Get only last 7 projects
+    .slice(0, 5); // Get only last 5 recent projects
 
   if (isLoading) {
     return (
