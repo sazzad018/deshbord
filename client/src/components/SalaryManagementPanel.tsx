@@ -118,7 +118,7 @@ export default function SalaryManagementPanel() {
   // Mutations
   const addPaymentMutation = useMutation({
     mutationFn: (data: SalaryPaymentFormData) =>
-      apiRequest("/api/salary-payments", "POST", {
+      apiRequest("POST", "/api/salary-payments", {
         ...data,
         paymentDate: new Date(data.paymentDate),
       }),
