@@ -33,7 +33,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
 
   const mainNavItems = [
     { path: "/dashboard", label: "ড্যাশবোর্ড", icon: Home, description: "মূল ড্যাশবোর্ড" },
-    { path: "/crm-project-management", label: "CRM + Project Management", icon: Briefcase, description: "সম্পূর্ণ প্রজেক্ট ম্যানেজমেন্ট সিস্টেম" },
+    { path: "/project-management", label: "CRM + Project Management", icon: Briefcase, description: "সম্পূর্ণ প্রজেক্ট ম্যানেজমেন্ট সিস্টেম" },
   ];
 
   const projectNavItems = [
