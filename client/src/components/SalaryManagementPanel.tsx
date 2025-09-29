@@ -32,11 +32,15 @@ import {
   Filter,
   Search,
   Phone,
-  Mail
+  Mail,
+  ExternalLink,
+  Edit,
+  Trash2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/utils-dashboard";
+import { Link } from "wouter";
 import type { Employee, SalaryPayment, InsertEmployee } from "@shared/schema";
 
 // Form schemas
@@ -188,6 +192,25 @@ export default function SalaryManagementPanel() {
       toast({
         title: "ত্রুটি",
         description: "ইমপ্লয়ী যোগ করতে সমস্যা হয়েছে",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Employee delete/deactivate mutation
+  const deleteEmployeeMutation = useMutation({
+    mutationFn: (employeeId: string) => apiRequest("PATCH", `/api/employees/${employeeId}`, { isActive: false }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      toast({
+        title: "সফল",
+        description: "ইমপ্লয়ী নিষ্ক্রিয় করা হয়েছে",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "ত্রুটি",
+        description: "ইমপ্লয়ী নিষ্ক্রিয় করতে সমস্যা হয়েছে",
         variant: "destructive",
       });
     },
@@ -858,6 +881,34 @@ export default function SalaryManagementPanel() {
                           >
                             {employee.isActive ? "সক্রিয়" : "নিষ্ক্রিয়"}
                           </Badge>
+                          
+                          {/* Employee Portal Button */}
+                          <Link href={`/employee-portal?id=${employee.id}`}>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-xs hover:bg-blue-50 hover:border-blue-300"
+                              data-testid={`button-portal-${employee.id}`}
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              পোর্টাল
+                            </Button>
+                          </Link>
+                          
+                          {/* Delete/Deactivate Button */}
+                          {employee.isActive && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-xs hover:bg-red-50 hover:border-red-300 text-red-600"
+                              onClick={() => deleteEmployeeMutation.mutate(employee.id)}
+                              disabled={deleteEmployeeMutation.isPending}
+                              data-testid={`button-delete-${employee.id}`}
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              নিষ্ক্রিয়
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </Card>
