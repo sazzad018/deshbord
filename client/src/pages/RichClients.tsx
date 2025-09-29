@@ -110,7 +110,7 @@ function DraggableClientCard({ client, onEdit }: { client: RichClient; onEdit: (
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.6 : 1,
   };
 
   const handleWhatsAppClick = (phone: string) => {
@@ -120,95 +120,123 @@ function DraggableClientCard({ client, onEdit }: { client: RichClient; onEdit: (
     }
   };
 
+  const getCategoryStyle = (category: string) => {
+    switch (category) {
+      case 'premium':
+        return 'border-l-4 border-l-amber-400 bg-gradient-to-r from-amber-50/80 to-yellow-50/80 hover:from-amber-100/80 hover:to-yellow-100/80';
+      case 'regular':
+        return 'border-l-4 border-l-emerald-400 bg-gradient-to-r from-emerald-50/80 to-green-50/80 hover:from-emerald-100/80 hover:to-green-100/80';
+      default:
+        return 'border-l-4 border-l-slate-400 bg-gradient-to-r from-slate-50/80 to-gray-50/80 hover:from-slate-100/80 hover:to-gray-100/80';
+    }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'premium': return <Crown className="h-3.5 w-3.5 text-amber-600" />;
+      case 'regular': return <Users className="h-3.5 w-3.5 text-emerald-600" />;
+      default: return <User className="h-3.5 w-3.5 text-slate-600" />;
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="group bg-white rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 p-4 cursor-grab active:cursor-grabbing"
+      className={`group ${getCategoryStyle(client.category)} border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-300 cursor-grab active:cursor-grabbing hover:scale-[1.02]`}
       {...attributes}
       {...listeners}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-start gap-2 flex-1">
-          <GripVertical className="h-4 w-4 text-gray-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="flex-1">
-            <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-              {client.name}
-              {client.category === 'premium' && <Crown className="h-4 w-4 text-yellow-500" />}
-            </h4>
-            <p className="text-sm text-gray-600">{client.company || 'কোম্পানি তথ্য নেই'}</p>
-            {client.email && (
-              <p className="text-xs text-gray-500">{client.email}</p>
-            )}
-          </div>
+      {/* Header - Compact */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {getCategoryIcon(client.category)}
+          <h4 className="font-bold text-gray-900 text-sm truncate">
+            {client.name}
+          </h4>
+          <GripVertical className="h-3.5 w-3.5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
         </div>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-              <MoreHorizontal className="h-4 w-4" />
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+              <MoreHorizontal className="h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleWhatsAppClick(client.phone)}>
-              <MessageCircle className="h-4 w-4 mr-2" />
+          <DropdownMenuContent align="end" className="w-36">
+            <DropdownMenuItem onClick={() => handleWhatsAppClick(client.phone)} className="text-xs">
+              <MessageCircle className="h-3 w-3 mr-1.5" />
               WhatsApp
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onEdit(client)}>
-              <Edit className="h-4 w-4 mr-2" />
+            <DropdownMenuItem onClick={() => onEdit(client)} className="text-xs">
+              <Edit className="h-3 w-3 mr-1.5" />
               সম্পাদনা
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
-      <div className="space-y-2 mb-3">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Phone className="h-3 w-3" />
+      {/* Company Info - Single Line */}
+      <div className="flex items-center gap-1.5 mb-2">
+        <Building2 className="h-3 w-3 text-gray-400 flex-shrink-0" />
+        <span className="text-xs text-gray-600 truncate font-medium">
+          {client.company || 'কোম্পানি তথ্য নেই'}
+        </span>
+      </div>
+
+      {/* Contact & Financial - Two Column */}
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        <div className="flex items-center gap-1">
+          <Phone className="h-3 w-3 text-gray-400" />
           <button 
             onClick={(e) => {
               e.stopPropagation();
               handleWhatsAppClick(client.phone);
             }}
-            className="hover:text-green-600 transition-colors"
+            className="text-xs text-gray-600 hover:text-green-600 transition-colors truncate"
           >
-            {client.phone}
+            {client.phone.substring(0, 11)}...
           </button>
         </div>
         
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <DollarSign className="h-3 w-3" />
-          <span>৳{client.walletBalance.toLocaleString()}</span>
+        <div className="flex items-center gap-1 justify-end">
+          <DollarSign className="h-3 w-3 text-green-600" />
+          <span className="text-xs font-bold text-gray-900">
+            ৳{(client.walletBalance / 1000).toFixed(0)}k
+          </span>
         </div>
       </div>
 
-      {client.tags && client.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-3">
-          {client.tags.map((tag, index) => (
-            <Badge key={index} variant="secondary" className="text-xs">
-              {tag}
+      {/* Status & Tags - Single Row */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1">
+          <div className={`w-1.5 h-1.5 rounded-full ${client.isActive ? 'bg-green-500' : 'bg-red-400'}`}></div>
+          <span className="text-xs text-gray-600 font-medium">
+            {client.isActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
+          </span>
+        </div>
+        
+        {client.tags && client.tags.length > 0 && (
+          <div className="flex gap-1">
+            <Badge variant="secondary" className="text-xs px-1.5 py-0.5 h-auto bg-white/70 text-gray-700 border-gray-300">
+              {client.tags[0]}
             </Badge>
-          ))}
-        </div>
-      )}
-
-      {client.notes && (
-        <div className="text-xs text-gray-500 bg-gray-50 rounded p-2 mb-3">
-          <StickyNote className="h-3 w-3 inline mr-1" />
-          {client.notes}
-        </div>
-      )}
-
-      {client.adminNotes && (
-        <div className="text-xs text-orange-600 bg-orange-50 rounded p-2 mb-3">
-          <Tag className="h-3 w-3 inline mr-1" />
-          <strong>Admin Notes:</strong> {client.adminNotes}
-        </div>
-      )}
-
-      <div className="text-xs text-gray-400">
-        Last Contact: {client.lastContact}
+            {client.tags.length > 1 && (
+              <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                +{client.tags.length - 1}
+              </span>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Admin Notes - Compact Preview */}
+      {client.adminNotes && (
+        <div className="text-xs text-amber-700 bg-amber-50/80 border border-amber-200 rounded px-2 py-1">
+          <Tag className="h-3 w-3 inline mr-1" />
+          <span className="font-medium">Note:</span> {client.adminNotes.substring(0, 30)}{client.adminNotes.length > 30 && '...'}
+        </div>
+      )}
     </div>
   );
 }
@@ -390,14 +418,14 @@ export default function RichClients() {
     return (
       <div className="flex-1 min-w-0">
         <DroppableArea categoryKey={categoryKey}>
-          <Card className={`${config.bgColor} ${config.borderColor} border-2 min-h-[600px] transition-all duration-200`}>
-            <CardHeader className="pb-4">
-              <div className="flex items-center gap-3">
-                <div className={`p-3 rounded-xl bg-gradient-to-r ${config.color} shadow-lg`}>
-                  <Icon className="h-6 w-6 text-white" />
+          <Card className={`${config.bgColor} ${config.borderColor} border-2 min-h-[75vh] max-h-[80vh] transition-all duration-200 shadow-sm hover:shadow-md`}>
+            <CardHeader className="pb-3 pt-3">
+              <div className="flex items-center gap-2">
+                <div className={`p-2 rounded-lg bg-gradient-to-r ${config.color} shadow-sm`}>
+                  <Icon className="h-4 w-4 text-white" />
                 </div>
-                <div>
-                  <CardTitle className={`text-lg ${config.textColor} font-bold`}>
+                <div className="flex-1">
+                  <CardTitle className={`text-base ${config.textColor} font-bold`}>
                     {config.title}
                   </CardTitle>
                   <p className="text-sm text-gray-600 mt-1">{config.description}</p>
@@ -407,20 +435,20 @@ export default function RichClients() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3">
               <SortableContext items={clients.map(c => c.id)} strategy={verticalListSortingStrategy}>
                 <div 
-                  className="space-y-4 max-h-96 overflow-y-auto min-h-[400px] p-2 rounded-lg transition-all duration-200"
+                  className="space-y-2 max-h-[65vh] overflow-y-auto min-h-[350px] p-2 rounded-lg transition-all duration-200 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
                   style={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                    border: '2px dashed rgba(0, 0, 0, 0.1)'
+                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                    border: '1px dashed rgba(0, 0, 0, 0.1)'
                   }}
                 >
                   {clients.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Icon className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>এই ক্যাটাগরিতে কোনো ক্লায়েন্ট নেই</p>
-                      <p className="text-xs mt-2">💡 ক্লায়েন্ট এখানে টেনে আনুন</p>
+                    <div className="text-center py-6 text-gray-500">
+                      <Icon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">এই ক্যাটাগরিতে কোনো ক্লায়েন্ট নেই</p>
+                      <p className="text-xs mt-1 opacity-70">💡 ক্লায়েন্ট এখানে টেনে আনুন</p>
                     </div>
                   ) : (
                     clients.map(client => (
@@ -540,8 +568,8 @@ export default function RichClients() {
             </Card>
           </div>
 
-          {/* Three Column Funnel Design with Drag & Drop */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Professional Compact Funnel Design - Optimized for 10-12 Clients Visibility */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 lg:grid-cols-2 gap-4">
             {renderCategoryColumn('premium', categorizedClients.premium)}
             {renderCategoryColumn('regular', categorizedClients.regular)}
             {renderCategoryColumn('general', categorizedClients.general)}
