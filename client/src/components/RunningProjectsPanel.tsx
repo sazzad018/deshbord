@@ -1,9 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, DollarSign, Users, Globe, Clock, CheckCircle, AlertTriangle, Eye, Plus, Edit, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar, DollarSign, Users, Globe, Clock, CheckCircle, AlertTriangle, Eye, Plus, Edit, Trash2, Save, X } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils-dashboard";
 import type { ProjectWithDetails, Employee } from "@shared/schema";
 
@@ -39,6 +46,30 @@ const STATUS_CONFIG = {
 };
 
 export default function RunningProjectsPanel() {
+  const { toast } = useToast();
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<ProjectWithDetails | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    description: "",
+    progress: 0,
+    totalAmount: 0,
+    advanceReceived: 0,
+    dueAmount: 0,
+    publicUrl: "",
+    adminNotes: "",
+    // Payment tracking fields (20%+ progress)
+    secondPaymentDate: "",
+    thirdPaymentDate: "",
+    paymentCompleted: false,
+    // Credentials (20%+ progress)
+    wpUsername: "",
+    wpPassword: "",
+    cpanelUsername: "",
+    cpanelPassword: "",
+  });
+
   const { data: projects = [], isLoading } = useQuery<ProjectWithDetails[]>({
     queryKey: ["/api/projects"],
   });
@@ -46,6 +77,93 @@ export default function RunningProjectsPanel() {
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
   });
+
+  // Update project mutation
+  const updateProjectMutation = useMutation({
+    mutationFn: (data: { id: string; updates: any }) => 
+      apiRequest("PATCH", `/api/projects/${data.id}`, data.updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      setEditDialogOpen(false);
+      toast({
+        title: "সফল!",
+        description: "প্রজেক্ট আপডেট করা হয়েছে।",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "ত্রুটি!",
+        description: "প্রজেক্ট আপডেট করতে সমস্যা হয়েছে।",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete project mutation
+  const deleteProjectMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/projects/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      toast({
+        title: "সফল!",
+        description: "প্রজেক্ট ডিলিট করা হয়েছে।",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "ত্রুটি!",
+        description: "প্রজেক্ট ডিলিট করতে সমস্যা হয়েছে।",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Action handlers
+  const handleViewProject = (project: ProjectWithDetails) => {
+    setSelectedProject(project);
+    setViewDialogOpen(true);
+  };
+
+  const handleEditProject = (project: ProjectWithDetails) => {
+    setSelectedProject(project);
+    setEditFormData({
+      name: project.name,
+      description: project.description || "",
+      progress: project.progress,
+      totalAmount: project.totalAmount,
+      advanceReceived: project.advanceReceived,
+      dueAmount: project.dueAmount,
+      publicUrl: project.publicUrl || "",
+      adminNotes: project.adminNotes || "",
+      secondPaymentDate: project.secondPaymentDate ? new Date(project.secondPaymentDate).toISOString().split('T')[0] : "",
+      thirdPaymentDate: project.thirdPaymentDate ? new Date(project.thirdPaymentDate).toISOString().split('T')[0] : "",
+      paymentCompleted: project.paymentCompleted || false,
+      wpUsername: project.wpUsername || "",
+      wpPassword: project.wpPassword || "",
+      cpanelUsername: project.cpanelUsername || "",
+      cpanelPassword: project.cpanelPassword || "",
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteProject = (project: ProjectWithDetails) => {
+    if (confirm(`আপনি কি নিশ্চিত যে "${project.name}" প্রজেক্টটি ডিলিট করতে চান?`)) {
+      deleteProjectMutation.mutate(project.id);
+    }
+  };
+
+  const handleSaveProject = () => {
+    if (!selectedProject) return;
+    
+    const updates = {
+      ...editFormData,
+      dueAmount: editFormData.totalAmount - editFormData.advanceReceived,
+      secondPaymentDate: editFormData.secondPaymentDate ? new Date(editFormData.secondPaymentDate) : null,
+      thirdPaymentDate: editFormData.thirdPaymentDate ? new Date(editFormData.thirdPaymentDate) : null,
+    };
+    
+    updateProjectMutation.mutate({ id: selectedProject.id, updates });
+  };
 
   // Filter running projects (not completed/cancelled)
   const runningProjects = projects.filter(p => 
@@ -145,10 +263,7 @@ export default function RunningProjectsPanel() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          console.log('View project details:', project.id);
-                          // TODO: Implement view project details
-                        }}
+                        onClick={() => handleViewProject(project)}
                         className="h-7 w-7 p-0 text-gray-500 hover:text-blue-600 hover:bg-blue-50"
                         data-testid={`button-view-${project.id}`}
                         title="বিস্তারিত দেখুন"
@@ -158,10 +273,7 @@ export default function RunningProjectsPanel() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          console.log('Edit project:', project.id);
-                          // TODO: Implement edit project
-                        }}
+                        onClick={() => handleEditProject(project)}
                         className="h-7 w-7 p-0 text-gray-500 hover:text-green-600 hover:bg-green-50"
                         data-testid={`button-edit-${project.id}`}
                         title="সম্পাদনা করুন"
@@ -171,12 +283,7 @@ export default function RunningProjectsPanel() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          console.log('Delete project:', project.id);
-                          if (confirm('আপনি কি নিশ্চিত যে এই প্রজেক্টটি ডিলিট করতে চান?')) {
-                            // TODO: Implement delete project
-                          }
-                        }}
+                        onClick={() => handleDeleteProject(project)}
                         className="h-7 w-7 p-0 text-gray-500 hover:text-red-600 hover:bg-red-50"
                         data-testid={`button-delete-${project.id}`}
                         title="ডিলিট করুন"
@@ -290,6 +397,250 @@ export default function RunningProjectsPanel() {
           </div>
         )}
       </CardContent>
+
+      {/* View Project Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">প্রজেক্ট বিস্তারিত</DialogTitle>
+            <DialogDescription>প্রজেক্টের সম্পূর্ণ তথ্য দেখুন</DialogDescription>
+          </DialogHeader>
+          
+          {selectedProject && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">নাম</Label>
+                  <p className="text-sm">{selectedProject.name}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">টাইপ</Label>
+                  <p className="text-sm">{selectedProject.type === "website" ? "ওয়েবসাইট" : "ল্যান্ডিং পেজ"}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">স্ট্যাটাস</Label>
+                  <Badge className={STATUS_CONFIG[selectedProject.status as keyof typeof STATUS_CONFIG].bgColor}>
+                    {STATUS_CONFIG[selectedProject.status as keyof typeof STATUS_CONFIG].text}
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">অগ্রগতি</Label>
+                  <p className="text-sm">{selectedProject.progress}%</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">মোট পরিমাণ</Label>
+                  <p className="text-sm">৳{selectedProject.totalAmount.toLocaleString()}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">অগ্রিম</Label>
+                  <p className="text-sm">৳{selectedProject.advanceReceived.toLocaleString()}</p>
+                </div>
+              </div>
+              
+              {selectedProject.description && (
+                <div>
+                  <Label className="text-sm font-medium">বিবরণ</Label>
+                  <p className="text-sm">{selectedProject.description}</p>
+                </div>
+              )}
+              
+              {selectedProject.adminNotes && (
+                <div>
+                  <Label className="text-sm font-medium">এডমিন নোট</Label>
+                  <p className="text-sm">{selectedProject.adminNotes}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Project Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">প্রজেক্ট সম্পাদনা</DialogTitle>
+            <DialogDescription>প্রজেক্টের তথ্য আপডেট করুন</DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">মূল তথ্য</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-name">প্রজেক্টের নাম</Label>
+                  <Input
+                    id="edit-name"
+                    value={editFormData.name}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-progress">অগ্রগতি (%)</Label>
+                  <Input
+                    id="edit-progress"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={editFormData.progress}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, progress: parseInt(e.target.value) || 0 }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-total">মোট পরিমাণ (৳)</Label>
+                  <Input
+                    id="edit-total"
+                    type="number"
+                    value={editFormData.totalAmount}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, totalAmount: parseInt(e.target.value) || 0 }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-advance">অগ্রিম (৳)</Label>
+                  <Input
+                    id="edit-advance"
+                    type="number"
+                    value={editFormData.advanceReceived}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, advanceReceived: parseInt(e.target.value) || 0 }))}
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-description">বিবরণ</Label>
+                <Textarea
+                  id="edit-description"
+                  value={editFormData.description}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-url">পাবলিক URL</Label>
+                <Input
+                  id="edit-url"
+                  value={editFormData.publicUrl}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, publicUrl: e.target.value }))}
+                  placeholder="https://example.com"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-notes">এডমিন নোট</Label>
+                <Textarea
+                  id="edit-notes"
+                  value={editFormData.adminNotes}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, adminNotes: e.target.value }))}
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            {/* 20%+ Progress Fields */}
+            {editFormData.progress >= 20 && (
+              <>
+                {/* Payment Tracking */}
+                <div className="space-y-4 p-4 border rounded-lg bg-blue-50">
+                  <h3 className="text-lg font-semibold text-blue-800">পেমেন্ট ট্র্যাকিং (২০%+ অগ্রগতি)</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-second-payment">দ্বিতীয় পেমেন্টের তারিখ</Label>
+                      <Input
+                        id="edit-second-payment"
+                        type="date"
+                        value={editFormData.secondPaymentDate}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, secondPaymentDate: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-third-payment">তৃতীয় পেমেন্টের তারিখ</Label>
+                      <Input
+                        id="edit-third-payment"
+                        type="date"
+                        value={editFormData.thirdPaymentDate}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, thirdPaymentDate: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      id="edit-payment-completed"
+                      type="checkbox"
+                      checked={editFormData.paymentCompleted}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, paymentCompleted: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <Label htmlFor="edit-payment-completed">পেমেন্ট সম্পূর্ণ</Label>
+                  </div>
+                </div>
+
+                {/* Website Credentials */}
+                <div className="space-y-4 p-4 border rounded-lg bg-green-50">
+                  <h3 className="text-lg font-semibold text-green-800">ওয়েবসাইট ক্রেডেনশিয়াল (২০%+ অগ্রগতি)</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-wp-username">WordPress ইউজারনেম</Label>
+                      <Input
+                        id="edit-wp-username"
+                        value={editFormData.wpUsername}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, wpUsername: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-wp-password">WordPress পাসওয়ার্ড</Label>
+                      <Input
+                        id="edit-wp-password"
+                        type="password"
+                        value={editFormData.wpPassword}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, wpPassword: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-cpanel-username">cPanel ইউজারনেম</Label>
+                      <Input
+                        id="edit-cpanel-username"
+                        value={editFormData.cpanelUsername}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, cpanelUsername: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-cpanel-password">cPanel পাসওয়ার্ড</Label>
+                      <Input
+                        id="edit-cpanel-password"
+                        type="password"
+                        value={editFormData.cpanelPassword}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, cpanelPassword: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setEditDialogOpen(false)}
+                disabled={updateProjectMutation.isPending}
+              >
+                <X className="h-4 w-4 mr-2" />
+                বাতিল
+              </Button>
+              <Button
+                onClick={handleSaveProject}
+                disabled={updateProjectMutation.isPending}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                সেভ করুন
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

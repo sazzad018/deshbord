@@ -369,6 +369,15 @@ export const projects = pgTable("projects", {
   features: jsonb("features").$type<string[]>().notNull().default([]), // List of features
   completedFeatures: jsonb("completed_features").$type<string[]>().notNull().default([]), // Completed features
   adminNotes: text("admin_notes"),
+  // Payment tracking fields (available after 20% progress)
+  secondPaymentDate: timestamp("second_payment_date"),
+  thirdPaymentDate: timestamp("third_payment_date"),
+  paymentCompleted: boolean("payment_completed").notNull().default(false),
+  // Website credentials (available after 20% progress)
+  wpUsername: text("wp_username"),
+  wpPassword: text("wp_password"),
+  cpanelUsername: text("cpanel_username"),
+  cpanelPassword: text("cpanel_password"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -446,7 +455,9 @@ export type InsertSalaryPayment = typeof salaryPayments.$inferInsert;
 export const insertProjectTypeSchema = createInsertSchema(projectTypes).omit({ id: true, createdAt: true });
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true }).extend({
   startDate: z.union([z.date(), z.string().datetime(), z.null()]).transform((val) => val ? new Date(val) : null).optional(),
-  endDate: z.union([z.date(), z.string().datetime(), z.null()]).transform((val) => val ? new Date(val) : null).optional()
+  endDate: z.union([z.date(), z.string().datetime(), z.null()]).transform((val) => val ? new Date(val) : null).optional(),
+  secondPaymentDate: z.union([z.date(), z.string().datetime(), z.null()]).transform((val) => val ? new Date(val) : null).optional(),
+  thirdPaymentDate: z.union([z.date(), z.string().datetime(), z.null()]).transform((val) => val ? new Date(val) : null).optional()
 });
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true });
 export const insertProjectAssignmentSchema = createInsertSchema(projectAssignments).omit({ id: true, assignedDate: true });
