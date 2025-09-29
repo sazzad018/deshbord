@@ -7,11 +7,217 @@ import ProjectListPanel from "@/components/ProjectListPanel";
 import SalaryManagementPanel from "@/components/SalaryManagementPanel";
 import EmployeeListPanel from "@/components/EmployeeListPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Settings, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, Settings, Clock, GripVertical, Minus, Plus } from "lucide-react";
+import {
+  DndContext,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+  useSensor,
+  useSensors,
+  PointerSensor,
+  KeyboardSensor,
+  closestCenter,
+  UniqueIdentifier,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import {
+  useSortable,
+  SortableContext as SortableProvider,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+// Define card types for drag-and-drop
+interface DashboardCard {
+  id: string;
+  title: string;
+  icon: typeof Clock;
+  component: string;
+  borderColor: string;
+  bgColor: string;
+  iconColor: string;
+  isMinimized: boolean;
+}
+
+interface SortableCardProps {
+  card: DashboardCard;
+  children: React.ReactNode;
+}
+
+function SortableCard({ card, children }: SortableCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: card.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      <Card className={`${card.borderColor} ${card.bgColor} shadow-lg transition-all duration-200 ${
+        isDragging ? 'shadow-2xl scale-105' : ''
+      }`}>
+        <CardHeader className="pb-4 relative">
+          <div className="flex items-center justify-between">
+            <CardTitle className={`text-xl font-bold ${card.iconColor} flex items-center gap-2`}>
+              <card.icon className="h-6 w-6" />
+              {card.title}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => toggleMinimize(card.id)}
+                data-testid={`button-toggle-${card.id}`}
+                className="hover:bg-white/50"
+              >
+                {card.isMinimized ? <Plus className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
+              </Button>
+              <div
+                {...attributes}
+                {...listeners}
+                className="cursor-grab hover:cursor-grabbing p-1 rounded hover:bg-white/20 transition-colors"
+                data-testid={`drag-handle-${card.id}`}
+              >
+                <GripVertical className="h-4 w-4 text-gray-500" />
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        {!card.isMinimized && (
+          <CardContent>
+            {children}
+          </CardContent>
+        )}
+      </Card>
+    </div>
+  );
+}
 
 export default function ProjectManagement() {
   const [query, setQuery] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+
+  // Initialize dashboard cards with their configurations
+  const [dashboardCards, setDashboardCards] = useState<DashboardCard[]>([
+    {
+      id: "running-projects",
+      title: "চলমান প্রোজেক্টসমূহ",
+      icon: Clock,
+      component: "RunningProjectsPanel",
+      borderColor: "border-2 border-green-200",
+      bgColor: "bg-green-50",
+      iconColor: "text-green-800",
+      isMinimized: false,
+    },
+    {
+      id: "client-info",
+      title: "ক্লায়েন্ট তালিকা",
+      icon: Users,
+      component: "ProjectListPanel",
+      borderColor: "border-2 border-blue-200",
+      bgColor: "bg-blue-50",
+      iconColor: "text-blue-800",
+      isMinimized: false,
+    },
+    {
+      id: "salary-management",
+      title: "স্যালারি ম্যানেজমেন্ত",
+      icon: Users,
+      component: "SalaryManagementPanel",
+      borderColor: "border-2 border-orange-200",
+      bgColor: "bg-orange-50",
+      iconColor: "text-orange-800",
+      isMinimized: false,
+    },
+    {
+      id: "employee-list",
+      title: "ইমপ্লয়ী লিস্ট",
+      icon: Users,
+      component: "EmployeeListPanel",
+      borderColor: "border-2 border-indigo-200",
+      bgColor: "bg-indigo-50",
+      iconColor: "text-indigo-800",
+      isMinimized: false,
+    },
+    {
+      id: "admin-project",
+      title: "অ্যাডমিন প্রোজেক্ট ম্যানেজমেন্ট",
+      icon: Settings,
+      component: "AdminProjectManagement",
+      borderColor: "border-2 border-purple-200",
+      bgColor: "bg-purple-50",
+      iconColor: "text-purple-800",
+      isMinimized: false,
+    },
+  ]);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setDashboardCards((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over?.id);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+
+    setActiveId(null);
+  };
+
+  const toggleMinimize = (cardId: string) => {
+    setDashboardCards((cards) =>
+      cards.map((card) =>
+        card.id === cardId ? { ...card, isMinimized: !card.isMinimized } : card
+      )
+    );
+  };
+
+  const renderCardContent = (card: DashboardCard) => {
+    switch (card.component) {
+      case "RunningProjectsPanel":
+        return <RunningProjectsPanel />;
+      case "ProjectListPanel":
+        return <ProjectListPanel />;
+      case "SalaryManagementPanel":
+        return <SalaryManagementPanel />;
+      case "EmployeeListPanel":
+        return <EmployeeListPanel />;
+      case "AdminProjectManagement":
+        return <AdminProjectManagement />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-900">
@@ -38,86 +244,46 @@ export default function ProjectManagement() {
           </p>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-700 flex items-center gap-2">
+            <GripVertical className="h-4 w-4" />
+            <span className="font-medium">Drag & Drop:</span> 
+            সেকশনগুলিকে টানুন এবং পুনর্বিন্যাস করুন। মিনিমাইজ/ম্যাক্সিমাইজ বোতাম দিয়ে সেকশন লুকান।
+          </p>
+        </div>
+
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={dashboardCards.map(card => card.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-6">
+              {dashboardCards.map((card) => (
+                <SortableCard key={card.id} card={card}>
+                  {renderCardContent(card)}
+                </SortableCard>
+              ))}
+            </div>
+          </SortableContext>
           
-          {/* Left Column */}
-          <div className="space-y-6">
-            
-            {/* Running Projects Section */}
-            <Card className="border-2 border-emerald-200 bg-emerald-50 shadow-lg">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold text-emerald-800 flex items-center gap-2">
-                  <Clock className="h-6 w-6" />
-                  চলমান প্রোজেক্টসমূহ
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <RunningProjectsPanel />
-              </CardContent>
-            </Card>
-
-            {/* Admin Project Management Section */}
-            <Card className="border-2 border-blue-200 bg-blue-50 shadow-lg">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold text-blue-800 flex items-center gap-2">
-                  <Settings className="h-6 w-6" />
-                  অ্যাডমিন প্রোজেক্ট ম্যানেজমেন্ট
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <AdminProjectManagement />
-              </CardContent>
-            </Card>
-
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-6">
-            
-            {/* Project List Section */}
-            <Card className="border-2 border-purple-200 bg-purple-50 shadow-lg">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold text-purple-800 flex items-center gap-2">
-                  <Users className="h-6 w-6" />
-                  প্রোজেক্ট তালিকা
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ProjectListPanel />
-              </CardContent>
-            </Card>
-
-            {/* Salary Management Section */}
-            <Card className="border-2 border-orange-200 bg-orange-50 shadow-lg">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold text-orange-800 flex items-center gap-2">
-                  <Users className="h-6 w-6" />
-                  স্যালারি ম্যানেজমেন্ট
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SalaryManagementPanel />
-              </CardContent>
-            </Card>
-
-          </div>
-        </div>
-
-        {/* Employee List Section - Full Width */}
-        <div className="mt-8">
-          <Card className="border-2 border-indigo-200 bg-indigo-50 shadow-lg">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-bold text-indigo-800 flex items-center gap-2">
-                <Users className="h-6 w-6" />
-                ইমপ্লয়ী লিস্ট
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <EmployeeListPanel />
-            </CardContent>
-          </Card>
-        </div>
+          <DragOverlay>
+            {activeId ? (
+              <Card className="shadow-2xl border-2 border-blue-300 bg-blue-50 opacity-80 rotate-3">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl font-bold text-blue-800 flex items-center gap-2">
+                    <GripVertical className="h-6 w-6" />
+                    {dashboardCards.find(card => card.id === activeId)?.title}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       </div>
     </div>
   );
