@@ -38,7 +38,7 @@ import InvoiceMaker from "@/components/InvoiceMaker";
 import RecentProjectsSummary from "@/components/RecentProjectsSummary";
 import TodoListShort from "@/components/TodoListShort";
 import WhatsAppShortcut from "@/components/WhatsAppShortcut";
-import ProjectTypesShortcuts from "@/components/ProjectTypesShortcuts";
+import RunningProjectsPanel from "@/components/RunningProjectsPanel";
 import { MinimizableCard } from "@/components/MinimizableCard";
 import { GripVertical } from "lucide-react";
 
@@ -94,22 +94,16 @@ export default function Dashboard() {
   
   // Component ordering state
   const [leftColumnOrder, setLeftColumnOrder] = useState([
-    "project-types-shortcuts",
+    "running-projects",
     "recent-projects-summary",
     "client-management",
-    "ai-query", 
-    "spend-chart",
-    "website-projects",
-    "invoice-maker"
+    "ai-query"
   ]);
   
   const [rightColumnOrder, setRightColumnOrder] = useState([
     "client-details",
     "quick-actions",
-    "meeting-scheduler", 
-    "todo-list",
-    "whatsapp-shortcut",
-    "control-panel"
+    "meeting-scheduler"
   ]);
 
   // Load saved order from localStorage
@@ -119,9 +113,9 @@ export default function Dashboard() {
     
     if (savedLeftOrder) {
       const parsedLeftOrder = JSON.parse(savedLeftOrder);
-      // Ensure project-types-shortcuts is included if it's missing
-      if (!parsedLeftOrder.includes('project-types-shortcuts')) {
-        parsedLeftOrder.unshift('project-types-shortcuts');
+      // Ensure running-projects is included if it's missing
+      if (!parsedLeftOrder.includes('running-projects')) {
+        parsedLeftOrder.unshift('running-projects');
       }
       setLeftColumnOrder(parsedLeftOrder);
     }
@@ -152,7 +146,7 @@ export default function Dashboard() {
 
   // Component mapping
   const leftColumnComponents = {
-    "project-types-shortcuts": <ProjectTypesShortcuts />,
+    "running-projects": <RunningProjectsPanel />,
     "client-management": (
       <ClientManagement
         query={query}
@@ -161,10 +155,7 @@ export default function Dashboard() {
       />
     ),
     "ai-query": <AIQuerySystem />,
-    "spend-chart": <SpendChart />,
-    "website-projects": <ClientWebsiteProjectsPanel selectedClientId={selectedClientId} />,
     "recent-projects-summary": <RecentProjectsSummary />,
-    "invoice-maker": <InvoiceMaker />,
   };
 
   const rightColumnComponents = {
@@ -176,9 +167,6 @@ export default function Dashboard() {
     ),
     "quick-actions": <QuickActions selectedClientId={selectedClientId} />,
     "meeting-scheduler": <MeetingScheduler selectedClientId={selectedClientId} />,
-    "todo-list": <TodoListShort selectedClientId={selectedClientId} />,
-    "whatsapp-shortcut": <WhatsAppShortcut selectedClientId={selectedClientId} />,
-    "control-panel": <ControlPanel />,
   };
 
   function handleDragStart(event: DragStartEvent) {
