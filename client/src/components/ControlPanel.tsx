@@ -550,7 +550,7 @@ export default function ControlPanel() {
                 className="bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={() => {
                   setEditingQuickMessage(null);
-                  setQuickMessageFormData({ title: "", content: "", category: "", isActive: true, sortOrder: 0 });
+                  setQuickMessageFormData({ title: "", message: "", category: "", isActive: true, sortOrder: 0 });
                 }}
               >
                 <Plus className="h-4 w-4 mr-2" />
