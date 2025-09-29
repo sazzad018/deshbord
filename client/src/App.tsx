@@ -15,6 +15,7 @@ import InvoiceMakerPage from "@/pages/InvoiceMaker";
 import ClientManagementPage from "@/pages/ClientManagement";
 import WebsiteProjectsPage from "@/pages/WebsiteProjectsPage";
 import PaymentManagement from "@/pages/PaymentManagement";
+import ProjectManagement from "@/pages/ProjectManagement";
 import ControlPanel from "@/components/ControlPanel";
 
 function AdminRoutes() {
@@ -31,6 +32,7 @@ function AdminRoutes() {
         <Route path="/saved-pdfs" component={SavedPDFs} />
         <Route path="/website-projects" component={WebsiteProjectsPage} />
         <Route path="/payment-management" component={PaymentManagement} />
+        <Route path="/project-management" component={ProjectManagement} />
         <Route path="/control-panel" component={ControlPanel} />
       </Switch>
     </NotificationProvider>
