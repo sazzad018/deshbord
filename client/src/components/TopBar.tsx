@@ -27,7 +27,7 @@ export default function TopBar({ query, setQuery, onToggleSidebar }: TopBarProps
   ];
 
   return (
-    <div className="sticky top-0 z-50 bg-gradient-to-r from-blue-50/80 via-white/95 to-violet-50/80 backdrop-blur supports-[backdrop-filter]:bg-white/90 border-b border-blue-200/60 shadow-lg">
+    <div className="sticky top-0 z-50 bg-gradient-to-r from-blue-50/80 via-white/95 to-violet-50/80 backdrop-blur supports-[backdrop-filter]:bg-white/90 border-b border-blue-200/60">
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
