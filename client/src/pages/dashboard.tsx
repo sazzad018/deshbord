@@ -35,10 +35,7 @@ import { ClientWebsiteProjectsPanel } from "@/components/ClientWebsiteProjectsPa
 import QuickActions from "@/components/QuickActions";
 import ControlPanel from "@/components/ControlPanel";
 import InvoiceMaker from "@/components/InvoiceMaker";
-import RunningProjectsPanel from "@/components/RunningProjectsPanel";
-import AdminProjectManagement from "@/components/AdminProjectManagement";
-import ProjectListPanel from "@/components/ProjectListPanel";
-import SalaryManagementPanel from "@/components/SalaryManagementPanel";
+import RecentProjectsSummary from "@/components/RecentProjectsSummary";
 import TodoListShort from "@/components/TodoListShort";
 import WhatsAppShortcut from "@/components/WhatsAppShortcut";
 import { MinimizableCard } from "@/components/MinimizableCard";
@@ -96,10 +93,7 @@ export default function Dashboard() {
   
   // Component ordering state
   const [leftColumnOrder, setLeftColumnOrder] = useState([
-    "running-projects",
-    "admin-project-management", 
-    "project-list",
-    "salary-management",
+    "recent-projects-summary",
     "client-management",
     "ai-query", 
     "spend-chart",
@@ -161,10 +155,7 @@ export default function Dashboard() {
     "ai-query": <AIQuerySystem />,
     "spend-chart": <SpendChart />,
     "website-projects": <ClientWebsiteProjectsPanel selectedClientId={selectedClientId} />,
-    "running-projects": <RunningProjectsPanel />,
-    "admin-project-management": <AdminProjectManagement />,
-    "project-list": <ProjectListPanel />,
-    "salary-management": <SalaryManagementPanel />,
+    "recent-projects-summary": <RecentProjectsSummary />,
     "invoice-maker": <InvoiceMaker />,
   };
 
