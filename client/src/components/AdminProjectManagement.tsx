@@ -81,8 +81,11 @@ export default function AdminProjectManagement() {
       name: "",
       description: "",
       type: "website",
+      clientId: "",
       totalAmount: 0,
       status: "planning",
+      features: "",
+      deadline: "",
     },
   });
 
