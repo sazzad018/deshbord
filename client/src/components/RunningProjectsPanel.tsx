@@ -288,7 +288,7 @@ export default function RunningProjectsPanel() {
             <p className="text-xs text-slate-400 mt-1">নতুন প্রজেক্ট শুরু করুন</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 h-[200px] overflow-y-auto p-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[500px] overflow-y-auto p-1">
             {runningProjects.map((project) => {
               const statusConfig = STATUS_CONFIG[project.status as keyof typeof STATUS_CONFIG];
               const StatusIcon = statusConfig.icon;
