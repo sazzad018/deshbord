@@ -199,11 +199,14 @@ function StaticClientCard({ client, onEdit, onCategoryChange }: {
         )}
       </div>
 
-      {/* Admin Notes - Compact Preview */}
+      {/* Admin Notes - Full Display */}
       {client.adminNotes && (
-        <div className="text-xs text-amber-700 bg-amber-50/80 border border-amber-200 rounded px-2 py-1 mb-2">
+        <div className="text-xs text-amber-700 bg-amber-50/80 border border-amber-200 rounded px-2 py-1.5 mb-2">
           <Tag className="h-3 w-3 inline mr-1" />
-          <span className="font-medium">Note:</span> {client.adminNotes.substring(0, 30)}{client.adminNotes.length > 30 && '...'}
+          <span className="font-medium">Note:</span> 
+          <div className="mt-1 text-xs leading-relaxed">
+            {client.adminNotes}
+          </div>
         </div>
       )}
 
