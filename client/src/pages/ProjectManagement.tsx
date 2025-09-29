@@ -5,6 +5,7 @@ import RunningProjectsPanel from "@/components/RunningProjectsPanel";
 import AdminProjectManagement from "@/components/AdminProjectManagement";
 import ProjectListPanel from "@/components/ProjectListPanel";
 import SalaryManagementPanel from "@/components/SalaryManagementPanel";
+import EmployeeListPanel from "@/components/EmployeeListPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Settings, Clock } from "lucide-react";
 
@@ -30,10 +31,10 @@ export default function ProjectManagement() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-slate-900 mb-2 flex items-center gap-3">
             <Settings className="h-8 w-8 text-blue-600" />
-            CRM + প্রোজেক্ট ম্যানেজমেন্ট সিস্টেম
+            ওয়েবসাইট এবং ল্যান্ডিং পেজ ম্যানেজমেন্ট সিস্টেম
           </h1>
           <p className="text-lg text-slate-600">
-            ক্লায়েন্ট ম্যানেজমেন্ট, প্রোজেক্ট ট্র্যাকিং এবং টিম ম্যানেজমেন্ট সিস্টেম
+            ওয়েবসাইট ডেভেলপমেন্ট, ল্যান্ডিং পেজ ডিজাইন এবং প্রোজেক্ট ম্যানেজমেন্ট সিস্টেম
           </p>
         </div>
 
@@ -101,6 +102,21 @@ export default function ProjectManagement() {
             </Card>
 
           </div>
+        </div>
+
+        {/* Employee List Section - Full Width */}
+        <div className="mt-8">
+          <Card className="border-2 border-indigo-200 bg-indigo-50 shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-bold text-indigo-800 flex items-center gap-2">
+                <Users className="h-6 w-6" />
+                ইমপ্লয়ী লিস্ট
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <EmployeeListPanel />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
