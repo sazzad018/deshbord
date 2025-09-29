@@ -48,9 +48,10 @@ interface DashboardCard {
 interface SortableCardProps {
   card: DashboardCard;
   children: React.ReactNode;
+  onToggleMinimize: (cardId: string) => void;
 }
 
-function SortableCard({ card, children }: SortableCardProps) {
+function SortableCard({ card, children, onToggleMinimize }: SortableCardProps) {
   const {
     attributes,
     listeners,
@@ -81,7 +82,7 @@ function SortableCard({ card, children }: SortableCardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => toggleMinimize(card.id)}
+                onClick={() => onToggleMinimize(card.id)}
                 data-testid={`button-toggle-${card.id}`}
                 className="hover:bg-white/50"
               >
@@ -264,7 +265,7 @@ export default function ProjectManagement() {
           >
             <div className="space-y-6">
               {dashboardCards.map((card) => (
-                <SortableCard key={card.id} card={card}>
+                <SortableCard key={card.id} card={card} onToggleMinimize={toggleMinimize}>
                   {renderCardContent(card)}
                 </SortableCard>
               ))}
