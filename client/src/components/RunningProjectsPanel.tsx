@@ -207,7 +207,7 @@ export default function RunningProjectsPanel() {
               {runningProjects.length}টি
             </Badge>
           </CardTitle>
-          <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/20 backdrop-blur-sm">
+          <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-gradient-to-r hover:from-yellow-400 hover:to-orange-500 hover:text-white backdrop-blur-sm bg-gradient-to-r from-green-400 to-blue-500 border-0">
             <Plus className="h-4 w-4 mr-1" />
             নতুন প্রজেক্ট
           </Button>
@@ -221,7 +221,7 @@ export default function RunningProjectsPanel() {
             <p className="text-xs text-slate-400 mt-1">নতুন প্রজেক্ট শুরু করুন</p>
           </div>
         ) : (
-          <div className="space-y-5 max-h-96 overflow-y-auto p-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto p-1">
             {runningProjects.map((project) => {
               const statusConfig = STATUS_CONFIG[project.status as keyof typeof STATUS_CONFIG];
               const StatusIcon = statusConfig.icon;
