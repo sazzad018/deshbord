@@ -368,13 +368,12 @@ export default function RichClients() {
     },
   });
 
-  // Handle full client information update
+  // Handle full client profile information update (excludes category)
   const updateClientMutation = useMutation({
     mutationFn: ({ clientId, clientData }: { clientId: string; clientData: any }) =>
       apiRequest("PATCH", `/api/clients/${clientId}`, {
         name: clientData.name,
         phone: clientData.phone,
-        category: clientData.category,
         adminNotes: clientData.notes
       }),
     onSuccess: () => {
@@ -661,9 +660,9 @@ export default function RichClients() {
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>ক্লায়েন্ট সম্পাদনা</DialogTitle>
+            <DialogTitle>প্রোফাইল ইনফরমেশন সম্পাদনা</DialogTitle>
             <DialogDescription>
-              ক্লায়েন্টের তথ্য আপডেট করুন
+              ক্লায়েন্টের নাম, ফোন ও নোট আপডেট করুন (ক্যাটাগরি পরিবর্তনের জন্য drag & drop ব্যবহার করুন)
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -682,19 +681,6 @@ export default function RichClients() {
                 value={clientFormData.phone}
                 onChange={(e) => setClientFormData(prev => ({ ...prev, phone: e.target.value }))}
               />
-            </div>
-            <div>
-              <Label htmlFor="category">ক্যাটাগরি</Label>
-              <Select value={clientFormData.category} onValueChange={(value) => setClientFormData(prev => ({ ...prev, category: value as any }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="general">সাধারণ ক্লায়েন্ট</SelectItem>
-                  <SelectItem value="regular">নিয়মিত ক্লায়েন্ট</SelectItem>
-                  <SelectItem value="premium">প্রিমিয়াম ক্লায়েন্ট</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div>
               <Label htmlFor="tags">ট্যাগ (কমা দিয়ে আলাদা করুন)</Label>
@@ -735,7 +721,7 @@ export default function RichClients() {
                 className="flex-1"
                 disabled={updateClientMutation.isPending}
               >
-                {updateClientMutation.isPending ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ"}
+                {updateClientMutation.isPending ? "আপডেট হচ্ছে..." : "প্রোফাইল আপডেট"}
               </Button>
             </div>
           </div>
