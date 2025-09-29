@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,7 +24,23 @@ import {
   Briefcase,
   FileText,
   UserPlus,
-  MapPin
+  MapPin,
+  ShoppingCart,
+  CreditCard,
+  Package,
+  Star,
+  MessageSquare,
+  Shield,
+  Search,
+  Truck,
+  BarChart,
+  Heart,
+  Filter,
+  Bell,
+  Smartphone,
+  Globe,
+  Image,
+  Upload
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -52,10 +69,72 @@ const assignmentFormSchema = z.object({
 type ProjectFormData = z.infer<typeof projectFormSchema>;
 type AssignmentFormData = z.infer<typeof assignmentFormSchema>;
 
+// Predefined E-commerce Features
+const predefinedFeatures = [
+  { id: "product-catalog", name: "প্রোডাক্ট ক্যাটালগ", icon: Package, category: "মূল ফিচার" },
+  { id: "shopping-cart", name: "শপিং কার্ট", icon: ShoppingCart, category: "মূল ফিচার" },
+  { id: "checkout", name: "চেকআউট সিস্টেম", icon: CreditCard, category: "মূল ফিচার" },
+  { id: "user-registration", name: "ইউজার রেজিস্ট্রেশন", icon: User, category: "ব্যবহারকারী" },
+  { id: "user-login", name: "ইউজার লগইন", icon: Shield, category: "ব্যবহারকারী" },
+  { id: "user-profile", name: "ইউজার প্রোফাইল", icon: User, category: "ব্যবহারকারী" },
+  { id: "order-management", name: "অর্ডার ম্যানেজমেন্ট", icon: FileText, category: "অর্ডার" },
+  { id: "order-tracking", name: "অর্ডার ট্র্যাকিং", icon: Truck, category: "অর্ডার" },
+  { id: "payment-gateway", name: "পেমেন্ট গেটওয়ে", icon: CreditCard, category: "পেমেন্ট" },
+  { id: "inventory-management", name: "ইনভেন্টরি ম্যানেজমেন্ট", icon: Package, category: "ইনভেন্টরি" },
+  { id: "product-search", name: "প্রোডাক্ট সার্চ", icon: Search, category: "সার্চ ও ফিল্টার" },
+  { id: "product-filter", name: "প্রোডাক্ট ফিল্টার", icon: Filter, category: "সার্চ ও ফিল্টার" },
+  { id: "product-reviews", name: "প্রোডাক্ট রিভিউ", icon: Star, category: "রিভিউ ও রেটিং" },
+  { id: "product-rating", name: "প্রোডাক্ট রেটিং", icon: Star, category: "রিভিউ ও রেটিং" },
+  { id: "wishlist", name: "উইশলিস্ট", icon: Heart, category: "অতিরিক্ত ফিচার" },
+  { id: "coupon-system", name: "কুপন সিস্টেম", icon: DollarSign, category: "ছাড় ও অফার" },
+  { id: "live-chat", name: "লাইভ চ্যাট", icon: MessageSquare, category: "কাস্টমার সাপোর্ট" },
+  { id: "email-notifications", name: "ইমেইল নোটিফিকেশন", icon: Bell, category: "নোটিফিকেশন" },
+  { id: "mobile-responsive", name: "মোবাইল রেসপন্সিভ", icon: Smartphone, category: "ডিজাইন" },
+  { id: "admin-dashboard", name: "অ্যাডমিন ড্যাশবোর্ড", icon: BarChart, category: "অ্যাডমিন" },
+  { id: "analytics", name: "অ্যানালিটিক্স", icon: BarChart, category: "রিপোর্ট" },
+  { id: "seo-optimization", name: "SEO অপটিমাইজেশন", icon: Globe, category: "SEO" },
+  { id: "image-gallery", name: "ইমেজ গ্যালারি", icon: Image, category: "মিডিয়া" },
+  { id: "bulk-upload", name: "বাল্ক আপলোড", icon: Upload, category: "মিডিয়া" }
+];
+
 export default function AdminProjectManagement() {
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isAssignDeveloperOpen, setIsAssignDeveloperOpen] = useState(false);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [customFeatures, setCustomFeatures] = useState<string[]>([]);
+  const [newCustomFeature, setNewCustomFeature] = useState("");
   const { toast } = useToast();
+
+  // Helper functions for feature management
+  const toggleFeature = (featureId: string) => {
+    setSelectedFeatures(prev => 
+      prev.includes(featureId) 
+        ? prev.filter(id => id !== featureId)
+        : [...prev, featureId]
+    );
+  };
+
+  const addCustomFeature = () => {
+    if (newCustomFeature.trim() && !customFeatures.includes(newCustomFeature.trim())) {
+      setCustomFeatures(prev => [...prev, newCustomFeature.trim()]);
+      setSelectedFeatures(prev => [...prev, newCustomFeature.trim()]);
+      setNewCustomFeature("");
+    }
+  };
+
+  const removeCustomFeature = (feature: string) => {
+    setCustomFeatures(prev => prev.filter(f => f !== feature));
+    setSelectedFeatures(prev => prev.filter(f => f !== feature));
+  };
+
+  // Group features by category
+  const groupedFeatures = predefinedFeatures.reduce((acc, feature) => {
+    if (!acc[feature.category]) {
+      acc[feature.category] = [];
+    }
+    acc[feature.category].push(feature);
+    return acc;
+  }, {} as Record<string, typeof predefinedFeatures>);
 
   // Queries
   const { data: projects = [] } = useQuery<Project[]>({
@@ -102,7 +181,7 @@ export default function AdminProjectManagement() {
     mutationFn: (data: ProjectFormData) => 
       apiRequest("POST", "/api/projects", {
         ...data,
-        features: data.features ? data.features.split(',').map(f => f.trim()) : [],
+        features: selectedFeatures.length > 0 ? selectedFeatures : [],
         endDate: data.deadline ? new Date(data.deadline).toISOString() : null,
       }),
     onSuccess: () => {
@@ -113,6 +192,9 @@ export default function AdminProjectManagement() {
       });
       setIsCreateProjectOpen(false);
       projectForm.reset();
+      setSelectedFeatures([]);
+      setCustomFeatures([]);
+      setNewCustomFeature("");
     },
     onError: () => {
       toast({
@@ -307,23 +389,111 @@ export default function AdminProjectManagement() {
                       />
                     </div>
 
-                    <FormField
-                      control={projectForm.control}
-                      name="features"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>ফিচারসমূহ</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="কমা দিয়ে আলাদা করে ফিচার লিখুন (যেমন: Login System, Dashboard, Payment Gateway)" 
-                              {...field} 
-                              data-testid="textarea-features"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                    {/* Feature Selection System */}
+                    <div className="space-y-4">
+                      <Label className="text-base font-semibold">ফিচার নির্বাচন করুন</Label>
+                      
+                      {/* Predefined Features by Category */}
+                      <div className="space-y-4 max-h-80 overflow-y-auto border rounded-lg p-4">
+                        {Object.entries(groupedFeatures).map(([category, features]) => (
+                          <div key={category} className="space-y-2">
+                            <h4 className="font-medium text-sm text-gray-700 bg-gray-50 px-2 py-1 rounded">
+                              {category}
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-2">
+                              {features.map(feature => {
+                                const IconComponent = feature.icon;
+                                return (
+                                  <div key={feature.id} className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={feature.id}
+                                      checked={selectedFeatures.includes(feature.id)}
+                                      onCheckedChange={() => toggleFeature(feature.id)}
+                                      data-testid={`checkbox-feature-${feature.id}`}
+                                    />
+                                    <label 
+                                      htmlFor={feature.id} 
+                                      className="flex items-center space-x-2 text-sm cursor-pointer"
+                                    >
+                                      <IconComponent className="h-4 w-4 text-gray-500" />
+                                      <span>{feature.name}</span>
+                                    </label>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Custom Features */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">কাস্টম ফিচার যোগ করুন</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="নতুন ফিচার লিখুন..."
+                            value={newCustomFeature}
+                            onChange={(e) => setNewCustomFeature(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && addCustomFeature()}
+                            data-testid="input-custom-feature"
+                          />
+                          <Button 
+                            type="button" 
+                            onClick={addCustomFeature}
+                            size="sm"
+                            data-testid="button-add-custom-feature"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        {/* Display Custom Features */}
+                        {customFeatures.length > 0 && (
+                          <div className="space-y-2">
+                            <Label className="text-xs text-gray-600">কাস্টম ফিচারসমূহ:</Label>
+                            <div className="flex flex-wrap gap-2">
+                              {customFeatures.map(feature => (
+                                <Badge 
+                                  key={feature} 
+                                  variant="secondary" 
+                                  className="text-xs px-2 py-1"
+                                >
+                                  {feature}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeCustomFeature(feature)}
+                                    className="ml-1 text-red-500 hover:text-red-700"
+                                    data-testid={`button-remove-${feature}`}
+                                  >
+                                    ×
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Selected Features Summary */}
+                      {selectedFeatures.length > 0 && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <Label className="text-sm font-medium text-blue-800">
+                            নির্বাচিত ফিচার ({selectedFeatures.length}টি):
+                          </Label>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {selectedFeatures.map(featureId => {
+                              const predefinedFeature = predefinedFeatures.find(f => f.id === featureId);
+                              const displayName = predefinedFeature ? predefinedFeature.name : featureId;
+                              return (
+                                <Badge key={featureId} variant="outline" className="text-xs">
+                                  {displayName}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
                       )}
-                    />
+                    </div>
 
                     <FormField
                       control={projectForm.control}
