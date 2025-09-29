@@ -30,12 +30,14 @@ import {
   Users,
   Download,
   Filter,
-  Search
+  Search,
+  Phone,
+  Mail
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/utils-dashboard";
-import type { Employee, SalaryPayment } from "@shared/schema";
+import type { Employee, SalaryPayment, InsertEmployee } from "@shared/schema";
 
 // Form schemas
 const salaryPaymentFormSchema = z.object({
@@ -48,7 +50,15 @@ const salaryPaymentFormSchema = z.object({
   notes: z.string().optional(),
 });
 
+const employeeFormSchema = z.object({
+  name: z.string().min(1, "নাম প্রয়োজন"),
+  email: z.string().email("সঠিক ইমেইল লিখুন").optional().or(z.literal("")),
+  phone: z.string().min(1, "ফোন নম্বর প্রয়োজন"),
+  role: z.string().min(1, "ভূমিকা নির্বাচন করুন"),
+});
+
 type SalaryPaymentFormData = z.infer<typeof salaryPaymentFormSchema>;
+type EmployeeFormData = z.infer<typeof employeeFormSchema>;
 
 // Payment type configuration
 const PAYMENT_TYPE_CONFIG = {
@@ -91,9 +101,11 @@ interface EmployeeWithSalaryDetails {
 
 export default function SalaryManagementPanel() {
   const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
+  const [isCreateEmployeeOpen, setIsCreateEmployeeOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<string>("all");
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
   const { toast } = useToast();
 
   // Queries
@@ -105,13 +117,23 @@ export default function SalaryManagementPanel() {
     queryKey: ["/api/salary-payments"],
   });
 
-  // Form
+  // Forms
   const paymentForm = useForm<SalaryPaymentFormData>({
     resolver: zodResolver(salaryPaymentFormSchema),
     defaultValues: {
       amount: 0,
       type: "salary",
       paymentDate: new Date().toISOString().split('T')[0],
+    },
+  });
+
+  const employeeForm = useForm<EmployeeFormData>({
+    resolver: zodResolver(employeeFormSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      role: "",
     },
   });
 
@@ -141,10 +163,46 @@ export default function SalaryManagementPanel() {
     },
   });
 
+  const createEmployeeMutation = useMutation({
+    mutationFn: async (data: EmployeeFormData) => {
+      const employeeData: InsertEmployee = {
+        name: data.name,
+        email: data.email || undefined,
+        phone: data.phone,
+        role: data.role,
+        portalKey: `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Generate unique portal key
+      };
+      return apiRequest("POST", "/api/employees", employeeData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      setIsCreateEmployeeOpen(false);
+      employeeForm.reset();
+      toast({
+        title: "সফল",
+        description: "নতুন ইমপ্লয়ী সফলভাবে যোগ করা হয়েছে",
+      });
+    },
+    onError: (error) => {
+      console.error("Employee creation error:", error);
+      toast({
+        title: "ত্রুটি",
+        description: "ইমপ্লয়ী যোগ করতে সমস্যা হয়েছে",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Filter employees based on search
   const filteredEmployees = employees.filter(emp => 
     emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.role.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Filter employees for employee management
+  const filteredEmployeesForManagement = employees.filter(emp => 
+    emp.name.toLowerCase().includes(employeeSearchTerm.toLowerCase()) ||
+    emp.role.toLowerCase().includes(employeeSearchTerm.toLowerCase())
   );
 
   // Filter payments
@@ -435,9 +493,10 @@ export default function SalaryManagementPanel() {
         </div>
 
         <Tabs defaultValue="employees" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="employees">ডেভেলপার সামারি</TabsTrigger>
             <TabsTrigger value="payments">পেমেন্ট ইতিহাস</TabsTrigger>
+            <TabsTrigger value="management">ইমপ্লয়ী ম্যানেজমেন্ত</TabsTrigger>
           </TabsList>
 
           <TabsContent value="employees" className="mt-4">
@@ -621,6 +680,190 @@ export default function SalaryManagementPanel() {
                   );
                 })
               )}
+            </div>
+          </TabsContent>
+
+          {/* Employee Management Tab */}
+          <TabsContent value="management" className="mt-4">
+            <div className="space-y-4">
+              {/* Header with Add Employee Button */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">ইমপ্লয়ী ম্যানেজমেন্ত</h3>
+                  <p className="text-sm text-gray-600">নতুন ইমপ্লয়ী যোগ করুন এবং বিদ্যমান ইমপ্লয়ীদের পরিচালনা করুন</p>
+                </div>
+                <Dialog open={isCreateEmployeeOpen} onOpenChange={setIsCreateEmployeeOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-blue-600 hover:bg-blue-700" data-testid="button-add-employee">
+                      <Plus className="h-4 w-4 mr-2" />
+                      নতুন ইমপ্লয়ী
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <User className="h-5 w-5 text-blue-600" />
+                        নতুন ইমপ্লয়ী যোগ করুন
+                      </DialogTitle>
+                    </DialogHeader>
+                    <Form {...employeeForm}>
+                      <form onSubmit={employeeForm.handleSubmit((data) => createEmployeeMutation.mutate(data))} className="space-y-4">
+                        <FormField
+                          control={employeeForm.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>পূর্ণ নাম *</FormLabel>
+                              <FormControl>
+                                <Input placeholder="ইমপ্লয়ীর পূর্ণ নাম" {...field} data-testid="input-employee-name" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField
+                            control={employeeForm.control}
+                            name="phone"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>ফোন নম্বর *</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="01XXXXXXXXX" {...field} data-testid="input-employee-phone" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={employeeForm.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>ইমেইল</FormLabel>
+                                <FormControl>
+                                  <Input type="email" placeholder="example@domain.com" {...field} data-testid="input-employee-email" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <FormField
+                          control={employeeForm.control}
+                          name="role"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>ভূমিকা *</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger data-testid="select-employee-role">
+                                    <SelectValue placeholder="ভূমিকা নির্বাচন করুন" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="developer">ডেভেলপার</SelectItem>
+                                  <SelectItem value="designer">ডিজাইনার</SelectItem>
+                                  <SelectItem value="manager">ম্যানেজার</SelectItem>
+                                  <SelectItem value="content_writer">কন্টেন্ট রাইটার</SelectItem>
+                                  <SelectItem value="seo_specialist">এসইও স্পেশালিস্ট</SelectItem>
+                                  <SelectItem value="marketing">মার্কেটিং</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="flex justify-end space-x-2 pt-4">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsCreateEmployeeOpen(false)}
+                          >
+                            বাতিল
+                          </Button>
+                          <Button
+                            type="submit"
+                            disabled={createEmployeeMutation.isPending}
+                            className="bg-blue-600 hover:bg-blue-700"
+                            data-testid="button-submit-employee"
+                          >
+                            {createEmployeeMutation.isPending ? "যোগ হচ্ছে..." : "ইমপ্লয়ী যোগ করুন"}
+                          </Button>
+                        </div>
+                      </form>
+                    </Form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="ইমপ্লয়ী খুঁজুন..."
+                  value={employeeSearchTerm}
+                  onChange={(e) => setEmployeeSearchTerm(e.target.value)}
+                  className="pl-10"
+                  data-testid="input-search-employees-management"
+                />
+              </div>
+
+              {/* Employee List */}
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {filteredEmployeesForManagement.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                    <p className="text-gray-500">কোন ইমপ্লয়ী পাওয়া যায়নি</p>
+                  </div>
+                ) : (
+                  filteredEmployeesForManagement.map((employee) => (
+                    <Card key={employee.id} className="p-4" data-testid={`employee-card-${employee.id}`}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                              <User className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900">{employee.name}</h4>
+                              <p className="text-sm text-gray-600">{employee.role}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                            {employee.phone && (
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Phone className="h-3 w-3" />
+                                <span>{employee.phone}</span>
+                              </div>
+                            )}
+                            {employee.email && (
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Mail className="h-3 w-3" />
+                                <span>{employee.email}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Badge 
+                            variant={employee.isActive ? "default" : "secondary"}
+                            className={employee.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}
+                          >
+                            {employee.isActive ? "সক্রিয়" : "নিষ্ক্রিয়"}
+                          </Badge>
+                        </div>
+                      </div>
+                    </Card>
+                  ))
+                )}
+              </div>
             </div>
           </TabsContent>
         </Tabs>

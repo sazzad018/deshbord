@@ -5,7 +5,6 @@ import RunningProjectsPanel from "@/components/RunningProjectsPanel";
 import AdminProjectManagement from "@/components/AdminProjectManagement";
 import ProjectListPanel from "@/components/ProjectListPanel";
 import SalaryManagementPanel from "@/components/SalaryManagementPanel";
-import EmployeeListPanel from "@/components/EmployeeListPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Settings, Clock, GripVertical, Minus, Plus } from "lucide-react";
@@ -128,7 +127,7 @@ export default function ProjectManagement() {
     },
     {
       id: "client-info",
-      title: "ক্লায়েন্ট তালিকা",
+      title: "ক্লায়েন্ট তালিকা ও প্রোজেক্ট সমূহ",
       icon: Users,
       component: "ProjectListPanel",
       borderColor: "border-2 border-blue-200",
@@ -138,22 +137,12 @@ export default function ProjectManagement() {
     },
     {
       id: "salary-management",
-      title: "স্যালারি ম্যানেজমেন্ত",
+      title: "স্যালারি ও ইমপ্লয়ী ম্যানেজমেন্ত",
       icon: Users,
       component: "SalaryManagementPanel",
       borderColor: "border-2 border-orange-200",
       bgColor: "bg-orange-50",
       iconColor: "text-orange-800",
-      isMinimized: false,
-    },
-    {
-      id: "employee-list",
-      title: "ইমপ্লয়ী লিস্ট",
-      icon: Users,
-      component: "EmployeeListPanel",
-      borderColor: "border-2 border-indigo-200",
-      bgColor: "bg-indigo-50",
-      iconColor: "text-indigo-800",
       isMinimized: false,
     },
     {
@@ -211,8 +200,6 @@ export default function ProjectManagement() {
         return <ProjectListPanel />;
       case "SalaryManagementPanel":
         return <SalaryManagementPanel />;
-      case "EmployeeListPanel":
-        return <EmployeeListPanel />;
       case "AdminProjectManagement":
         return <AdminProjectManagement />;
       default:
