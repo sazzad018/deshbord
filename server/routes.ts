@@ -1036,23 +1036,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/projects/:id", async (req, res) => {
     try {
-      console.log('Updating project with data:', req.body);
+      console.log('Updating project with data:', JSON.stringify(req.body, null, 2));
       
       // Ensure features is properly formatted as string array
       const updateData = { ...req.body };
-      if (updateData.features && Array.isArray(updateData.features)) {
-        updateData.features = updateData.features.map(String); // Ensure all are strings
+      if (updateData.features) {
+        // Convert array-like object to proper array
+        updateData.features = Array.from(updateData.features).map(String);
+        console.log('Features array processed:', updateData.features);
       }
       
-      console.log('Processed update data:', updateData);
+      // Handle endDate properly
+      if (updateData.endDate && typeof updateData.endDate === 'string') {
+        updateData.endDate = new Date(updateData.endDate);
+        console.log('EndDate processed:', updateData.endDate);
+      }
+      
+      console.log('Final update data:', JSON.stringify(updateData, null, 2));
       const project = await storage.updateProject(req.params.id, updateData);
+      console.log('Update result:', project ? 'Success' : 'Not found');
+      
       if (!project) {
         return res.status(404).json({ error: "Project not found" });
       }
       res.json(project);
     } catch (error: any) {
-      console.error('Project update error:', error);
-      res.status(500).json({ error: "Failed to update project", details: error?.message || "Unknown error" });
+      console.error('Project update error details:');
+      console.error('Error message:', error?.message);
+      console.error('Error stack:', error?.stack);
+      console.error('Error details:', error);
+      res.status(500).json({ 
+        error: "Failed to update project", 
+        details: error?.message || "Unknown error",
+        stack: error?.stack 
+      });
     }
   });
 
@@ -1166,7 +1183,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/project-assignments", async (req, res) => {
     try {
-      const validatedData = insertProjectAssignmentSchema.parse(req.body);
+      // Preprocess array fields
+      const preprocessedData = { ...req.body };
+      if (preprocessedData.assignedFeatures) {
+        preprocessedData.assignedFeatures = Array.from(preprocessedData.assignedFeatures).map(String);
+      }
+      if (preprocessedData.completedFeatures) {
+        preprocessedData.completedFeatures = Array.from(preprocessedData.completedFeatures).map(String);
+      }
+      
+      const validatedData = insertProjectAssignmentSchema.parse(preprocessedData);
       const assignment = await storage.createProjectAssignment(validatedData);
       res.status(201).json(assignment);
     } catch (error) {
