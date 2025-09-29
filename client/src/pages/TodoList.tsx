@@ -310,9 +310,9 @@ export default function TodoList() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">টু-ডু লিস্ট</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">টু-ডু লিস্ট</h1>
           <p className="text-muted-foreground">দৈনন্দিন কাজ ও প্রোজেক্ট টাস্ক পরিচালনা করুন</p>
         </div>
 
@@ -372,7 +372,7 @@ export default function TodoList() {
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="priority"
@@ -489,7 +489,7 @@ export default function TodoList() {
       </div>
 
       {/* Statistics Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -557,13 +557,13 @@ export default function TodoList() {
       {showBulkActions && (
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-center gap-2">
                 <p className="font-medium" data-testid="text-selected-count">
                   {selectedTodos.size} টি টাস্ক নির্বাচিত
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -599,20 +599,20 @@ export default function TodoList() {
       )}
 
       {/* Filters and Search */}
-      <div className="flex flex-wrap gap-4 items-center">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-start sm:items-center">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Search className="h-4 w-4" />
           <Input
             placeholder="টাস্ক খুঁজুন..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-64"
+            className="flex-1 sm:w-64"
             data-testid="input-search-todos"
           />
         </div>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40" data-testid="select-status-filter">
+          <SelectTrigger className="w-full sm:w-40" data-testid="select-status-filter">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -624,7 +624,7 @@ export default function TodoList() {
         </Select>
 
         <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-40" data-testid="select-priority-filter">
+          <SelectTrigger className="w-full sm:w-40" data-testid="select-priority-filter">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
