@@ -222,13 +222,6 @@ export default function ProjectManagement() {
           </p>
         </div>
 
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-700 flex items-center gap-2">
-            <GripVertical className="h-4 w-4" />
-            <span className="font-medium">Drag & Drop:</span> 
-            সেকশনগুলিকে টানুন এবং পুনর্বিন্যাস করুন। মিনিমাইজ/ম্যাক্সিমাইজ বোতাম দিয়ে সেকশন লুকান।
-          </p>
-        </div>
 
         <DndContext
           sensors={sensors}
