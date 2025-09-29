@@ -66,7 +66,7 @@ const assignmentFormSchema = z.object({
   projectId: z.string().min(1, "প্রজেক্ট নির্বাচন করুন"),
   employeeId: z.string().min(1, "ডেভেলপার নির্বাচন করুন"),
   hourlyRate: z.number().min(0, "ঘন্টার হার ০ বা তার বেশি হতে হবে"),
-  assignedFeatures: z.string().optional(),
+  assignedFeatures: z.array(z.string()).default([]),
   role: z.string().default("developer"),
 });
 
@@ -105,6 +105,8 @@ export default function AdminProjectManagement() {
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isAssignDeveloperOpen, setIsAssignDeveloperOpen] = useState(false);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [assignmentSelectedFeatures, setAssignmentSelectedFeatures] = useState<string[]>([]);
+  const [selectedProjectForAssignment, setSelectedProjectForAssignment] = useState<string>("");
   const [categoryFeatures, setCategoryFeatures] = useState<Record<string, { id: string; name: string; icon: any; category: string }[]>>({});
   const [newFeatureInputs, setNewFeatureInputs] = useState<Record<string, string>>({});
   const { toast } = useToast();
@@ -112,6 +114,14 @@ export default function AdminProjectManagement() {
   // Helper functions for feature management
   const toggleFeature = (featureId: string) => {
     setSelectedFeatures(prev => 
+      prev.includes(featureId) 
+        ? prev.filter(id => id !== featureId)
+        : [...prev, featureId]
+    );
+  };
+
+  const toggleAssignmentFeature = (featureId: string) => {
+    setAssignmentSelectedFeatures(prev => 
       prev.includes(featureId) 
         ? prev.filter(id => id !== featureId)
         : [...prev, featureId]
@@ -212,10 +222,24 @@ export default function AdminProjectManagement() {
   const assignmentForm = useForm<AssignmentFormData>({
     resolver: zodResolver(assignmentFormSchema),
     defaultValues: {
+      projectId: "",
+      employeeId: "",
       hourlyRate: 0,
+      assignedFeatures: [],
       role: "developer",
     },
   });
+
+  // Handler for project selection in assignment form
+  const handleProjectSelection = (projectId: string) => {
+    setSelectedProjectForAssignment(projectId);
+    // Find the selected project
+    const selectedProject = projects.find(p => p.id === projectId);
+    if (selectedProject && selectedProject.features) {
+      // Reset assignment selected features
+      setAssignmentSelectedFeatures([]);
+    }
+  };
 
   // Mutations
   const createProjectMutation = useMutation({
@@ -253,7 +277,7 @@ export default function AdminProjectManagement() {
     mutationFn: (data: AssignmentFormData) =>
       apiRequest("POST", "/api/project-assignments", {
         ...data,
-        assignedFeatures: data.assignedFeatures ? data.assignedFeatures.split(',').map(f => f.trim()) : [],
+        assignedFeatures: assignmentSelectedFeatures,
         status: "assigned",
       }),
     onSuccess: () => {
@@ -265,6 +289,8 @@ export default function AdminProjectManagement() {
       });
       setIsAssignDeveloperOpen(false);
       assignmentForm.reset();
+      setAssignmentSelectedFeatures([]);
+      setSelectedProjectForAssignment("");
     },
     onError: () => {
       toast({
@@ -622,7 +648,10 @@ export default function AdminProjectManagement() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>প্রজেক্ট *</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={(value) => {
+                            field.onChange(value);
+                            handleProjectSelection(value);
+                          }} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger data-testid="select-assignment-project">
                                 <SelectValue placeholder="প্রজেক্ট নির্বাচন করুন" />
@@ -686,23 +715,76 @@ export default function AdminProjectManagement() {
                       )}
                     />
 
-                    <FormField
-                      control={assignmentForm.control}
-                      name="assignedFeatures"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>এসাইন করা ফিচার</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="কমা দিয়ে আলাদা করে ফিচার লিখুন" 
-                              {...field} 
-                              data-testid="textarea-assigned-features"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {/* Feature Selection for Assignment */}
+                    {selectedProjectForAssignment && (() => {
+                      const selectedProject = projects.find(p => p.id === selectedProjectForAssignment);
+                      const projectFeatures = selectedProject?.features || [];
+                      
+                      if (projectFeatures.length === 0) {
+                        return (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <p className="text-sm text-yellow-700">
+                              এই প্রজেক্টে কোন ফিচার নির্বাচিত নেই।
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-4">
+                          <FormLabel className="text-base font-semibold">এসাইন করা ফিচার নির্বাচন করুন</FormLabel>
+                          
+                          <div className="space-y-3 max-h-60 overflow-y-auto border rounded-lg p-4">
+                            <div className="grid grid-cols-1 gap-2">
+                              {projectFeatures.map((featureId) => {
+                                // Find the feature name from predefined features
+                                const predefinedFeature = predefinedFeatures.find(f => f.id === featureId);
+                                const featureName = predefinedFeature ? predefinedFeature.name : featureId;
+                                const FeatureIcon = predefinedFeature ? predefinedFeature.icon : Package;
+                                
+                                return (
+                                  <div key={featureId} className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`assignment-${featureId}`}
+                                      checked={assignmentSelectedFeatures.includes(featureId)}
+                                      onCheckedChange={() => toggleAssignmentFeature(featureId)}
+                                      data-testid={`checkbox-assignment-feature-${featureId}`}
+                                    />
+                                    <label 
+                                      htmlFor={`assignment-${featureId}`} 
+                                      className="flex items-center space-x-2 text-sm cursor-pointer"
+                                    >
+                                      <FeatureIcon className="h-4 w-4 text-gray-500" />
+                                      <span>{featureName}</span>
+                                    </label>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          
+                          {/* Selected Features Summary */}
+                          {assignmentSelectedFeatures.length > 0 && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                              <p className="text-sm font-medium text-blue-800">
+                                নির্বাচিত ফিচার ({assignmentSelectedFeatures.length}টি):
+                              </p>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {assignmentSelectedFeatures.map(featureId => {
+                                  const predefinedFeature = predefinedFeatures.find(f => f.id === featureId);
+                                  const featureName = predefinedFeature ? predefinedFeature.name : featureId;
+                                  return (
+                                    <span key={featureId} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                                      {featureName}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     <div className="flex justify-end gap-2 pt-4">
                       <Button 
