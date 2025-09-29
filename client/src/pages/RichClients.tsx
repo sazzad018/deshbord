@@ -39,6 +39,7 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  useDroppable,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -319,57 +320,77 @@ export default function RichClients() {
     setEditDialogOpen(true);
   };
 
+  // Droppable Area Component
+  function DroppableArea({ categoryKey, children }: { categoryKey: string; children: React.ReactNode }) {
+    const {isOver, setNodeRef} = useDroppable({
+      id: categoryKey,
+    });
+    
+    const style = {
+      backgroundColor: isOver ? 'rgba(59, 130, 246, 0.1)' : undefined,
+      borderColor: isOver ? '#3b82f6' : undefined,
+    };
+    
+    return (
+      <div ref={setNodeRef} style={style} className="h-full">
+        {children}
+      </div>
+    );
+  }
+
   const renderCategoryColumn = (categoryKey: keyof typeof categoryConfig, clients: RichClient[]) => {
     const config = categoryConfig[categoryKey];
     const Icon = config.icon;
 
     return (
       <div className="flex-1 min-w-0">
-        <Card className={`${config.bgColor} ${config.borderColor} border-2 min-h-[600px]`}>
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-xl bg-gradient-to-r ${config.color} shadow-lg`}>
-                <Icon className="h-6 w-6 text-white" />
+        <DroppableArea categoryKey={categoryKey}>
+          <Card className={`${config.bgColor} ${config.borderColor} border-2 min-h-[600px] transition-all duration-200`}>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-xl bg-gradient-to-r ${config.color} shadow-lg`}>
+                  <Icon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <CardTitle className={`text-lg ${config.textColor} font-bold`}>
+                    {config.title}
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">{config.description}</p>
+                  <Badge variant="outline" className={`mt-2 ${config.textColor} ${config.borderColor}`}>
+                    {clients.length}টি ক্লায়েন্ট
+                  </Badge>
+                </div>
               </div>
-              <div>
-                <CardTitle className={`text-lg ${config.textColor} font-bold`}>
-                  {config.title}
-                </CardTitle>
-                <p className="text-sm text-gray-600 mt-1">{config.description}</p>
-                <Badge variant="outline" className={`mt-2 ${config.textColor} ${config.borderColor}`}>
-                  {clients.length}টি ক্লায়েন্ট
-                </Badge>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <SortableContext items={clients.map(c => c.id)} strategy={verticalListSortingStrategy}>
-              <div 
-                className="space-y-4 max-h-96 overflow-y-auto min-h-[400px] p-2 rounded-lg transition-colors"
-                style={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                  border: '2px dashed transparent'
-                }}
-              >
-                {clients.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Icon className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>এই ক্যাটাগরিতে কোনো ক্লায়েন্ট নেই</p>
-                    <p className="text-xs mt-2">ক্লায়েন্ট এখানে টেনে আনুন</p>
-                  </div>
-                ) : (
-                  clients.map(client => (
-                    <DraggableClientCard 
-                      key={client.id} 
-                      client={client} 
-                      onEdit={handleEditClient}
-                    />
-                  ))
-                )}
-              </div>
-            </SortableContext>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <SortableContext items={clients.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                <div 
+                  className="space-y-4 max-h-96 overflow-y-auto min-h-[400px] p-2 rounded-lg transition-all duration-200"
+                  style={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                    border: '2px dashed rgba(0, 0, 0, 0.1)'
+                  }}
+                >
+                  {clients.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Icon className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>এই ক্যাটাগরিতে কোনো ক্লায়েন্ট নেই</p>
+                      <p className="text-xs mt-2">💡 ক্লায়েন্ট এখানে টেনে আনুন</p>
+                    </div>
+                  ) : (
+                    clients.map(client => (
+                      <DraggableClientCard 
+                        key={client.id} 
+                        client={client} 
+                        onEdit={handleEditClient}
+                      />
+                    ))
+                  )}
+                </div>
+              </SortableContext>
+            </CardContent>
+          </Card>
+        </DroppableArea>
       </div>
     );
   };
