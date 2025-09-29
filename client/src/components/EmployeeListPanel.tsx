@@ -1,8 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
 import { 
   Users, 
@@ -14,13 +22,90 @@ import {
   TrendingUp,
   TrendingDown,
   UserCheck,
-  UserX
+  UserX,
+  Plus,
+  Trash2
 } from "lucide-react";
-import type { Employee } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Employee, InsertEmployee } from "@shared/schema";
+
+// Employee creation form schema
+const employeeFormSchema = z.object({
+  name: z.string().min(1, "নাম প্রয়োজন"),
+  email: z.string().email("সঠিক ইমেইল লিখুন").optional().or(z.literal("")),
+  phone: z.string().min(1, "ফোন নম্বর প্রয়োজন"),
+  role: z.string().min(1, "ভূমিকা নির্বাচন করুন"),
+});
+
+type EmployeeFormData = z.infer<typeof employeeFormSchema>;
 
 export default function EmployeeListPanel() {
+  const { toast } = useToast();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { data: employees = [], isLoading } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
+  });
+
+  // Employee creation form
+  const employeeForm = useForm<EmployeeFormData>({
+    resolver: zodResolver(employeeFormSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      role: "",
+    },
+  });
+
+  // Employee creation mutation
+  const createEmployeeMutation = useMutation({
+    mutationFn: async (data: EmployeeFormData) => {
+      const employeeData: InsertEmployee = {
+        name: data.name,
+        email: data.email || undefined,
+        phone: data.phone,
+        role: data.role,
+        portalKey: `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Generate unique portal key
+      };
+      return apiRequest("POST", "/api/employees", employeeData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      setIsCreateDialogOpen(false);
+      employeeForm.reset();
+      toast({
+        title: "সফল",
+        description: "নতুন ইমপ্লয়ী সফলভাবে যোগ করা হয়েছে",
+      });
+    },
+    onError: (error) => {
+      console.error("Employee creation error:", error);
+      toast({
+        title: "ত্রুটি",
+        description: "ইমপ্লয়ী যোগ করতে সমস্যা হয়েছে",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Employee delete/deactivate mutation
+  const deleteEmployeeMutation = useMutation({
+    mutationFn: (employeeId: string) => apiRequest("PATCH", `/api/employees/${employeeId}`, { isActive: false }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      toast({
+        title: "সফল",
+        description: "ইমপ্লয়ী নিষ্ক্রিয় করা হয়েছে",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "ত্রুটি",
+        description: "ইমপ্লয়ী নিষ্ক্রিয় করতে সমস্যা হয়েছে",
+        variant: "destructive",
+      });
+    },
   });
 
   // Filter active employees
@@ -79,6 +164,14 @@ export default function EmployeeListPanel() {
               {activeEmployees.length}জন সক্রিয়
             </Badge>
           </CardTitle>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="bg-green-600 hover:bg-green-700" data-testid="button-add-employee">
+                <Plus className="h-4 w-4 mr-1" />
+                নতুন ইমপ্লয়ী
+              </Button>
+            </DialogTrigger>
+          </Dialog>
         </div>
       </CardHeader>
       <CardContent>
@@ -182,6 +275,17 @@ export default function EmployeeListPanel() {
                               পোর্টাল
                             </Button>
                           </Link>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => deleteEmployeeMutation.mutate(employee.id)}
+                            disabled={deleteEmployeeMutation.isPending}
+                            className="hover:bg-red-50 border-red-200 text-red-700"
+                            data-testid={`button-delete-employee-${employee.id}`}
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            ডিলিট
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -223,6 +327,103 @@ export default function EmployeeListPanel() {
           </div>
         )}
       </CardContent>
+
+      {/* Employee Creation Dialog */}
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>নতুন ইমপ্লয়ী যোগ করুন</DialogTitle>
+        </DialogHeader>
+        <Form {...employeeForm}>
+          <form onSubmit={employeeForm.handleSubmit((data) => createEmployeeMutation.mutate(data))} className="space-y-4">
+            <FormField
+              control={employeeForm.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>নাম *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="ইমপ্লয়ীর নাম লিখুন" {...field} data-testid="input-employee-name" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={employeeForm.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>ইমেইল</FormLabel>
+                  <FormControl>
+                    <Input placeholder="ইমেইল ঠিকানা" type="email" {...field} data-testid="input-employee-email" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={employeeForm.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>ফোন নম্বর *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="ফোন নম্বর" {...field} data-testid="input-employee-phone" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={employeeForm.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>ভূমিকা *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-employee-role">
+                        <SelectValue placeholder="ভূমিকা নির্বাচন করুন" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="frontend developer">Frontend Developer</SelectItem>
+                      <SelectItem value="backend developer">Backend Developer</SelectItem>
+                      <SelectItem value="designer">Designer</SelectItem>
+                      <SelectItem value="manager">Manager</SelectItem>
+                      <SelectItem value="developer">Developer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCreateDialogOpen(false)}
+                className="flex-1"
+                data-testid="button-cancel-employee"
+              >
+                বাতিল
+              </Button>
+              <Button
+                type="submit"
+                disabled={createEmployeeMutation.isPending}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+                data-testid="button-submit-employee"
+              >
+                {createEmployeeMutation.isPending ? "যোগ করছি..." : "যোগ করুন"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
     </Card>
   );
 }
