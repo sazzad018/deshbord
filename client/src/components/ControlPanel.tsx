@@ -469,24 +469,12 @@ export default function ControlPanel() {
       
       <CardContent className="p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-gray-500">লোড হচ্ছে...</div>
+          <div className="text-center py-2 text-gray-500 text-sm">
+            লোড হচ্ছে...
           </div>
         ) : customButtons.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="flex justify-center mb-4">
-              <div className="p-3 bg-gray-100 rounded-full">
-                <LinkIcon className="h-8 w-8 text-gray-400" />
-              </div>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">কোন কাস্টম বাটন নেই</h3>
-            <p className="text-gray-500 mb-4">আপনার প্রয়োজনীয় লিংকের জন্য কাস্টম বাটন তৈরি করুন।</p>
-            <Button 
-              onClick={() => setIsAddDialogOpen(true)}
-              className="bg-slate-900 hover:bg-slate-800 text-white"
-            >
-              প্রথম বাটন যোগ করুন
-            </Button>
+          <div className="text-center py-4 text-gray-500 text-sm">
+            কাস্টম বাটন যোগ করুন
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4">
@@ -653,24 +641,12 @@ export default function ControlPanel() {
       
       <CardContent className="p-6">
         {isLoadingQuickMessages ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-gray-500">মেসেজ লোড হচ্ছে...</div>
+          <div className="text-center py-2 text-gray-500 text-sm">
+            লোড হচ্ছে...
           </div>
         ) : quickMessages.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="flex justify-center mb-4">
-              <div className="p-3 bg-blue-100 rounded-full">
-                <MessageSquare className="h-8 w-8 text-blue-400" />
-              </div>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">কোন কুইক মেসেজ নেই</h3>
-            <p className="text-gray-500 mb-4">দ্রুত উত্তরের জন্য কুইক মেসেজ তৈরি করুন।</p>
-            <Button 
-              onClick={() => setIsQuickMessageDialogOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              প্রথম মেসেজ যোগ করুন
-            </Button>
+          <div className="text-center py-4 text-gray-500 text-sm">
+            কুইক মেসেজ যোগ করুন
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">
