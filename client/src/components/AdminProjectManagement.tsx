@@ -103,17 +103,29 @@ const predefinedFeatures = [
 
 export default function AdminProjectManagement() {
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [isEditProjectOpen, setIsEditProjectOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isAssignDeveloperOpen, setIsAssignDeveloperOpen] = useState(false);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [editSelectedFeatures, setEditSelectedFeatures] = useState<string[]>([]);
   const [assignmentSelectedFeatures, setAssignmentSelectedFeatures] = useState<string[]>([]);
   const [selectedProjectForAssignment, setSelectedProjectForAssignment] = useState<string>("");
   const [categoryFeatures, setCategoryFeatures] = useState<Record<string, { id: string; name: string; icon: any; category: string }[]>>({});
   const [newFeatureInputs, setNewFeatureInputs] = useState<Record<string, string>>({});
+  const [editNewFeatureInputs, setEditNewFeatureInputs] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   // Helper functions for feature management
   const toggleFeature = (featureId: string) => {
     setSelectedFeatures(prev => 
+      prev.includes(featureId) 
+        ? prev.filter(id => id !== featureId)
+        : [...prev, featureId]
+    );
+  };
+
+  const toggleEditFeature = (featureId: string) => {
+    setEditSelectedFeatures(prev => 
       prev.includes(featureId) 
         ? prev.filter(id => id !== featureId)
         : [...prev, featureId]
@@ -166,6 +178,69 @@ export default function AdminProjectManagement() {
     setSelectedFeatures(prev => prev.filter(f => f !== featureId));
   };
 
+  // Edit mode helper functions
+  const addEditFeatureToCategory = (category: string) => {
+    const newFeatureName = editNewFeatureInputs[category];
+    if (!newFeatureName || !newFeatureName.trim()) return;
+
+    const customFeatureId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const newFeature = {
+      id: customFeatureId,
+      name: newFeatureName.trim(),
+      icon: Package,
+      category: category
+    };
+
+    setCategoryFeatures(prev => ({
+      ...prev,
+      [category]: [...(prev[category] || []), newFeature]
+    }));
+
+    setEditNewFeatureInputs(prev => ({
+      ...prev,
+      [category]: ""
+    }));
+
+    toast({
+      title: "ফিচার যোগ করা হয়েছে!",
+      description: `"${newFeatureName}" ফিচারটি ${category} ক্যাটাগরিতে যোগ করা হয়েছে`,
+    });
+  };
+
+  const removeEditCategoryFeature = (category: string, featureId: string) => {
+    setCategoryFeatures(prev => ({
+      ...prev,
+      [category]: prev[category]?.filter(f => f.id !== featureId) || []
+    }));
+    setEditSelectedFeatures(prev => prev.filter(f => f !== featureId));
+  };
+
+  // Function to open edit modal with project data
+  const openEditProject = (project: Project) => {
+    setEditingProject(project);
+    
+    // Pre-populate form with existing project data
+    editProjectForm.reset({
+      name: project.name,
+      description: project.description || "",
+      type: project.type,
+      clientId: project.clientId,
+      totalAmount: project.totalAmount,
+      status: project.status,
+      features: "",
+      deadline: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : "",
+    });
+
+    // Pre-populate selected features
+    if (project.features && Array.isArray(project.features)) {
+      setEditSelectedFeatures(project.features);
+    } else {
+      setEditSelectedFeatures([]);
+    }
+
+    setIsEditProjectOpen(true);
+  };
+
   // Group features by category (including custom ones)
   const groupedFeatures = predefinedFeatures.reduce((acc, feature) => {
     if (!acc[feature.category]) {
@@ -206,6 +281,20 @@ export default function AdminProjectManagement() {
 
   // Forms
   const projectForm = useForm<ProjectFormData>({
+    resolver: zodResolver(projectFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      type: "website",
+      clientId: "",
+      totalAmount: 0,
+      status: "planning",
+      features: "",
+      deadline: "",
+    },
+  });
+
+  const editProjectForm = useForm<ProjectFormData>({
     resolver: zodResolver(projectFormSchema),
     defaultValues: {
       name: "",
@@ -268,6 +357,37 @@ export default function AdminProjectManagement() {
       toast({
         title: "ত্রুটি!",
         description: "প্রজেক্ট তৈরি করতে সমস্যা হয়েছে",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const editProjectMutation = useMutation({
+    mutationFn: (data: ProjectFormData & { id: string }) => {
+      const projectData = {
+        ...data,
+        features: editSelectedFeatures,
+        endDate: data.deadline ? new Date(data.deadline) : null,
+      };
+      console.log('Updating project data:', projectData);
+      return apiRequest("PATCH", `/api/projects/${data.id}`, projectData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      toast({
+        title: "সফল!",
+        description: "প্রজেক্ট আপডেট হয়েছে",
+      });
+      setIsEditProjectOpen(false);
+      editProjectForm.reset();
+      setEditSelectedFeatures([]);
+      setEditingProject(null);
+      setEditNewFeatureInputs({});
+    },
+    onError: () => {
+      toast({
+        title: "ত্রুটি!",
+        description: "প্রজেক্ট আপডেট করতে সমস্যা হয়েছে",
         variant: "destructive",
       });
     },
@@ -618,6 +738,290 @@ export default function AdminProjectManagement() {
               </DialogContent>
             </Dialog>
 
+            {/* Edit Project Modal */}
+            <Dialog open={isEditProjectOpen} onOpenChange={setIsEditProjectOpen}>
+              <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Edit className="h-5 w-5 text-green-600" />
+                    প্রজেক্ট সম্পাদনা করুন
+                  </DialogTitle>
+                  <DialogDescription>
+                    প্রজেক্টের তথ্য ও ফিচার আপডেট করুন। প্রয়োজনে নতুন ফিচার যোগ করুন বা সরান।
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...editProjectForm}>
+                  <form onSubmit={editProjectForm.handleSubmit((data) => editProjectMutation.mutate({ ...data, id: editingProject?.id || "" }))} className="space-y-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <FormField
+                        control={editProjectForm.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>প্রজেক্টের নাম *</FormLabel>
+                            <FormControl>
+                              <Input placeholder="প্রজেক্টের নাম লিখুন" {...field} data-testid="input-edit-project-name" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={editProjectForm.control}
+                        name="type"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>প্রজেক্টের ধরন *</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-edit-project-type">
+                                  <SelectValue placeholder="ধরন নির্বাচন করুন" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {projectTypes.filter(type => type.isActive).map((type) => (
+                                  <SelectItem key={type.id} value={type.name}>
+                                    {type.displayName}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={editProjectForm.control}
+                      name="clientId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ক্লায়েন্ট *</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-edit-client">
+                                <SelectValue placeholder="ক্লায়েন্ট নির্বাচন করুন" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {clients.map((client) => (
+                                <SelectItem key={client.id} value={client.id}>
+                                  {client.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={editProjectForm.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>বর্ণনা</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="প্রজেক্টের বিস্তারিত বর্ণনা লিখুন" 
+                              {...field} 
+                              data-testid="textarea-edit-description"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <FormField
+                        control={editProjectForm.control}
+                        name="totalAmount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>মোট খরচ (BDT) *</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                placeholder="0" 
+                                {...field} 
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                data-testid="input-edit-total-amount"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={editProjectForm.control}
+                        name="deadline"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>ডেডলাইন</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} data-testid="input-edit-deadline" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* Feature Selection System for Edit */}
+                    <div className="space-y-4">
+                      <Label className="text-base font-semibold">ফিচার নির্বাচন করুন</Label>
+                      
+                      {/* Predefined Features by Category for Edit */}
+                      <div className="space-y-4 max-h-80 overflow-y-auto border rounded-lg p-4">
+                        {Object.entries(groupedFeatures).map(([category, features]) => (
+                          <div key={category} className="space-y-3 border border-gray-200 rounded-lg p-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium text-sm text-gray-700 bg-gray-50 px-2 py-1 rounded">
+                                {category}
+                              </h4>
+                              
+                              {/* Add Feature to Category Button for Edit */}
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  placeholder="নতুন ফিচার..."
+                                  value={editNewFeatureInputs[category] || ""}
+                                  onChange={(e) => setEditNewFeatureInputs(prev => ({
+                                    ...prev,
+                                    [category]: e.target.value
+                                  }))}
+                                  onKeyPress={(e) => e.key === 'Enter' && addEditFeatureToCategory(category)}
+                                  className="text-xs h-7 w-32"
+                                  data-testid={`input-edit-new-feature-${category}`}
+                                />
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => addEditFeatureToCategory(category)}
+                                  className="h-7 w-7 p-0"
+                                  data-testid={`button-edit-add-feature-${category}`}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {features.map(feature => {
+                                const IconComponent = feature.icon;
+                                const isCustomFeature = feature.id.startsWith('custom-');
+                                return (
+                                  <div key={feature.id} className="flex items-center justify-between group">
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`edit-${feature.id}`}
+                                        checked={editSelectedFeatures.includes(feature.id)}
+                                        onCheckedChange={() => toggleEditFeature(feature.id)}
+                                        data-testid={`checkbox-edit-feature-${feature.id}`}
+                                      />
+                                      <label 
+                                        htmlFor={`edit-${feature.id}`} 
+                                        className="flex items-center space-x-2 text-sm cursor-pointer"
+                                      >
+                                        <IconComponent className="h-4 w-4 text-gray-500" />
+                                        <span>{feature.name}</span>
+                                      </label>
+                                    </div>
+                                    
+                                    {/* Remove button for custom features in edit mode */}
+                                    {isCustomFeature && (
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => removeEditCategoryFeature(category, feature.id)}
+                                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700"
+                                        data-testid={`button-edit-remove-feature-${feature.id}`}
+                                      >
+                                        ×
+                                      </Button>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Selected Features Summary for Edit */}
+                      {editSelectedFeatures.length > 0 && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                          <Label className="text-sm font-medium text-green-800">
+                            নির্বাচিত ফিচার ({editSelectedFeatures.length}টি):
+                          </Label>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {editSelectedFeatures.map(featureId => {
+                              const predefinedFeature = predefinedFeatures.find(f => f.id === featureId);
+                              const displayName = predefinedFeature ? predefinedFeature.name : featureId;
+                              return (
+                                <Badge key={featureId} variant="outline" className="text-xs">
+                                  {displayName}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <FormField
+                      control={editProjectForm.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>স্ট্যাটাস</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-edit-status">
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="planning">পরিকল্পনা</SelectItem>
+                              <SelectItem value="in_progress">চলমান</SelectItem>
+                              <SelectItem value="completed">সম্পূর্ণ</SelectItem>
+                              <SelectItem value="cancelled">বাতিল</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => setIsEditProjectOpen(false)}
+                        data-testid="button-cancel-edit-project"
+                      >
+                        বাতিল
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        disabled={editProjectMutation.isPending}
+                        className="bg-green-600 hover:bg-green-700"
+                        data-testid="button-submit-edit-project"
+                      >
+                        {editProjectMutation.isPending ? "আপডেট হচ্ছে..." : "প্রজেক্ট আপডেট করুন"}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+
             <Dialog open={isAssignDeveloperOpen} onOpenChange={setIsAssignDeveloperOpen}>
               <DialogTrigger asChild>
                 <Button 
@@ -948,10 +1352,7 @@ export default function AdminProjectManagement() {
                         size="sm" 
                         variant="ghost" 
                         className="h-8 px-2 text-green-600 hover:bg-green-50"
-                        onClick={() => {
-                          // TODO: Implement project edit modal
-                          console.log('Edit project:', project.id);
-                        }}
+                        onClick={() => openEditProject(project)}
                         data-testid={`button-edit-${project.id}`}
                       >
                         <Edit className="h-3 w-3 mr-1" />
