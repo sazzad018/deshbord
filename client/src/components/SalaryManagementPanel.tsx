@@ -516,10 +516,11 @@ export default function SalaryManagementPanel() {
         </div>
 
         <Tabs defaultValue="employees" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="employees">ডেভেলপার সামারি</TabsTrigger>
             <TabsTrigger value="payments">পেমেন্ট ইতিহাস</TabsTrigger>
             <TabsTrigger value="management">ইমপ্লয়ী ম্যানেজমেন্ত</TabsTrigger>
+            <TabsTrigger value="developer-dashboard">ডেভেলপার ড্যাশবোর্ড</TabsTrigger>
           </TabsList>
 
           <TabsContent value="employees" className="mt-4">
@@ -917,7 +918,288 @@ export default function SalaryManagementPanel() {
               </div>
             </div>
           </TabsContent>
+
+          {/* Developer Dashboard Tab */}
+          <TabsContent value="developer-dashboard" className="mt-4">
+            <DeveloperDashboard employees={employees} />
+          </TabsContent>
         </Tabs>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Developer Dashboard Component
+function DeveloperDashboard({ employees }: { employees: Employee[] }) {
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
+  const { toast } = useToast();
+
+  // Fetch project assignments for selected employee
+  const { data: assignments = [], isLoading: isLoadingAssignments, refetch } = useQuery({
+    queryKey: ["/api/employees", selectedEmployeeId, "assignments"],
+    enabled: !!selectedEmployeeId,
+  });
+
+  // Mark feature as complete mutation
+  const markFeatureCompleteMutation = useMutation({
+    mutationFn: async ({ assignmentId, feature }: { assignmentId: string; feature: string }) => {
+      const assignment = assignments.find(a => a.id === assignmentId);
+      if (!assignment) throw new Error("Assignment not found");
+      
+      const completedFeatures = [...(assignment.completedFeatures || [])];
+      if (!completedFeatures.includes(feature)) {
+        completedFeatures.push(feature);
+      }
+
+      return apiRequest("PATCH", `/api/project-assignments/${assignmentId}`, {
+        completedFeatures,
+        status: completedFeatures.length === assignment.assignedFeatures?.length ? "completed" : "working"
+      });
+    },
+    onSuccess: () => {
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ["/api/project-assignments"] });
+      toast({
+        title: "সফল!",
+        description: "ফিচার সম্পূর্ণ হিসেবে চিহ্নিত করা হয়েছে",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "ত্রুটি!",
+        description: "ফিচার আপডেট করতে সমস্যা হয়েছে",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800">ডেভেলপার প্রজেক্ট ড্যাশবোর্ড</h3>
+          <p className="text-sm text-gray-600">ডেভেলপাররা তাদের assigned projects এবং features দেখতে এবং complete করতে পারবে</p>
+        </div>
+      </div>
+
+      {/* Employee Selection */}
+      <div className="max-w-sm">
+        <Label htmlFor="employee-select" className="text-sm font-medium text-gray-700 mb-2 block">
+          ডেভেলপার নির্বাচন করুন
+        </Label>
+        <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
+          <SelectTrigger data-testid="select-developer">
+            <SelectValue placeholder="ডেভেলপার নির্বাচন করুন..." />
+          </SelectTrigger>
+          <SelectContent>
+            {employees.filter(emp => emp.isActive).map((employee) => (
+              <SelectItem key={employee.id} value={employee.id}>
+                {employee.name} - {employee.role}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Show assignments for selected employee */}
+      {selectedEmployee && (
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <User className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-blue-900">{selectedEmployee.name}</h4>
+                <p className="text-sm text-blue-700">{selectedEmployee.role}</p>
+              </div>
+            </div>
+          </div>
+
+          {isLoadingAssignments ? (
+            <div className="text-center py-8">
+              <Clock className="w-8 h-8 mx-auto text-gray-400 animate-spin mb-3" />
+              <p className="text-gray-500">প্রজেক্ট তথ্য লোড হচ্ছে...</p>
+            </div>
+          ) : assignments.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+              <p className="text-gray-500">কোন প্রজেক্ট assignment পাওয়া যায়নি</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {assignments.map((assignment) => (
+                <ProjectAssignmentCard 
+                  key={assignment.id} 
+                  assignment={assignment} 
+                  onMarkComplete={(feature) => 
+                    markFeatureCompleteMutation.mutate({ 
+                      assignmentId: assignment.id, 
+                      feature 
+                    })
+                  }
+                  isUpdating={markFeatureCompleteMutation.isPending}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Project Assignment Card Component
+function ProjectAssignmentCard({ 
+  assignment, 
+  onMarkComplete, 
+  isUpdating 
+}: { 
+  assignment: any; 
+  onMarkComplete: (feature: string) => void;
+  isUpdating: boolean;
+}) {
+  const assignedFeatures = assignment.assignedFeatures || [];
+  const completedFeatures = assignment.completedFeatures || [];
+  const progressPercentage = assignedFeatures.length > 0 
+    ? Math.round((completedFeatures.length / assignedFeatures.length) * 100)
+    : 0;
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "assigned": return "bg-yellow-100 text-yellow-700 border-yellow-300";
+      case "working": return "bg-blue-100 text-blue-700 border-blue-300";
+      case "completed": return "bg-green-100 text-green-700 border-green-300";
+      default: return "bg-gray-100 text-gray-700 border-gray-300";
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "assigned": return "নির্ধারিত";
+      case "working": return "চলমান";
+      case "completed": return "সম্পূর্ণ";
+      default: return status;
+    }
+  };
+
+  return (
+    <Card className="border-l-4 border-l-blue-500" data-testid={`assignment-card-${assignment.id}`}>
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <h4 className="font-semibold text-gray-900 mb-2">
+              {assignment.project?.name || "প্রজেক্ট"}
+            </h4>
+            <p className="text-sm text-gray-600 mb-3">
+              {assignment.project?.description || "কোন বিবরণ নেই"}
+            </p>
+            <div className="flex items-center gap-3">
+              <Badge 
+                variant="outline" 
+                className={getStatusColor(assignment.status)}
+              >
+                {getStatusText(assignment.status)}
+              </Badge>
+              <span className="text-sm text-gray-600">
+                {completedFeatures.length}/{assignedFeatures.length} ফিচার সম্পূর্ণ
+              </span>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-bold text-blue-600">{progressPercentage}%</p>
+            <p className="text-xs text-gray-500">সম্পূর্ণ</p>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="mb-4">
+          <Progress value={progressPercentage} className="h-2" />
+        </div>
+
+        {/* Features List */}
+        {assignedFeatures.length > 0 && (
+          <div>
+            <h5 className="font-medium text-gray-800 mb-3">নির্ধারিত ফিচারসমূহ:</h5>
+            <div className="space-y-2">
+              {assignedFeatures.map((feature, index) => {
+                const isCompleted = completedFeatures.includes(feature);
+                
+                return (
+                  <div 
+                    key={index} 
+                    className={`flex items-center justify-between p-3 rounded-lg border ${
+                      isCompleted 
+                        ? 'bg-green-50 border-green-200' 
+                        : 'bg-gray-50 border-gray-200'
+                    }`}
+                    data-testid={`feature-${assignment.id}-${index}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {isCompleted ? (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <Clock className="h-5 w-5 text-gray-400" />
+                      )}
+                      <span className={isCompleted ? 'text-green-800 line-through' : 'text-gray-800'}>
+                        {feature}
+                      </span>
+                    </div>
+                    {!isCompleted && (
+                      <Button
+                        size="sm"
+                        onClick={() => onMarkComplete(feature)}
+                        disabled={isUpdating}
+                        className="bg-green-600 hover:bg-green-700"
+                        data-testid={`button-complete-${assignment.id}-${index}`}
+                      >
+                        {isUpdating ? (
+                          <Clock className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "সম্পূর্ণ"
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Assignment Details */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <p className="text-gray-600">Hourly Rate</p>
+              <p className="font-medium">{formatCurrency(assignment.hourlyRate || 0)}</p>
+            </div>
+            <div>
+              <p className="text-gray-600">Total Earned</p>
+              <p className="font-medium">{formatCurrency(assignment.totalEarned || 0)}</p>
+            </div>
+            <div>
+              <p className="text-gray-600">Assigned Date</p>
+              <p className="font-medium">
+                {assignment.assignedDate 
+                  ? new Date(assignment.assignedDate).toLocaleDateString('bn-BD')
+                  : "N/A"
+                }
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-600">Completed Date</p>
+              <p className="font-medium">
+                {assignment.completedDate 
+                  ? new Date(assignment.completedDate).toLocaleDateString('bn-BD')
+                  : "চলমান"
+                }
+              </p>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

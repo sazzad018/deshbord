@@ -69,6 +69,21 @@ export default function EmployeePortal() {
   const urlParams = new URLSearchParams(window.location.search);
   const employeeId = urlParams.get('id');
 
+  // Simple test return for now
+  if (!employeeId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white p-4">
+        <Card className="w-full max-w-md mx-auto shadow-lg">
+          <CardContent className="p-8 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Employee Portal</h1>
+            <p className="text-gray-600">No Employee ID provided in URL</p>
+            <p className="text-sm text-gray-500 mt-2">URL: {window.location.href}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Fetch employee data using employee ID
   const { data: employee, isLoading, error } = useQuery<EmployeeWithDetails>({
     queryKey: ["/api/employees", employeeId],
@@ -85,6 +100,7 @@ export default function EmployeePortal() {
               <User className="h-8 w-8 text-purple-600 animate-pulse" />
             </div>
             <p className="text-gray-600">ডেটা লোড হচ্ছে...</p>
+            <p className="text-xs text-gray-500 mt-2">Employee ID: {employeeId}</p>
           </CardContent>
         </Card>
       </div>
@@ -104,6 +120,24 @@ export default function EmployeePortal() {
             <p className="text-gray-600 mb-4">
               ইমপ্লয়ী তথ্য লোড করতে সমস্যা হয়েছে। লিংকটি সঠিক কিনা যাচাই করুন।
             </p>
+            <p className="text-xs text-gray-500">Employee ID: {employeeId}</p>
+            <p className="text-xs text-gray-500">Error: {error?.message || 'Unknown'}</p>
+            <p className="text-xs text-gray-500">Has Employee: {employee ? 'Yes' : 'No'}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Debug check - Fallback if employee exists but data is somehow invalid
+  if (!employee.name) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">ডেটা সমস্যা</h2>
+            <p className="text-gray-600 mb-4">Employee data received but name is missing</p>
+            <pre className="text-xs text-left">{JSON.stringify(employee, null, 2)}</pre>
           </CardContent>
         </Card>
       </div>
