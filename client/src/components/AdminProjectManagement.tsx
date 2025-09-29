@@ -1294,7 +1294,15 @@ export default function AdminProjectManagement() {
             সাম্প্রতিক প্রজেক্টসমূহ
           </h4>
           <div className="space-y-3 max-h-64 overflow-y-auto">
-            {projects.slice(0, 6).map((project) => {
+            {projects
+              .sort((a, b) => {
+                // Sort by creation date (newest first)
+                const dateA = new Date(a.createdAt || 0);
+                const dateB = new Date(b.createdAt || 0);
+                return dateB.getTime() - dateA.getTime();
+              })
+              .slice(0, 5)
+              .map((project) => {
               const client = clients.find(c => c.id === project.clientId);
               const projectAssignments = assignments.filter(a => a.projectId === project.id);
               
