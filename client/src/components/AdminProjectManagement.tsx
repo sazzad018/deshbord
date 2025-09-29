@@ -178,12 +178,15 @@ export default function AdminProjectManagement() {
 
   // Mutations
   const createProjectMutation = useMutation({
-    mutationFn: (data: ProjectFormData) => 
-      apiRequest("POST", "/api/projects", {
+    mutationFn: (data: ProjectFormData) => {
+      const projectData = {
         ...data,
-        features: selectedFeatures.length > 0 ? selectedFeatures : [],
+        features: selectedFeatures,
         endDate: data.deadline ? new Date(data.deadline).toISOString() : null,
-      }),
+      };
+      console.log('Submitting project data:', projectData);
+      return apiRequest("POST", "/api/projects", projectData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       toast({
@@ -263,7 +266,7 @@ export default function AdminProjectManagement() {
                   নতুন প্রজেক্ট
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <FolderPlus className="h-5 w-5 text-blue-600" />
@@ -272,7 +275,7 @@ export default function AdminProjectManagement() {
                 </DialogHeader>
                 <Form {...projectForm}>
                   <form onSubmit={projectForm.handleSubmit((data) => createProjectMutation.mutate(data))} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <FormField
                         control={projectForm.control}
                         name="name"
@@ -353,7 +356,7 @@ export default function AdminProjectManagement() {
                       )}
                     />
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <FormField
                         control={projectForm.control}
                         name="totalAmount"
@@ -400,7 +403,7 @@ export default function AdminProjectManagement() {
                             <h4 className="font-medium text-sm text-gray-700 bg-gray-50 px-2 py-1 rounded">
                               {category}
                             </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-2">
                               {features.map(feature => {
                                 const IconComponent = feature.icon;
                                 return (
