@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, DollarSign, Users, Globe, Clock, CheckCircle, AlertTriangle, Eye, Plus, Edit, Trash2, Save, X } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +50,7 @@ export default function RunningProjectsPanel() {
   const { toast } = useToast();
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectWithDetails | null>(null);
   const [editFormData, setEditFormData] = useState({
     name: "",
@@ -70,12 +72,26 @@ export default function RunningProjectsPanel() {
     cpanelPassword: "",
   });
 
+  const [createFormData, setCreateFormData] = useState({
+    name: "",
+    description: "",
+    type: "website" as "website" | "landing_page",
+    clientId: "",
+    totalAmount: 0,
+    advanceReceived: 0,
+    startDate: new Date().toISOString().split('T')[0],
+  });
+
   const { data: projects = [], isLoading } = useQuery<ProjectWithDetails[]>({
     queryKey: ["/api/projects"],
   });
 
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
+  });
+
+  const { data: clients = [] } = useQuery<any[]>({
+    queryKey: ["/api/clients"],
   });
 
   // Update project mutation
@@ -113,6 +129,35 @@ export default function RunningProjectsPanel() {
       toast({
         title: "ত্রুটি!",
         description: "প্রজেক্ট ডিলিট করতে সমস্যা হয়েছে।",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Create project mutation
+  const createProjectMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/projects", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      setCreateDialogOpen(false);
+      setCreateFormData({
+        name: "",
+        description: "",
+        type: "website",
+        clientId: "",
+        totalAmount: 0,
+        advanceReceived: 0,
+        startDate: new Date().toISOString().split('T')[0],
+      });
+      toast({
+        title: "সফল!",
+        description: "নতুন প্রজেক্ট তৈরি করা হয়েছে।",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "ত্রুটি!",
+        description: "প্রজেক্ট তৈরি করতে সমস্যা হয়েছে।",
         variant: "destructive",
       });
     },
@@ -165,6 +210,22 @@ export default function RunningProjectsPanel() {
     updateProjectMutation.mutate({ id: selectedProject.id, updates });
   };
 
+  const handleCreateProject = () => {
+    const projectData = {
+      ...createFormData,
+      dueAmount: createFormData.totalAmount - createFormData.advanceReceived,
+      progress: 0,
+      status: "pending",
+      startDate: new Date(createFormData.startDate),
+    };
+    
+    createProjectMutation.mutate(projectData);
+  };
+
+  const handleNewProjectClick = () => {
+    setCreateDialogOpen(true);
+  };
+
   // Filter running projects (not completed/cancelled)
   const runningProjects = projects.filter(p => 
     p.status === "pending" || p.status === "in_progress"
@@ -207,7 +268,13 @@ export default function RunningProjectsPanel() {
               {runningProjects.length}টি
             </Badge>
           </CardTitle>
-          <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-gradient-to-r hover:from-yellow-400 hover:to-orange-500 hover:text-white backdrop-blur-sm bg-gradient-to-r from-green-400 to-blue-500 border-0">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleNewProjectClick}
+            className="border-white/30 text-white hover:bg-gradient-to-r hover:from-yellow-400 hover:to-orange-500 hover:text-white backdrop-blur-sm bg-gradient-to-r from-green-400 to-blue-500 border-0"
+            data-testid="button-new-project"
+          >
             <Plus className="h-4 w-4 mr-1" />
             নতুন প্রজেক্ট
           </Button>
@@ -645,6 +712,134 @@ export default function RunningProjectsPanel() {
               >
                 <Save className="h-4 w-4 mr-2" />
                 সেভ করুন
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Project Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">নতুন প্রজেক্ট তৈরি করুন</DialogTitle>
+            <DialogDescription>একটি নতুন প্রজেক্ট তৈরি করার জন্য নিচের তথ্য দিন</DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="create-name">প্রজেক্টের নাম</Label>
+                <Input
+                  id="create-name"
+                  value={createFormData.name}
+                  onChange={(e) => setCreateFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="প্রজেক্টের নাম লিখুন"
+                  data-testid="input-project-name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="create-type">প্রজেক্টের ধরন</Label>
+                <Select
+                  value={createFormData.type}
+                  onValueChange={(value: "website" | "landing_page") => 
+                    setCreateFormData(prev => ({ ...prev, type: value }))
+                  }
+                >
+                  <SelectTrigger data-testid="select-project-type">
+                    <SelectValue placeholder="ধরন নির্বাচন করুন" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="website">ওয়েবসাইট</SelectItem>
+                    <SelectItem value="landing_page">ল্যান্ডিং পেজ</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="create-client">ক্লায়েন্ট</Label>
+                <Select
+                  value={createFormData.clientId}
+                  onValueChange={(value) => 
+                    setCreateFormData(prev => ({ ...prev, clientId: value }))
+                  }
+                >
+                  <SelectTrigger data-testid="select-client">
+                    <SelectValue placeholder="ক্লায়েন্ট নির্বাচন করুন" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client: any) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="create-start-date">শুরুর তারিখ</Label>
+                <Input
+                  id="create-start-date"
+                  type="date"
+                  value={createFormData.startDate}
+                  onChange={(e) => setCreateFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                  data-testid="input-start-date"
+                />
+              </div>
+              <div>
+                <Label htmlFor="create-total">মোট পরিমাণ (৳)</Label>
+                <Input
+                  id="create-total"
+                  type="number"
+                  value={createFormData.totalAmount}
+                  onChange={(e) => setCreateFormData(prev => ({ ...prev, totalAmount: parseInt(e.target.value) || 0 }))}
+                  placeholder="মোট পরিমাণ"
+                  data-testid="input-total-amount"
+                />
+              </div>
+              <div>
+                <Label htmlFor="create-advance">অগ্রিম (৳)</Label>
+                <Input
+                  id="create-advance"
+                  type="number"
+                  value={createFormData.advanceReceived}
+                  onChange={(e) => setCreateFormData(prev => ({ ...prev, advanceReceived: parseInt(e.target.value) || 0 }))}
+                  placeholder="অগ্রিম পরিমাণ"
+                  data-testid="input-advance-amount"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="create-description">বিবরণ</Label>
+              <Textarea
+                id="create-description"
+                value={createFormData.description}
+                onChange={(e) => setCreateFormData(prev => ({ ...prev, description: e.target.value }))}
+                rows={3}
+                placeholder="প্রজেক্টের বিস্তারিত বিবরণ"
+                data-testid="textarea-description"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setCreateDialogOpen(false)}
+                disabled={createProjectMutation.isPending}
+                data-testid="button-cancel-create"
+              >
+                <X className="h-4 w-4 mr-2" />
+                বাতিল
+              </Button>
+              <Button
+                onClick={handleCreateProject}
+                disabled={createProjectMutation.isPending || !createFormData.name || !createFormData.clientId}
+                className="bg-blue-600 hover:bg-blue-700"
+                data-testid="button-save-project"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                প্রজেক্ট তৈরি করুন
               </Button>
             </div>
           </div>
