@@ -29,29 +29,8 @@ import {
   ArrowRight,
   Tag,
   StickyNote,
-  GripVertical,
   ArrowUpDown
 } from "lucide-react";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  useDroppable,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import {
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Client } from "@shared/schema";
@@ -97,26 +76,12 @@ const categoryConfig = {
   }
 };
 
-// Draggable Client Card Component
-function DraggableClientCard({ client, onEdit, onCategoryChange }: { 
+// Static Client Card Component (No Drag & Drop)
+function StaticClientCard({ client, onEdit, onCategoryChange }: { 
   client: RichClient; 
   onEdit: (client: RichClient) => void;
   onCategoryChange: (clientId: string, newCategory: string) => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: client.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.6 : 1,
-  };
 
   const handleWhatsAppClick = (phone: string) => {
     if (phone) {
@@ -150,11 +115,7 @@ function DraggableClientCard({ client, onEdit, onCategoryChange }: {
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      className={`group ${getCategoryStyle(client.category)} border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-300 cursor-grab active:cursor-grabbing hover:scale-[1.02]`}
-      {...attributes}
-      {...listeners}
+      className={`group ${getCategoryStyle(client.category)} border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02]`}
     >
       {/* Header - Compact */}
       <div className="flex items-center justify-between mb-2">
@@ -163,7 +124,6 @@ function DraggableClientCard({ client, onEdit, onCategoryChange }: {
           <h4 className="font-bold text-gray-900 text-sm truncate">
             {client.name}
           </h4>
-          <GripVertical className="h-3.5 w-3.5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
         </div>
         
         <DropdownMenu>
@@ -307,13 +267,6 @@ export default function RichClients() {
     company: ""
   });
 
-  // DnD sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   // Fetch clients data
   const { data: clients = [], isLoading } = useQuery<Client[]>({
@@ -436,23 +389,6 @@ export default function RichClients() {
     },
   });
 
-  // Handle drag end
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const clientId = active.id as string;
-    const newCategory = over.id as string;
-
-    // Find the client being dragged
-    const client = richClients.find(c => c.id === clientId);
-    
-    if (client && client.category !== newCategory) {
-      // Update the category
-      changeCategoryMutation.mutate({ clientId, newCategory });
-    }
-  };
 
   // Handle edit client
   const handleEditClient = (client: RichClient) => {
@@ -469,23 +405,6 @@ export default function RichClients() {
     setEditDialogOpen(true);
   };
 
-  // Droppable Area Component
-  function DroppableArea({ categoryKey, children }: { categoryKey: string; children: React.ReactNode }) {
-    const {isOver, setNodeRef} = useDroppable({
-      id: categoryKey,
-    });
-    
-    const style = {
-      backgroundColor: isOver ? 'rgba(59, 130, 246, 0.1)' : undefined,
-      borderColor: isOver ? '#3b82f6' : undefined,
-    };
-    
-    return (
-      <div ref={setNodeRef} style={style} className="h-full">
-        {children}
-      </div>
-    );
-  }
 
   const renderCategoryColumn = (categoryKey: keyof typeof categoryConfig, clients: RichClient[]) => {
     const config = categoryConfig[categoryKey];
@@ -493,56 +412,52 @@ export default function RichClients() {
 
     return (
       <div className="flex-1 min-w-0">
-        <DroppableArea categoryKey={categoryKey}>
-          <Card className={`${config.bgColor} ${config.borderColor} border-2 min-h-[75vh] max-h-[80vh] transition-all duration-200 shadow-sm hover:shadow-md`}>
-            <CardHeader className="pb-3 pt-3">
-              <div className="flex items-center gap-2">
-                <div className={`p-2 rounded-lg bg-gradient-to-r ${config.color} shadow-sm`}>
-                  <Icon className="h-4 w-4 text-white" />
-                </div>
-                <div className="flex-1">
-                  <CardTitle className={`text-base ${config.textColor} font-bold`}>
-                    {config.title}
-                  </CardTitle>
-                  <p className="text-sm text-gray-600 mt-1">{config.description}</p>
-                  <Badge variant="outline" className={`mt-2 ${config.textColor} ${config.borderColor}`}>
-                    {clients.length}টি ক্লায়েন্ট
-                  </Badge>
-                </div>
+        <Card className={`${config.bgColor} ${config.borderColor} border-2 min-h-[75vh] max-h-[80vh] transition-all duration-200 shadow-sm hover:shadow-md`}>
+          <CardHeader className="pb-3 pt-3">
+            <div className="flex items-center gap-2">
+              <div className={`p-2 rounded-lg bg-gradient-to-r ${config.color} shadow-sm`}>
+                <Icon className="h-4 w-4 text-white" />
               </div>
-            </CardHeader>
-            <CardContent className="p-3">
-              <SortableContext items={clients.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                <div 
-                  className="space-y-2 max-h-[65vh] overflow-y-auto min-h-[350px] p-2 rounded-lg transition-all duration-200 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
-                  style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                    border: '1px dashed rgba(0, 0, 0, 0.1)'
-                  }}
-                >
-                  {clients.length === 0 ? (
-                    <div className="text-center py-6 text-gray-500">
-                      <Icon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">এই ক্যাটাগরিতে কোনো ক্লায়েন্ট নেই</p>
-                      <p className="text-xs mt-1 opacity-70">💡 ক্লায়েন্ট এখানে টেনে আনুন</p>
-                    </div>
-                  ) : (
-                    clients.map(client => (
-                      <DraggableClientCard 
-                        key={client.id} 
-                        client={client} 
-                        onEdit={handleEditClient}
-                        onCategoryChange={(clientId, newCategory) => {
-                          changeCategoryMutation.mutate({ clientId, newCategory });
-                        }}
-                      />
-                    ))
-                  )}
+              <div className="flex-1">
+                <CardTitle className={`text-base ${config.textColor} font-bold`}>
+                  {config.title}
+                </CardTitle>
+                <p className="text-sm text-gray-600 mt-1">{config.description}</p>
+                <Badge variant="outline" className={`mt-2 ${config.textColor} ${config.borderColor}`}>
+                  {clients.length}টি ক্লায়েন্ট
+                </Badge>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-3">
+            <div 
+              className="space-y-2 max-h-[65vh] overflow-y-auto min-h-[350px] p-2 rounded-lg transition-all duration-200 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                border: '1px solid rgba(0, 0, 0, 0.1)'
+              }}
+            >
+              {clients.length === 0 ? (
+                <div className="text-center py-6 text-gray-500">
+                  <Icon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">এই ক্যাটাগরিতে কোনো ক্লায়েন্ট নেই</p>
+                  <p className="text-xs mt-1 opacity-70">💡 বাটন দিয়ে ক্যাটাগরি পরিবর্তন করুন</p>
                 </div>
-              </SortableContext>
-            </CardContent>
-          </Card>
-        </DroppableArea>
+              ) : (
+                clients.map(client => (
+                  <StaticClientCard 
+                    key={client.id} 
+                    client={client} 
+                    onEdit={handleEditClient}
+                    onCategoryChange={(clientId, newCategory) => {
+                      changeCategoryMutation.mutate({ clientId, newCategory });
+                    }}
+                  />
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   };
@@ -570,12 +485,7 @@ export default function RichClients() {
 
   return (
     <>
-      <DndContext 
-        sensors={sensors} 
-        collisionDetection={closestCenter} 
-        onDragEnd={handleDragEnd}
-      >
-        <div className="p-6">
+      <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -583,7 +493,7 @@ export default function RichClients() {
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">বড়লোক ক্লাইন্ট</h1>
                 <p className="text-gray-600">প্রিমিয়াম ক্লায়েন্ট ক্যাটাগরি ম্যানেজমেন্ট</p>
-                <p className="text-sm text-gray-500 mt-1">💡 টিপস: ক্লায়েন্ট কার্ড টেনে নিয়ে ক্যাটাগরি পরিবর্তন করুন</p>
+                <p className="text-sm text-gray-500 mt-1">💡 টিপস: "ধাপ পরিবর্তন করুন" বাটন দিয়ে ক্যাটাগরি পরিবর্তন করুন</p>
               </div>
             </div>
             
@@ -654,7 +564,6 @@ export default function RichClients() {
             {renderCategoryColumn('general', categorizedClients.general)}
           </div>
         </div>
-      </DndContext>
 
       {/* Edit Client Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -662,7 +571,7 @@ export default function RichClients() {
           <DialogHeader>
             <DialogTitle>প্রোফাইল ইনফরমেশন সম্পাদনা</DialogTitle>
             <DialogDescription>
-              ক্লায়েন্টের নাম, ফোন ও নোট আপডেট করুন (ক্যাটাগরি পরিবর্তনের জন্য drag & drop ব্যবহার করুন)
+              ক্লায়েন্টের নাম, ফোন ও নোট আপডেট করুন (ক্যাটাগরি পরিবর্তনের জন্য বাটন ব্যবহার করুন)
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
