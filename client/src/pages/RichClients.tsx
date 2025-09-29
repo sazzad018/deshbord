@@ -246,17 +246,8 @@ export default function RichClients() {
     // Calculate wallet balance from deposited - spent
     const walletBalance = client.walletDeposited - client.walletSpent;
     
-    // Use the category from database, with fallback logic for existing clients
-    let category: 'regular' | 'premium' | 'general' = (client as any).category || 'general';
-    
-    // Fallback categorization for clients without category (backward compatibility)
-    if (!(client as any).category) {
-      if (walletBalance >= 50000) {
-        category = 'premium';
-      } else if (walletBalance >= 20000) {
-        category = 'regular';
-      }
-    }
+    // All clients start in 'general' category by default, can be moved to other categories
+    const category: 'regular' | 'premium' | 'general' = (client as any).category || 'general';
 
     return {
       ...client,
@@ -672,13 +663,13 @@ export default function RichClients() {
               />
             </div>
             <div>
-              <Label htmlFor="new-category">ক্যাটাগরি</Label>
+              <Label htmlFor="new-category">ক্যাটাগরি (ডিফল্ট: সাধারণ ক্লায়েন্ট)</Label>
               <Select value={clientFormData.category} onValueChange={(value) => setClientFormData(prev => ({ ...prev, category: value as any }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="general">সাধারণ ক্লায়েন্ট</SelectItem>
+                  <SelectItem value="general">সাধারণ ক্লায়েন্ট (ডিফল্ট)</SelectItem>
                   <SelectItem value="regular">নিয়মিত ক্লায়েন্ট</SelectItem>
                   <SelectItem value="premium">প্রিমিয়াম ক্লায়েন্ট</SelectItem>
                 </SelectContent>
