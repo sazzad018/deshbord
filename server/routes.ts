@@ -1024,7 +1024,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/projects", async (req, res) => {
     try {
       console.log('Creating project with data:', req.body);
-      const validatedData = insertProjectSchema.parse(req.body);
+      
+      // Preprocess array fields
+      const preprocessedData = { ...req.body };
+      if (preprocessedData.features) {
+        preprocessedData.features = Array.from(preprocessedData.features).map(String);
+      }
+      if (preprocessedData.completedFeatures) {
+        preprocessedData.completedFeatures = Array.from(preprocessedData.completedFeatures).map(String);
+      }
+      
+      const validatedData = insertProjectSchema.parse(preprocessedData);
       console.log('Validated data:', validatedData);
       const project = await storage.createProject(validatedData);
       res.status(201).json(project);
