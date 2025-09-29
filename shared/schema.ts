@@ -423,6 +423,38 @@ export const salaryPayments = pgTable("salary_payments", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Website Credentials Management Table
+export const websiteCredentials = pgTable("website_credentials", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => projects.id),
+  credentialType: text("credential_type").notNull(), // "admin", "cpanel", "hosting", "domain", "database"
+  title: text("title").notNull(), // e.g., "Admin Panel", "cPanel Access", "Database"
+  username: text("username"),
+  password: text("password"),
+  url: text("url"), // Login URL
+  additionalInfo: text("additional_info"), // Extra notes like FTP details, etc.
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Project Payment History Table for detailed tracking
+export const projectPaymentHistory = pgTable("project_payment_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => projects.id),
+  paymentType: text("payment_type").notNull(), // "advance", "milestone", "final", "due"
+  amount: integer("amount").notNull(),
+  paymentMethod: text("payment_method"), // "bKash", "Nagad", "Bank", "Cash"
+  transactionId: text("transaction_id"),
+  paymentDate: timestamp("payment_date").notNull(),
+  description: text("description"), // Payment description/milestone
+  isVerified: boolean("is_verified").notNull().default(false), // Admin verification
+  verifiedBy: text("verified_by"), // Admin who verified
+  verifiedAt: timestamp("verified_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Types for the new tables
 export type ProjectType = typeof projectTypes.$inferSelect;
 export type InsertProjectType = typeof projectTypes.$inferInsert;
@@ -441,6 +473,12 @@ export type InsertProjectPayment = typeof projectPayments.$inferInsert;
 
 export type SalaryPayment = typeof salaryPayments.$inferSelect;
 export type InsertSalaryPayment = typeof salaryPayments.$inferInsert;
+
+export type WebsiteCredential = typeof websiteCredentials.$inferSelect;
+export type InsertWebsiteCredential = typeof websiteCredentials.$inferInsert;
+
+export type ProjectPaymentHistory = typeof projectPaymentHistory.$inferSelect;
+export type InsertProjectPaymentHistory = typeof projectPaymentHistory.$inferInsert;
 
 // Insert schemas for validation
 export const insertProjectTypeSchema = createInsertSchema(projectTypes).omit({ id: true, createdAt: true });
