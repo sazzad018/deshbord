@@ -23,7 +23,7 @@ import {
   Eye
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils-dashboard";
-import type { EmployeeWithDetails, ProjectAssignment, SalaryPayment } from "@shared/schema";
+import type { EmployeeWithDetails, ProjectAssignment, SalaryPayment, Employee } from "@shared/schema";
 
 // Status configuration for projects
 const PROJECT_STATUS_CONFIG = {
@@ -68,31 +68,23 @@ const PAYMENT_TYPE_CONFIG = {
 export default function EmployeePortal() {
   const { toast } = useToast();
   
-  // Get employee ID from URL parameters
-  const [location] = useLocation();
-  // Use window.location.search for query parameters since wouter's location doesn't include query string
+  // Fetch all employees data
+  const { data: employees = [], isLoading: employeesLoading } = useQuery<Employee[]>({
+    queryKey: ["/api/employees"],
+  });
+
+  // Get URL employeeId if provided (for backward compatibility)
   const urlParams = new URLSearchParams(window.location.search);
-  const employeeId = urlParams.get('id');
+  const urlEmployeeId = urlParams.get('id') || urlParams.get('employeeId');
 
-  // Simple test return for now
-  if (!employeeId) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white p-4">
-        <Card className="w-full max-w-md mx-auto shadow-lg">
-          <CardContent className="p-8 text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Employee Portal</h1>
-            <p className="text-gray-600">No Employee ID provided in URL</p>
-            <p className="text-sm text-gray-500 mt-2">URL: {window.location.href}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Use first active employee as default if no URL param
+  const defaultEmployee = employees.find(emp => emp.isActive) || employees[0];
+  const selectedEmployeeId = urlEmployeeId || defaultEmployee?.id;
 
-  // Fetch employee data using employee ID
+  // Fetch specific employee details
   const { data: employee, isLoading, error, refetch } = useQuery<EmployeeWithDetails>({
-    queryKey: ["/api/employees", employeeId],
-    enabled: !!employeeId,
+    queryKey: ["/api/employees", selectedEmployeeId],
+    enabled: !!selectedEmployeeId,
   });
 
   // Mark feature as complete mutation
@@ -129,7 +121,7 @@ export default function EmployeePortal() {
   });
 
   // Loading state
-  if (isLoading) {
+  if (employeesLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-lg">
@@ -138,63 +130,99 @@ export default function EmployeePortal() {
               <User className="h-8 w-8 text-purple-600 animate-pulse" />
             </div>
             <p className="text-gray-600">ডেটা লোড হচ্ছে...</p>
-            <p className="text-xs text-gray-500 mt-2">Employee ID: {employeeId}</p>
+            <p className="text-xs text-gray-500 mt-2">কর্মচারী পোর্টাল প্রস্তুত করা হচ্ছে...</p>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  // Error state
-  if (error || !employee) {
+  // Show general employee portal if no specific employee found but employees exist
+  if (!employee && employees.length > 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white p-4">
+        <div className="container mx-auto max-w-4xl">
+          <Card className="shadow-lg">
+            <CardContent className="p-8 text-center">
+              <div className="mx-auto mb-4 w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                <Users className="h-8 w-8 text-blue-600" />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">কর্মচারী পোর্টাল</h1>
+              <p className="text-gray-600 mb-4">স্বাগতম! এখানে কর্মচারীদের তথ্য এবং প্রজেক্ট পরিচালনার সুবিধা রয়েছে।</p>
+              
+              {/* Show available employees */}
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-4">উপলব্ধ কর্মচারীগণ:</h3>
+                <div className="grid gap-3">
+                  {employees.filter(emp => emp.isActive).map((emp) => (
+                    <Card key={emp.id} className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+                          onClick={() => window.location.href = `/employee-portal?id=${emp.id}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="text-left">
+                          <h4 className="font-medium">{emp.name}</h4>
+                          <p className="text-sm text-gray-600">{emp.role}</p>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          পোর্টাল দেখুন
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state - no employees found
+  if (employees.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-lg">
           <CardContent className="p-8 text-center">
-            <div className="mx-auto mb-4 w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-              <AlertTriangle className="h-8 w-8 text-red-600" />
+            <div className="mx-auto mb-4 w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+              <Users className="h-8 w-8 text-blue-600" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">ত্রুটি</h2>
-            <p className="text-gray-600 mb-4">
-              ইমপ্লয়ী তথ্য লোড করতে সমস্যা হয়েছে। লিংকটি সঠিক কিনা যাচাই করুন।
-            </p>
-            <p className="text-xs text-gray-500">Employee ID: {employeeId}</p>
-            <p className="text-xs text-gray-500">Error: {error?.message || 'Unknown'}</p>
-            <p className="text-xs text-gray-500">Has Employee: {employee ? 'Yes' : 'No'}</p>
+            <h1 className="text-xl font-bold text-gray-900 mb-2">কর্মচারী পোর্টাল</h1>
+            <p className="text-gray-600 mb-4">কোন কর্মচারীর তথ্য এখনো যোগ করা হয়নি</p>
+            <p className="text-sm text-gray-500">প্রশাসনিক প্যানেল থেকে কর্মচারী যোগ করুন</p>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  // Debug check - Fallback if employee exists but data is somehow invalid
-  if (!employee.name) {
+  // Additional safety check
+  if (!employee?.name) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-lg">
           <CardContent className="p-8 text-center">
             <h2 className="text-xl font-semibold text-gray-900 mb-2">ডেটা সমস্যা</h2>
-            <p className="text-gray-600 mb-4">Employee data received but name is missing</p>
-            <pre className="text-xs text-left">{JSON.stringify(employee, null, 2)}</pre>
+            <p className="text-gray-600 mb-4">Employee data incomplete</p>
+            <p className="text-sm text-gray-500">Selected ID: {selectedEmployeeId}</p>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  // Calculate totals
-  const totalEarned = employee.totalIncome || 0;
-  const totalAdvance = employee.totalAdvance || 0;
-  const totalDue = employee.totalDue || 0;
+  // Calculate totals (with null checks)
+  const totalEarned = employee?.totalIncome || 0;
+  const totalAdvance = employee?.totalAdvance || 0;
+  const totalDue = employee?.totalDue || 0;
   const netBalance = totalEarned - totalAdvance;
 
   // Get active projects
-  const activeProjects = employee.assignments?.filter(assignment => 
+  const activeProjects = employee?.assignments?.filter(assignment => 
     assignment.status === "assigned" || assignment.status === "working"
   ) || [];
 
   // Get recent payments
-  const recentPayments = employee.salaryPayments?.slice(0, 5) || [];
+  const recentPayments = employee?.salaryPayments?.slice(0, 5) || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
@@ -208,16 +236,16 @@ export default function EmployeePortal() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900" data-testid="text-employee-name">
-                  {employee.name}
+                  {employee?.name}
                 </h1>
-                <p className="text-gray-600 capitalize">{employee.role}</p>
+                <p className="text-gray-600 capitalize">{employee?.role}</p>
               </div>
             </div>
             <Badge 
-              variant={employee.isActive ? "default" : "secondary"}
-              className={employee.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}
+              variant={employee?.isActive ? "default" : "secondary"}
+              className={employee?.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}
             >
-              {employee.isActive ? "সক্রিয়" : "নিষ্ক্রিয়"}
+              {employee?.isActive ? "সক্রিয়" : "নিষ্ক্রিয়"}
             </Badge>
           </div>
         </div>
