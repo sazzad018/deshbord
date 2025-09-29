@@ -1,10 +1,8 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -65,67 +63,46 @@ const PAYMENT_TYPE_CONFIG = {
 };
 
 export default function EmployeePortal() {
-  const [portalKey, setPortalKey] = useState("");
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  // Get employee ID from URL parameters
+  const [location] = useLocation();
+  const urlParams = new URLSearchParams(location.split('?')[1]);
+  const employeeId = urlParams.get('id');
 
-  // Fetch employee data using portal key
+  // Fetch employee data using employee ID
   const { data: employee, isLoading, error } = useQuery<EmployeeWithDetails>({
-    queryKey: ["/api/employees/portal", portalKey],
-    enabled: isSubmitted && !!portalKey,
+    queryKey: ["/api/employees", employeeId, "details"],
+    enabled: !!employeeId,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (portalKey.trim()) {
-      setIsSubmitted(true);
-    }
-  };
-
-  // Login form
-  if (!isSubmitted || !employee) {
+  // Loading state
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="text-center">
+          <CardContent className="p-8 text-center">
             <div className="mx-auto mb-4 w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
-              <User className="h-8 w-8 text-purple-600" />
+              <User className="h-8 w-8 text-purple-600 animate-pulse" />
             </div>
-            <CardTitle className="text-2xl font-bold text-gray-900">Employee Portal</CardTitle>
-            <p className="text-gray-600 mt-2">অ্যাক্সেস করতে আপনার পোর্টাল কী প্রবেশ করান</p>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="portalKey" className="text-sm font-medium text-gray-700">
-                  Portal Key
-                </label>
-                <Input
-                  id="portalKey"
-                  type="text"
-                  placeholder="আপনার Portal Key লিখুন"
-                  value={portalKey}
-                  onChange={(e) => setPortalKey(e.target.value)}
-                  className="w-full"
-                  data-testid="input-portal-key"
-                />
-              </div>
-              <Button 
-                type="submit" 
-                className="w-full bg-purple-600 hover:bg-purple-700"
-                disabled={isLoading}
-                data-testid="button-login"
-              >
-                {isLoading ? "লোড হচ্ছে..." : "প্রবেশ করুন"}
-              </Button>
-            </form>
-            
-            {error && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-600">
-                  অবৈধ Portal Key। দয়া করে সঠিক Key প্রবেশ করান।
-                </p>
-              </div>
-            )}
+            <p className="text-gray-600">ডেটা লোড হচ্ছে...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !employee) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardContent className="p-8 text-center">
+            <div className="mx-auto mb-4 w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+              <AlertTriangle className="h-8 w-8 text-red-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">ত্রুটি</h2>
+            <p className="text-gray-600 mb-4">
+              ইমপ্লয়ী তথ্য লোড করতে সমস্যা হয়েছে। লিংকটি সঠিক কিনা যাচাই করুন।
+            </p>
           </CardContent>
         </Card>
       </div>

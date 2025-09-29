@@ -171,7 +171,7 @@ export default function EmployeeListPanel() {
                         </div>
                         
                         <div className="flex flex-col gap-2">
-                          <Link href={`/employee-portal?key=${employee.portalKey}`}>
+                          <Link href={`/employee-portal?id=${employee.id}`}>
                             <Button 
                               size="sm" 
                               variant="outline" 
