@@ -1,9 +1,11 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
@@ -65,8 +67,199 @@ const PAYMENT_TYPE_CONFIG = {
   "project_payment": { text: "প্রজেক্ট পেমেন্ট", color: "bg-purple-100 text-purple-700" },
 };
 
+// Project Details Content Component
+function ProjectDetailsContent({ 
+  project, 
+  assignment, 
+  onFeatureComplete, 
+  isUpdating 
+}: { 
+  project: any; 
+  assignment: any; 
+  onFeatureComplete: (feature: string) => void;
+  isUpdating: boolean;
+}) {
+  const assignedFeatures = assignment.assignedFeatures || [];
+  const completedFeatures = assignment.completedFeatures || [];
+  const progressPercentage = assignedFeatures.length > 0 
+    ? Math.round((completedFeatures.length / assignedFeatures.length) * 100)
+    : 0;
+
+  const statusConfig = PROJECT_STATUS_CONFIG[project.status as keyof typeof PROJECT_STATUS_CONFIG];
+  const StatusIcon = statusConfig.icon;
+
+  return (
+    <div className="space-y-6">
+      {/* Project Header */}
+      <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">{project.name}</h2>
+            <p className="text-gray-600 mb-3">{project.description || "কোন বিবরণ নেই"}</p>
+            <div className="flex items-center gap-3">
+              <Badge 
+                variant="outline" 
+                className={`${statusConfig.bgColor} ${statusConfig.textColor}`}
+              >
+                <StatusIcon className="h-4 w-4 mr-1" />
+                {statusConfig.text}
+              </Badge>
+              <Badge variant="outline">
+                {project.type === "website" ? "ওয়েবসাইট" : "ল্যান্ডিং পেজ"}
+              </Badge>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-bold text-purple-600">{progressPercentage}%</p>
+            <p className="text-sm text-gray-600">সম্পূর্ণ</p>
+          </div>
+        </div>
+
+        {/* Overall Progress */}
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="font-medium text-gray-700">সামগ্রিক অগ্রগতি</span>
+            <span className="text-sm text-gray-600">
+              {completedFeatures.length}/{assignedFeatures.length} টাস্ক সম্পূর্ণ
+            </span>
+          </div>
+          <Progress value={progressPercentage} className="h-3" />
+        </div>
+
+        {/* Project Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="bg-white p-3 rounded-lg">
+            <p className="text-gray-600">Hourly Rate</p>
+            <p className="font-semibold">{formatCurrency(assignment.hourlyRate || 0)}</p>
+          </div>
+          <div className="bg-white p-3 rounded-lg">
+            <p className="text-gray-600">Total Earned</p>
+            <p className="font-semibold">{formatCurrency(assignment.totalEarned || 0)}</p>
+          </div>
+          <div className="bg-white p-3 rounded-lg">
+            <p className="text-gray-600">Assigned Date</p>
+            <p className="font-semibold">
+              {assignment.assignedDate 
+                ? new Date(assignment.assignedDate).toLocaleDateString('bn-BD')
+                : "N/A"
+              }
+            </p>
+          </div>
+          <div className="bg-white p-3 rounded-lg">
+            <p className="text-gray-600">Status</p>
+            <p className="font-semibold">
+              {assignment.status === "completed" ? "সম্পূর্ণ" : 
+               assignment.status === "working" ? "চলমান" : "নির্ধারিত"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tasks Section */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <CheckCircle className="h-5 w-5 text-green-600" />
+          প্রজেক্ট টাস্কসমূহ ({completedFeatures.length}/{assignedFeatures.length})
+        </h3>
+        
+        {assignedFeatures.length === 0 ? (
+          <div className="text-center py-8 bg-gray-50 rounded-lg">
+            <Clock className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+            <p className="text-gray-500">কোন টাস্ক নির্ধারিত নেই</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {assignedFeatures.map((feature, index) => {
+              const isCompleted = completedFeatures.includes(feature);
+              
+              return (
+                <div 
+                  key={index} 
+                  className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                    isCompleted 
+                      ? 'bg-green-50 border-green-200 shadow-sm' 
+                      : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
+                  }`}
+                  data-testid={`task-item-${index}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className={`p-2 rounded-full ${
+                        isCompleted ? 'bg-green-100' : 'bg-gray-100'
+                      }`}>
+                        {isCompleted ? (
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <Clock className="h-5 w-5 text-gray-400" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className={`font-medium ${
+                          isCompleted ? 'text-green-800 line-through' : 'text-gray-800'
+                        }`}>
+                          টাস্ক #{index + 1}
+                        </h4>
+                        <p className={`text-sm mt-1 ${
+                          isCompleted ? 'text-green-600' : 'text-gray-600'
+                        }`}>
+                          {feature}
+                        </p>
+                        {isCompleted && (
+                          <Badge variant="secondary" className="mt-2 bg-green-100 text-green-700">
+                            সম্পূর্ণ
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {!isCompleted && (
+                      <Button
+                        onClick={() => onFeatureComplete(feature)}
+                        disabled={isUpdating}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        data-testid={`button-complete-task-${index}`}
+                      >
+                        {isUpdating ? (
+                          <Clock className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                        )}
+                        সম্পূর্ণ করুন
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Project URLs if available */}
+      {project.publicUrl && (
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <h4 className="font-medium text-blue-900 mb-2">প্রজেক্ট লিংক</h4>
+          <a 
+            href={project.publicUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 underline"
+          >
+            <Globe className="h-4 w-4" />
+            লাইভ প্রজেক্ট দেখুন
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function EmployeePortal() {
   const { toast } = useToast();
+  
+  // State for project details modal
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [showProjectModal, setShowProjectModal] = useState(false);
   
   // Fetch all employees data
   const { data: employees = [], isLoading: employeesLoading } = useQuery<Employee[]>({
@@ -527,6 +720,124 @@ export default function EmployeePortal() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Project Profile Section */}
+        <div className="mt-8">
+          <Card className="rounded-2xl shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Target className="h-5 w-5 text-purple-600" />
+                প্রজেক্ট প্রোফাইল
+                <Badge variant="secondary" className="ml-2">
+                  {activeProjects.length}টি প্রজেক্ট
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {activeProjects.length === 0 ? (
+                <div className="text-center text-gray-500 py-12">
+                  <Target className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">কোন প্রজেক্ট নেই</h3>
+                  <p className="text-sm text-gray-500">Admin আপনাকে প্রজেক্ট assign করলে এখানে দেখা যাবে</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {activeProjects.map((assignment) => {
+                    const project = assignment.project;
+                    if (!project) return null;
+
+                    const statusConfig = PROJECT_STATUS_CONFIG[project.status as keyof typeof PROJECT_STATUS_CONFIG];
+                    const StatusIcon = statusConfig.icon;
+                    const completedFeatures = assignment.completedFeatures?.length || 0;
+                    const totalFeatures = assignment.assignedFeatures?.length || 0;
+                    const progress = totalFeatures > 0 ? (completedFeatures / totalFeatures) * 100 : 0;
+
+                    return (
+                      <Card 
+                        key={assignment.id}
+                        className="cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-purple-500"
+                        onClick={() => {
+                          setSelectedProject({ project, assignment });
+                          setShowProjectModal(true);
+                        }}
+                        data-testid={`project-profile-card-${assignment.id}`}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900 mb-1">{project.name}</h4>
+                              <p className="text-sm text-gray-600 line-clamp-2">{project.description || "কোন বিবরণ নেই"}</p>
+                            </div>
+                            <Badge 
+                              variant="outline" 
+                              className={`${statusConfig.bgColor} ${statusConfig.textColor} ml-2`}
+                            >
+                              <StatusIcon className="h-3 w-3 mr-1" />
+                              {statusConfig.text}
+                            </Badge>
+                          </div>
+
+                          {/* Progress Bar */}
+                          <div className="mb-3">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs text-gray-600">অগ্রগতি</span>
+                              <span className="text-xs font-medium text-gray-800">{Math.round(progress)}%</span>
+                            </div>
+                            <Progress value={progress} className="h-2" />
+                          </div>
+
+                          {/* Project Info */}
+                          <div className="flex items-center justify-between text-xs text-gray-600">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                {project.type === "website" ? "ওয়েবসাইট" : "ল্যান্ডিং পেজ"}
+                              </Badge>
+                              <span>৳{assignment.hourlyRate}/ঘন্টা</span>
+                            </div>
+                            <span className="font-medium">{completedFeatures}/{totalFeatures} টাস্ক</span>
+                          </div>
+
+                          {/* Click indicator */}
+                          <div className="mt-3 text-center">
+                            <Button variant="outline" size="sm" className="text-purple-600 border-purple-300 hover:bg-purple-50">
+                              বিস্তারিত দেখুন
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Project Details Modal */}
+        <Dialog open={showProjectModal} onOpenChange={setShowProjectModal}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-purple-600" />
+                {selectedProject?.project?.name || "প্রজেক্ট বিস্তারিত"}
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedProject && (
+              <ProjectDetailsContent 
+                project={selectedProject.project}
+                assignment={selectedProject.assignment}
+                onFeatureComplete={(feature) => 
+                  markFeatureCompleteMutation.mutate({ 
+                    assignmentId: selectedProject.assignment.id, 
+                    feature 
+                  })
+                }
+                isUpdating={markFeatureCompleteMutation.isPending}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
