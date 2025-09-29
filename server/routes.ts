@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { notificationService } from "./websocket";
-import { insertClientSchema, insertSpendLogSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, insertCustomButtonSchema, insertUploadSchema, insertInvoicePdfSchema, insertQuickMessageSchema, insertWebsiteProjectSchema, insertPaymentRequestSchema, insertProjectSchema, insertEmployeeSchema, insertProjectAssignmentSchema, insertProjectPaymentSchema, insertSalaryPaymentSchema } from "@shared/schema";
+import { insertClientSchema, insertSpendLogSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, insertCustomButtonSchema, insertUploadSchema, insertInvoicePdfSchema, insertQuickMessageSchema, insertWebsiteProjectSchema, insertPaymentRequestSchema, insertProjectTypeSchema, insertProjectSchema, insertEmployeeSchema, insertProjectAssignmentSchema, insertProjectPaymentSchema, insertSalaryPaymentSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Client routes
@@ -930,6 +930,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Project Management Routes
+  // Project Types
+  app.get("/api/project-types", async (req, res) => {
+    try {
+      const projectTypes = await storage.getProjectTypes();
+      res.json(projectTypes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project types" });
+    }
+  });
+
+  app.get("/api/project-types/:id", async (req, res) => {
+    try {
+      const projectType = await storage.getProjectType(req.params.id);
+      if (!projectType) {
+        return res.status(404).json({ error: "Project type not found" });
+      }
+      res.json(projectType);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project type" });
+    }
+  });
+
+  app.post("/api/project-types", async (req, res) => {
+    try {
+      const validatedData = insertProjectTypeSchema.parse(req.body);
+      const projectType = await storage.createProjectType(validatedData);
+      res.status(201).json(projectType);
+    } catch (error) {
+      console.error("Project type creation error:", error);
+      res.status(400).json({ error: "Invalid project type data" });
+    }
+  });
+
+  app.patch("/api/project-types/:id", async (req, res) => {
+    try {
+      const validatedData = insertProjectTypeSchema.partial().parse(req.body);
+      const projectType = await storage.updateProjectType(req.params.id, validatedData);
+      if (!projectType) {
+        return res.status(404).json({ error: "Project type not found" });
+      }
+      res.json(projectType);
+    } catch (error) {
+      console.error("Project type update error:", error);
+      res.status(400).json({ error: "Invalid project type data" });
+    }
+  });
+
+  app.delete("/api/project-types/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteProjectType(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Project type not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Project type deletion error:", error);
+      res.status(500).json({ error: "Failed to delete project type" });
+    }
+  });
+
   // Projects
   app.get("/api/projects", async (req, res) => {
     try {

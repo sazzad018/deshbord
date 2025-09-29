@@ -342,6 +342,16 @@ export interface DashboardMetrics {
 }
 
 // Project Management Tables
+export const projectTypes = pgTable("project_types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  description: text("description"),
+  isDefault: boolean("is_default").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
@@ -414,6 +424,9 @@ export const salaryPayments = pgTable("salary_payments", {
 });
 
 // Types for the new tables
+export type ProjectType = typeof projectTypes.$inferSelect;
+export type InsertProjectType = typeof projectTypes.$inferInsert;
+
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = typeof projects.$inferInsert;
 
@@ -430,6 +443,7 @@ export type SalaryPayment = typeof salaryPayments.$inferSelect;
 export type InsertSalaryPayment = typeof salaryPayments.$inferInsert;
 
 // Insert schemas for validation
+export const insertProjectTypeSchema = createInsertSchema(projectTypes).omit({ id: true, createdAt: true });
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true });
 export const insertProjectAssignmentSchema = createInsertSchema(projectAssignments).omit({ id: true, assignedDate: true });

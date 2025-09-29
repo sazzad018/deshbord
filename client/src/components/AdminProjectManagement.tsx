@@ -44,13 +44,13 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Project, Client, Employee, ProjectAssignment } from "@shared/schema";
+import type { Project, Client, Employee, ProjectAssignment, ProjectType } from "@shared/schema";
 
 // Form schemas
 const projectFormSchema = z.object({
   name: z.string().min(1, "প্রজেক্টের নাম প্রয়োজন"),
   description: z.string().optional(),
-  type: z.enum(["website", "landing_page"]),
+  type: z.string().min(1, "প্রজেক্টের ধরন নির্বাচন করুন"),
   clientId: z.string().min(1, "ক্লায়েন্ট নির্বাচন করুন"),
   totalAmount: z.number().min(0, "বাজেট ০ বা তার বেশি হতে হবে"),
   deadline: z.string().optional(),
@@ -184,6 +184,10 @@ export default function AdminProjectManagement() {
 
   const { data: assignments = [] } = useQuery<ProjectAssignment[]>({
     queryKey: ["/api/project-assignments"],
+  });
+
+  const { data: projectTypes = [] } = useQuery<ProjectType[]>({
+    queryKey: ["/api/project-types"],
   });
 
   // Forms
@@ -336,8 +340,11 @@ export default function AdminProjectManagement() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="website">ওয়েবসাইট</SelectItem>
-                                <SelectItem value="landing_page">ল্যান্ডিং পেজ</SelectItem>
+                                {projectTypes.filter(type => type.isActive).map((type) => (
+                                  <SelectItem key={type.id} value={type.name}>
+                                    {type.displayName}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                             <FormMessage />

@@ -1,4 +1,4 @@
-import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type WebsiteProject, type InsertWebsiteProject, type CustomButton, type InsertCustomButton, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage, type PaymentRequest, type InsertPaymentRequest, type Project, type InsertProject, type ProjectWithDetails, type Employee, type InsertEmployee, type EmployeeWithDetails, type ProjectAssignment, type InsertProjectAssignment, type ProjectPayment, type InsertProjectPayment, type SalaryPayment, type InsertSalaryPayment } from "@shared/schema";
+import { type Client, type InsertClient, type SpendLog, type InsertSpendLog, type Meeting, type InsertMeeting, type ClientWithLogs, type ClientWithDetails, type DashboardMetrics, type Todo, type InsertTodo, type WhatsappTemplate, type InsertWhatsappTemplate, type CompanySettings, type InsertCompanySettings, type ServiceScope, type InsertServiceScope, type ServiceAnalytics, type WebsiteProject, type InsertWebsiteProject, type CustomButton, type InsertCustomButton, type Upload, type InsertUpload, type InvoicePdf, type InsertInvoicePdf, type QuickMessage, type InsertQuickMessage, type PaymentRequest, type InsertPaymentRequest, type ProjectType, type InsertProjectType, type Project, type InsertProject, type ProjectWithDetails, type Employee, type InsertEmployee, type EmployeeWithDetails, type ProjectAssignment, type InsertProjectAssignment, type ProjectPayment, type InsertProjectPayment, type SalaryPayment, type InsertSalaryPayment } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -98,6 +98,13 @@ export interface IStorage {
   updatePaymentRequest(id: string, updates: Partial<PaymentRequest>): Promise<PaymentRequest | undefined>;
   approvePaymentRequest(id: string, adminNote?: string, processedBy?: string): Promise<PaymentRequest | undefined>;
   rejectPaymentRequest(id: string, adminNote?: string, processedBy?: string): Promise<PaymentRequest | undefined>;
+
+  // Project Type operations
+  getProjectTypes(): Promise<ProjectType[]>;
+  getProjectType(id: string): Promise<ProjectType | undefined>;
+  createProjectType(projectType: InsertProjectType): Promise<ProjectType>;
+  updateProjectType(id: string, updates: Partial<ProjectType>): Promise<ProjectType | undefined>;
+  deleteProjectType(id: string): Promise<boolean>;
 
   // Project operations
   getProjects(): Promise<Project[]>;
