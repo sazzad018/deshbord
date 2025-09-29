@@ -101,8 +101,8 @@ export default function AdminProjectManagement() {
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isAssignDeveloperOpen, setIsAssignDeveloperOpen] = useState(false);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
-  const [customFeatures, setCustomFeatures] = useState<string[]>([]);
-  const [newCustomFeature, setNewCustomFeature] = useState("");
+  const [categoryFeatures, setCategoryFeatures] = useState<Record<string, { id: string; name: string; icon: any }[]>>({});
+  const [newFeatureInputs, setNewFeatureInputs] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   // Helper functions for feature management
@@ -114,20 +114,44 @@ export default function AdminProjectManagement() {
     );
   };
 
-  const addCustomFeature = () => {
-    if (newCustomFeature.trim() && !customFeatures.includes(newCustomFeature.trim())) {
-      setCustomFeatures(prev => [...prev, newCustomFeature.trim()]);
-      setSelectedFeatures(prev => [...prev, newCustomFeature.trim()]);
-      setNewCustomFeature("");
-    }
+
+  // Category-wise feature management
+  const addFeatureToCategory = (category: string) => {
+    const newFeatureName = newFeatureInputs[category]?.trim();
+    if (!newFeatureName) return;
+
+    const newFeatureId = `custom-${Date.now()}-${newFeatureName.replace(/\s+/g, '-').toLowerCase()}`;
+    const newFeature = {
+      id: newFeatureId,
+      name: newFeatureName,
+      icon: Plus, // Default icon for custom features
+    };
+
+    setCategoryFeatures(prev => ({
+      ...prev,
+      [category]: [...(prev[category] || []), newFeature]
+    }));
+
+    setNewFeatureInputs(prev => ({
+      ...prev,
+      [category]: ""
+    }));
+
+    toast({
+      title: "ফিচার যোগ করা হয়েছে!",
+      description: `"${newFeatureName}" ফিচারটি ${category} ক্যাটাগরিতে যোগ করা হয়েছে`,
+    });
   };
 
-  const removeCustomFeature = (feature: string) => {
-    setCustomFeatures(prev => prev.filter(f => f !== feature));
-    setSelectedFeatures(prev => prev.filter(f => f !== feature));
+  const removeCategoryFeature = (category: string, featureId: string) => {
+    setCategoryFeatures(prev => ({
+      ...prev,
+      [category]: prev[category]?.filter(f => f.id !== featureId) || []
+    }));
+    setSelectedFeatures(prev => prev.filter(f => f !== featureId));
   };
 
-  // Group features by category
+  // Group features by category (including custom ones)
   const groupedFeatures = predefinedFeatures.reduce((acc, feature) => {
     if (!acc[feature.category]) {
       acc[feature.category] = [];
@@ -135,6 +159,14 @@ export default function AdminProjectManagement() {
     acc[feature.category].push(feature);
     return acc;
   }, {} as Record<string, typeof predefinedFeatures>);
+
+  // Add custom features to their respective categories
+  Object.entries(categoryFeatures).forEach(([category, features]) => {
+    if (!groupedFeatures[category]) {
+      groupedFeatures[category] = [];
+    }
+    groupedFeatures[category] = [...groupedFeatures[category], ...features];
+  });
 
   // Queries
   const { data: projects = [] } = useQuery<Project[]>({
@@ -196,8 +228,8 @@ export default function AdminProjectManagement() {
       setIsCreateProjectOpen(false);
       projectForm.reset();
       setSelectedFeatures([]);
-      setCustomFeatures([]);
-      setNewCustomFeature("");
+      setCategoryFeatures({});
+      setNewFeatureInputs({});
     },
     onError: () => {
       toast({
@@ -399,28 +431,73 @@ export default function AdminProjectManagement() {
                       {/* Predefined Features by Category */}
                       <div className="space-y-4 max-h-80 overflow-y-auto border rounded-lg p-4">
                         {Object.entries(groupedFeatures).map(([category, features]) => (
-                          <div key={category} className="space-y-2">
-                            <h4 className="font-medium text-sm text-gray-700 bg-gray-50 px-2 py-1 rounded">
-                              {category}
-                            </h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-2">
+                          <div key={category} className="space-y-3 border border-gray-200 rounded-lg p-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium text-sm text-gray-700 bg-gray-50 px-2 py-1 rounded">
+                                {category}
+                              </h4>
+                              
+                              {/* Add Feature to Category Button */}
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  placeholder="নতুন ফিচার..."
+                                  value={newFeatureInputs[category] || ""}
+                                  onChange={(e) => setNewFeatureInputs(prev => ({
+                                    ...prev,
+                                    [category]: e.target.value
+                                  }))}
+                                  onKeyPress={(e) => e.key === 'Enter' && addFeatureToCategory(category)}
+                                  className="text-xs h-7 w-32"
+                                  data-testid={`input-new-feature-${category}`}
+                                />
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => addFeatureToCategory(category)}
+                                  className="h-7 w-7 p-0"
+                                  data-testid={`button-add-feature-${category}`}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {features.map(feature => {
                                 const IconComponent = feature.icon;
+                                const isCustomFeature = feature.id.startsWith('custom-');
                                 return (
-                                  <div key={feature.id} className="flex items-center space-x-2">
-                                    <Checkbox
-                                      id={feature.id}
-                                      checked={selectedFeatures.includes(feature.id)}
-                                      onCheckedChange={() => toggleFeature(feature.id)}
-                                      data-testid={`checkbox-feature-${feature.id}`}
-                                    />
-                                    <label 
-                                      htmlFor={feature.id} 
-                                      className="flex items-center space-x-2 text-sm cursor-pointer"
-                                    >
-                                      <IconComponent className="h-4 w-4 text-gray-500" />
-                                      <span>{feature.name}</span>
-                                    </label>
+                                  <div key={feature.id} className="flex items-center justify-between group">
+                                    <div className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={feature.id}
+                                        checked={selectedFeatures.includes(feature.id)}
+                                        onCheckedChange={() => toggleFeature(feature.id)}
+                                        data-testid={`checkbox-feature-${feature.id}`}
+                                      />
+                                      <label 
+                                        htmlFor={feature.id} 
+                                        className="flex items-center space-x-2 text-sm cursor-pointer"
+                                      >
+                                        <IconComponent className="h-4 w-4 text-gray-500" />
+                                        <span>{feature.name}</span>
+                                      </label>
+                                    </div>
+                                    
+                                    {/* Remove button for custom features */}
+                                    {isCustomFeature && (
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => removeCategoryFeature(category, feature.id)}
+                                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700"
+                                        data-testid={`button-remove-feature-${feature.id}`}
+                                      >
+                                        ×
+                                      </Button>
+                                    )}
                                   </div>
                                 );
                               })}
@@ -429,53 +506,6 @@ export default function AdminProjectManagement() {
                         ))}
                       </div>
 
-                      {/* Custom Features */}
-                      <div className="space-y-3">
-                        <Label className="text-sm font-medium">কাস্টম ফিচার যোগ করুন</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="নতুন ফিচার লিখুন..."
-                            value={newCustomFeature}
-                            onChange={(e) => setNewCustomFeature(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && addCustomFeature()}
-                            data-testid="input-custom-feature"
-                          />
-                          <Button 
-                            type="button" 
-                            onClick={addCustomFeature}
-                            size="sm"
-                            data-testid="button-add-custom-feature"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        
-                        {/* Display Custom Features */}
-                        {customFeatures.length > 0 && (
-                          <div className="space-y-2">
-                            <Label className="text-xs text-gray-600">কাস্টম ফিচারসমূহ:</Label>
-                            <div className="flex flex-wrap gap-2">
-                              {customFeatures.map(feature => (
-                                <Badge 
-                                  key={feature} 
-                                  variant="secondary" 
-                                  className="text-xs px-2 py-1"
-                                >
-                                  {feature}
-                                  <button
-                                    type="button"
-                                    onClick={() => removeCustomFeature(feature)}
-                                    className="ml-1 text-red-500 hover:text-red-700"
-                                    data-testid={`button-remove-${feature}`}
-                                  >
-                                    ×
-                                  </button>
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
 
                       {/* Selected Features Summary */}
                       {selectedFeatures.length > 0 && (
