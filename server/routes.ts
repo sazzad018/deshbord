@@ -1036,13 +1036,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/projects/:id", async (req, res) => {
     try {
-      const project = await storage.updateProject(req.params.id, req.body);
+      console.log('Updating project with data:', req.body);
+      
+      // Ensure features is properly formatted as string array
+      const updateData = { ...req.body };
+      if (updateData.features && Array.isArray(updateData.features)) {
+        updateData.features = updateData.features.map(String); // Ensure all are strings
+      }
+      
+      console.log('Processed update data:', updateData);
+      const project = await storage.updateProject(req.params.id, updateData);
       if (!project) {
         return res.status(404).json({ error: "Project not found" });
       }
       res.json(project);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update project" });
+    } catch (error: any) {
+      console.error('Project update error:', error);
+      res.status(500).json({ error: "Failed to update project", details: error?.message || "Unknown error" });
     }
   });
 

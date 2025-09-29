@@ -224,9 +224,9 @@ export default function AdminProjectManagement() {
       name: project.name,
       description: project.description || "",
       type: project.type,
-      clientId: project.clientId,
+      clientId: project.clientId || "",
       totalAmount: project.totalAmount,
-      status: project.status,
+      status: project.status as "planning" | "in_progress" | "completed" | "cancelled",
       features: "",
       deadline: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : "",
     });
