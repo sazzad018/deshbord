@@ -40,7 +40,10 @@ import {
   Smartphone,
   Globe,
   Image,
-  Upload
+  Upload,
+  Eye,
+  Edit,
+  Trash2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -842,6 +845,53 @@ export default function AdminProjectManagement() {
                        project.status === "in_progress" ? "চলমান" :
                        project.status === "completed" ? "সম্পূর্ণ" : "বাতিল"}
                     </Badge>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-1">
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-8 px-2 text-blue-600 hover:bg-blue-50"
+                        onClick={() => {
+                          // TODO: Implement project details modal
+                          console.log('View details for project:', project.id);
+                        }}
+                        data-testid={`button-details-${project.id}`}
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        বিস্তারিত
+                      </Button>
+                      
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-8 px-2 text-green-600 hover:bg-green-50"
+                        onClick={() => {
+                          // TODO: Implement project edit modal
+                          console.log('Edit project:', project.id);
+                        }}
+                        data-testid={`button-edit-${project.id}`}
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        সম্পাদনা
+                      </Button>
+                      
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-8 px-2 text-red-600 hover:bg-red-50"
+                        onClick={() => {
+                          if (confirm('আপনি কি নিশ্চিত যে এই প্রজেক্টটি ডিলিট করতে চান?')) {
+                            // TODO: Implement project delete functionality
+                            console.log('Delete project:', project.id);
+                          }
+                        }}
+                        data-testid={`button-delete-${project.id}`}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        ডিলিট
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );

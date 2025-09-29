@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, DollarSign, Users, Globe, Clock, CheckCircle, AlertTriangle, Eye, Plus } from "lucide-react";
+import { Calendar, DollarSign, Users, Globe, Clock, CheckCircle, AlertTriangle, Eye, Plus, Edit, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils-dashboard";
 import type { ProjectWithDetails, Employee } from "@shared/schema";
 
@@ -138,6 +138,51 @@ export default function RunningProjectsPanel() {
                           <span className="text-gray-500">• {project.client.name}</span>
                         )}
                       </div>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          console.log('View project details:', project.id);
+                          // TODO: Implement view project details
+                        }}
+                        className="h-7 w-7 p-0 text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                        data-testid={`button-view-${project.id}`}
+                        title="বিস্তারিত দেখুন"
+                      >
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          console.log('Edit project:', project.id);
+                          // TODO: Implement edit project
+                        }}
+                        className="h-7 w-7 p-0 text-gray-500 hover:text-green-600 hover:bg-green-50"
+                        data-testid={`button-edit-${project.id}`}
+                        title="সম্পাদনা করুন"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          console.log('Delete project:', project.id);
+                          if (confirm('আপনি কি নিশ্চিত যে এই প্রজেক্টটি ডিলিট করতে চান?')) {
+                            // TODO: Implement delete project
+                          }
+                        }}
+                        className="h-7 w-7 p-0 text-gray-500 hover:text-red-600 hover:bg-red-50"
+                        data-testid={`button-delete-${project.id}`}
+                        title="ডিলিট করুন"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
 
