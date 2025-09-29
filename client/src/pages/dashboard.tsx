@@ -97,13 +97,18 @@ export default function Dashboard() {
     "running-projects",
     "recent-projects-summary",
     "client-management",
-    "ai-query"
+    "ai-query",
+    "spend-chart",
+    "invoice-maker"
   ]);
   
   const [rightColumnOrder, setRightColumnOrder] = useState([
     "client-details",
     "quick-actions",
-    "meeting-scheduler"
+    "meeting-scheduler",
+    "todo-list",
+    "whatsapp-shortcut",
+    "control-panel"
   ]);
 
   // Load saved order from localStorage
@@ -155,7 +160,9 @@ export default function Dashboard() {
       />
     ),
     "ai-query": <AIQuerySystem />,
+    "spend-chart": <SpendChart />,
     "recent-projects-summary": <RecentProjectsSummary />,
+    "invoice-maker": <InvoiceMaker />,
   };
 
   const rightColumnComponents = {
@@ -167,6 +174,9 @@ export default function Dashboard() {
     ),
     "quick-actions": <QuickActions selectedClientId={selectedClientId} />,
     "meeting-scheduler": <MeetingScheduler selectedClientId={selectedClientId} />,
+    "todo-list": <TodoListShort selectedClientId={selectedClientId} />,
+    "whatsapp-shortcut": <WhatsAppShortcut selectedClientId={selectedClientId} />,
+    "control-panel": <ControlPanel />,
   };
 
   function handleDragStart(event: DragStartEvent) {
