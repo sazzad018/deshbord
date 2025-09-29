@@ -125,6 +125,7 @@ export interface IStorage {
   deleteEmployee(id: string): Promise<boolean>;
 
   // Project Assignment operations
+  getAllProjectAssignments(): Promise<ProjectAssignment[]>;
   getProjectAssignments(projectId: string): Promise<ProjectAssignment[]>;
   getEmployeeAssignments(employeeId: string): Promise<ProjectAssignment[]>;
   createProjectAssignment(assignment: InsertProjectAssignment): Promise<ProjectAssignment>;

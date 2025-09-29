@@ -767,6 +767,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Project Assignment operations
+  async getAllProjectAssignments(): Promise<ProjectAssignment[]> {
+    return await db.select().from(projectAssignments)
+      .orderBy(desc(projectAssignments.assignedDate));
+  }
+
   async getProjectAssignments(projectId: string): Promise<ProjectAssignment[]> {
     return await db.select().from(projectAssignments)
       .where(eq(projectAssignments.projectId, projectId))

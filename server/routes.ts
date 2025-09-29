@@ -1145,6 +1145,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/project-assignments", async (req, res) => {
+    try {
+      const assignments = await storage.getAllProjectAssignments();
+      res.json(assignments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project assignments" });
+    }
+  });
+
   app.post("/api/project-assignments", async (req, res) => {
     try {
       const validatedData = insertProjectAssignmentSchema.parse(req.body);
