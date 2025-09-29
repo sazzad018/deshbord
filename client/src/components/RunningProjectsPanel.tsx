@@ -172,18 +172,20 @@ export default function RunningProjectsPanel() {
 
   if (isLoading) {
     return (
-      <Card className="rounded-2xl shadow-sm border-purple-100">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Globe className="h-5 w-5 text-purple-600" />
+      <Card className="rounded-2xl shadow-lg border-0 bg-gradient-to-br from-purple-50 via-white to-indigo-50">
+        <CardHeader className="pb-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-t-2xl">
+          <CardTitle className="text-xl font-bold flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+              <Globe className="h-6 w-6 animate-spin" />
+            </div>
             চলমান প্রজেক্টসমূহ
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
+        <CardContent className="p-6">
+          <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="animate-pulse">
-                <div className="h-20 bg-gray-200 rounded-lg"></div>
+                <div className="h-24 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 rounded-xl shadow-sm"></div>
               </div>
             ))}
           </div>
@@ -193,17 +195,19 @@ export default function RunningProjectsPanel() {
   }
 
   return (
-    <Card className="rounded-2xl shadow-sm border-purple-100">
-      <CardHeader className="pb-3">
+    <Card className="rounded-2xl shadow-lg border-0 bg-gradient-to-br from-purple-50 via-white to-indigo-50">
+      <CardHeader className="pb-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-t-2xl">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Globe className="h-5 w-5 text-purple-600" />
+          <CardTitle className="text-xl font-bold flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+              <Globe className="h-6 w-6" />
+            </div>
             চলমান প্রজেক্টসমূহ
-            <Badge variant="secondary" className="ml-2 bg-purple-50 text-purple-700 border-purple-200">
+            <Badge variant="secondary" className="ml-3 bg-white/20 text-white border-white/30 backdrop-blur-sm">
               {runningProjects.length}টি
             </Badge>
           </CardTitle>
-          <Button size="sm" variant="outline" className="hover:bg-purple-50">
+          <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/20 backdrop-blur-sm">
             <Plus className="h-4 w-4 mr-1" />
             নতুন প্রজেক্ট
           </Button>
@@ -217,7 +221,7 @@ export default function RunningProjectsPanel() {
             <p className="text-xs text-slate-400 mt-1">নতুন প্রজেক্ট শুরু করুন</p>
           </div>
         ) : (
-          <div className="space-y-4 max-h-96 overflow-y-auto">
+          <div className="space-y-5 max-h-96 overflow-y-auto p-1">
             {runningProjects.map((project) => {
               const statusConfig = STATUS_CONFIG[project.status as keyof typeof STATUS_CONFIG];
               const StatusIcon = statusConfig.icon;
@@ -228,7 +232,7 @@ export default function RunningProjectsPanel() {
               return (
                 <div 
                   key={project.id} 
-                  className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${statusConfig.bgColor}`}
+                  className="relative p-5 rounded-xl bg-gradient-to-br from-white via-gray-50 to-blue-50 border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:border-blue-300 group"
                   data-testid={`project-card-${project.id}`}
                 >
                   {/* Project Header */}
@@ -240,7 +244,7 @@ export default function RunningProjectsPanel() {
                         </h3>
                         <Badge 
                           variant="secondary" 
-                          className={`${statusConfig.bgColor} ${statusConfig.textColor} border-0 text-xs`}
+                          className={`${statusConfig.bgColor} ${statusConfig.textColor} border-0 text-xs shadow-sm backdrop-blur-sm`}
                         >
                           <StatusIcon className="h-3 w-3 mr-1" />
                           {statusConfig.text}
@@ -249,61 +253,66 @@ export default function RunningProjectsPanel() {
                       
                       {/* Project Type */}
                       <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <Badge variant="outline" className="text-xs border-gray-300">
+                        <Badge variant="outline" className="text-xs border-blue-300 bg-blue-50 text-blue-700 shadow-sm">
                           {project.type === "website" ? "ওয়েবসাইট" : "ল্যান্ডিং পেজ"}
                         </Badge>
                         {project.client && (
-                          <span className="text-gray-500">• {project.client.name}</span>
+                          <span className="text-gray-600 font-medium">• {project.client.name}</span>
                         )}
                       </div>
                     </div>
                     
                     {/* Action Buttons */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleViewProject(project)}
-                        className="h-7 w-7 p-0 text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                        className="h-8 w-8 p-0 bg-white shadow-md hover:shadow-lg text-blue-600 hover:bg-blue-50 border border-blue-200 rounded-lg transition-all duration-200"
                         data-testid={`button-view-${project.id}`}
                         title="বিস্তারিত দেখুন"
                       >
-                        <Eye className="h-3 w-3" />
+                        <Eye className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEditProject(project)}
-                        className="h-7 w-7 p-0 text-gray-500 hover:text-green-600 hover:bg-green-50"
+                        className="h-8 w-8 p-0 bg-white shadow-md hover:shadow-lg text-green-600 hover:bg-green-50 border border-green-200 rounded-lg transition-all duration-200"
                         data-testid={`button-edit-${project.id}`}
                         title="সম্পাদনা করুন"
                       >
-                        <Edit className="h-3 w-3" />
+                        <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteProject(project)}
-                        className="h-7 w-7 p-0 text-gray-500 hover:text-red-600 hover:bg-red-50"
+                        className="h-8 w-8 p-0 bg-white shadow-md hover:shadow-lg text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-all duration-200"
                         data-testid={`button-delete-${project.id}`}
                         title="ডিলিট করুন"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
 
                   {/* Progress Bar */}
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                      <span>অগ্রগতি</span>
-                      <span className="font-medium">{project.progress}%</span>
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between text-xs text-gray-700 mb-2">
+                      <span className="font-medium">অগ্রগতি</span>
+                      <span className="font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">{project.progress}%</span>
                     </div>
-                    <Progress 
-                      value={project.progress} 
-                      className="h-2 bg-gray-200"
-                      data-testid={`progress-${project.id}`}
-                    />
+                    <div className="relative">
+                      <Progress 
+                        value={project.progress} 
+                        className="h-3 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full shadow-inner"
+                        data-testid={`progress-${project.id}`}
+                      />
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-600 opacity-80" 
+                           style={{ width: `${project.progress}%` }}>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Project Details */}
