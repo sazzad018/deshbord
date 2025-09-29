@@ -169,7 +169,7 @@ function ProjectDetailsContent({
           </div>
         ) : (
           <div className="space-y-3">
-            {assignedFeatures.map((feature, index) => {
+            {assignedFeatures.map((feature: string, index: number) => {
               const isCompleted = completedFeatures.includes(feature);
               
               return (
