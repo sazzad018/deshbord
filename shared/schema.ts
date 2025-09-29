@@ -16,6 +16,7 @@ export const clients = pgTable("clients", {
   scopes: jsonb("scopes").$type<string[]>().notNull().default([]),
   portalKey: text("portal_key").notNull(),
   adminNotes: text("admin_notes"),
+  category: text("category").notNull().default("general"), // general, regular, premium
   deleted: boolean("deleted").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

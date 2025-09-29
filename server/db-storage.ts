@@ -48,6 +48,7 @@ export class DatabaseStorage implements IStorage {
       walletDeposited: 0,
       walletSpent: 0,
       scopes: (insertClient.scopes || ["Facebook Marketing"]) as string[],
+      category: (insertClient as any).category || "general", // Add category field
       portalKey,
     };
     

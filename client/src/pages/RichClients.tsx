@@ -241,18 +241,21 @@ export default function RichClients() {
     queryKey: ["/api/clients"],
   });
 
-  // Convert clients to rich clients (for demo, we'll categorize based on wallet balance)
+  // Convert clients to rich clients using database category field
   const richClients: RichClient[] = clients.map(client => {
     // Calculate wallet balance from deposited - spent
     const walletBalance = client.walletDeposited - client.walletSpent;
     
-    let category: 'regular' | 'premium' | 'general' = 'general';
+    // Use the category from database, with fallback logic for existing clients
+    let category: 'regular' | 'premium' | 'general' = (client as any).category || 'general';
     
-    // Categorize based on wallet balance (this is demo logic)
-    if (walletBalance >= 50000) {
-      category = 'premium';
-    } else if (walletBalance >= 20000) {
-      category = 'regular';
+    // Fallback categorization for clients without category (backward compatibility)
+    if (!(client as any).category) {
+      if (walletBalance >= 50000) {
+        category = 'premium';
+      } else if (walletBalance >= 20000) {
+        category = 'regular';
+      }
     }
 
     return {
@@ -283,6 +286,57 @@ export default function RichClients() {
       toast({
         title: "সফল!",
         description: "ক্লায়েন্ট ক্যাটাগরি পরিবর্তন করা হয়েছে",
+      });
+    },
+    onError: (error) => {
+      console.error("Category change error:", error);
+      toast({
+        title: "ত্রুটি!",
+        description: "ক্যাটাগরি পরিবর্তন করতে সমস্যা হয়েছে",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle adding new client
+  const addClientMutation = useMutation({
+    mutationFn: (clientData: any) => {
+      // Generate portal key
+      const portalKey = Math.random().toString(36).substring(2, 15);
+      return apiRequest("POST", "/api/clients", {
+        ...clientData,
+        portalKey,
+        walletDeposited: 0,
+        walletSpent: 0,
+        scopes: [],
+        status: "Active",
+        isActive: true,
+        deleted: false
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({
+        title: "সফল!",
+        description: "নতুন ক্লায়েন্ট যোগ করা হয়েছে",
+      });
+      setAddClientDialogOpen(false);
+      setClientFormData({
+        name: "",
+        email: "",
+        phone: "",
+        category: "general",
+        notes: "",
+        tags: "",
+        company: ""
+      });
+    },
+    onError: (error) => {
+      console.error("Add client error:", error);
+      toast({
+        title: "ত্রুটি!",
+        description: "নতুন ক্লায়েন্ট যোগ করতে সমস্যা হয়েছে",
+        variant: "destructive",
       });
     },
   });
@@ -571,16 +625,113 @@ export default function RichClients() {
               </Button>
               <Button 
                 onClick={() => {
-                  // Handle save functionality here
-                  toast({
-                    title: "সফল!",
-                    description: "ক্লায়েন্ট তথ্য আপডেট করা হয়েছে",
-                  });
+                  if (selectedClient) {
+                    changeCategoryMutation.mutate({
+                      clientId: selectedClient.id,
+                      newCategory: clientFormData.category
+                    });
+                  }
                   setEditDialogOpen(false);
                 }}
                 className="flex-1"
+                disabled={changeCategoryMutation.isPending}
               >
-                সংরক্ষণ
+                {changeCategoryMutation.isPending ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Client Dialog */}
+      <Dialog open={addClientDialogOpen} onOpenChange={setAddClientDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>নতুন ক্লায়েন্ট যোগ করুন</DialogTitle>
+            <DialogDescription>
+              নতুন ক্লায়েন্টের তথ্য পূরণ করুন
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="new-name">নাম *</Label>
+              <Input
+                id="new-name"
+                value={clientFormData.name}
+                onChange={(e) => setClientFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="ক্লায়েন্টের নাম"
+              />
+            </div>
+            <div>
+              <Label htmlFor="new-phone">ফোন *</Label>
+              <Input
+                id="new-phone"
+                value={clientFormData.phone}
+                onChange={(e) => setClientFormData(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="+8801XXXXXXXXX"
+              />
+            </div>
+            <div>
+              <Label htmlFor="new-category">ক্যাটাগরি</Label>
+              <Select value={clientFormData.category} onValueChange={(value) => setClientFormData(prev => ({ ...prev, category: value as any }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">সাধারণ ক্লায়েন্ট</SelectItem>
+                  <SelectItem value="regular">নিয়মিত ক্লায়েন্ট</SelectItem>
+                  <SelectItem value="premium">প্রিমিয়াম ক্লায়েন্ট</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="new-company">কোম্পানি</Label>
+              <Input
+                id="new-company"
+                value={clientFormData.company}
+                onChange={(e) => setClientFormData(prev => ({ ...prev, company: e.target.value }))}
+                placeholder="কোম্পানির নাম (ঐচ্ছিক)"
+              />
+            </div>
+            <div>
+              <Label htmlFor="new-notes">নোট</Label>
+              <Textarea
+                id="new-notes"
+                value={clientFormData.notes}
+                onChange={(e) => setClientFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="ক্লায়েন্ট সম্পর্কে গুরুত্বপূর্ণ তথ্য..."
+              />
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button 
+                onClick={() => setAddClientDialogOpen(false)}
+                variant="outline" 
+                className="flex-1"
+              >
+                বাতিল
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (clientFormData.name && clientFormData.phone) {
+                    addClientMutation.mutate({
+                      name: clientFormData.name,
+                      phone: clientFormData.phone,
+                      category: clientFormData.category,
+                      adminNotes: clientFormData.notes || null,
+                      fb: null
+                    });
+                  } else {
+                    toast({
+                      title: "ত্রুটি!",
+                      description: "নাম এবং ফোন নম্বর আবশ্যক",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                className="flex-1"
+                disabled={addClientMutation.isPending || !clientFormData.name || !clientFormData.phone}
+              >
+                {addClientMutation.isPending ? "যোগ করা হচ্ছে..." : "যোগ করুন"}
               </Button>
             </div>
           </div>
