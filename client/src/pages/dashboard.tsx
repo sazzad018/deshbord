@@ -95,7 +95,6 @@ export default function Dashboard() {
   // Component ordering state
   const [leftColumnOrder, setLeftColumnOrder] = useState([
     "running-projects",
-    "recent-projects-summary",
     "client-management",
     "ai-query",
     "spend-chart",
@@ -161,7 +160,6 @@ export default function Dashboard() {
     ),
     "ai-query": <AIQuerySystem />,
     "spend-chart": <SpendChart />,
-    "recent-projects-summary": <RecentProjectsSummary />,
     "invoice-maker": <InvoiceMaker />,
   };
 
