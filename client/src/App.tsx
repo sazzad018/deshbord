@@ -17,6 +17,7 @@ import WebsiteProjectsPage from "@/pages/WebsiteProjectsPage";
 import PaymentManagement from "@/pages/PaymentManagement";
 import ProjectManagement from "@/pages/ProjectManagement";
 import RichClients from "@/pages/RichClients";
+import ClientList from "@/pages/ClientList";
 import ControlPanel from "@/components/ControlPanel";
 
 function AdminRoutes() {
@@ -27,6 +28,7 @@ function AdminRoutes() {
         <Route path="/" component={Dashboard} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/clients" component={ClientManagementPage} />
+        <Route path="/client-list" component={ClientList} />
         <Route path="/rich-clients" component={RichClients} />
         <Route path="/invoice-maker" component={InvoiceMakerPage} />
         <Route path="/todo-list" component={TodoList} />

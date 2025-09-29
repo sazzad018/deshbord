@@ -29,7 +29,8 @@ import {
   ArrowRight,
   Tag,
   StickyNote,
-  GripVertical
+  GripVertical,
+  ArrowUpDown
 } from "lucide-react";
 import {
   DndContext,
@@ -97,7 +98,11 @@ const categoryConfig = {
 };
 
 // Draggable Client Card Component
-function DraggableClientCard({ client, onEdit }: { client: RichClient; onEdit: (client: RichClient) => void }) {
+function DraggableClientCard({ client, onEdit, onCategoryChange }: { 
+  client: RichClient; 
+  onEdit: (client: RichClient) => void;
+  onCategoryChange: (clientId: string, newCategory: string) => void;
+}) {
   const {
     attributes,
     listeners,
@@ -118,6 +123,10 @@ function DraggableClientCard({ client, onEdit }: { client: RichClient; onEdit: (
       const cleanPhone = phone.replace(/[^\d+]/g, '');
       window.open(`https://wa.me/${cleanPhone}`, '_blank');
     }
+  };
+
+  const handleCategoryChange = (clientId: string, newCategory: string) => {
+    onCategoryChange(clientId, newCategory);
   };
 
   const getCategoryStyle = (category: string) => {
@@ -232,11 +241,53 @@ function DraggableClientCard({ client, onEdit }: { client: RichClient; onEdit: (
 
       {/* Admin Notes - Compact Preview */}
       {client.adminNotes && (
-        <div className="text-xs text-amber-700 bg-amber-50/80 border border-amber-200 rounded px-2 py-1">
+        <div className="text-xs text-amber-700 bg-amber-50/80 border border-amber-200 rounded px-2 py-1 mb-2">
           <Tag className="h-3 w-3 inline mr-1" />
           <span className="font-medium">Note:</span> {client.adminNotes.substring(0, 30)}{client.adminNotes.length > 30 && '...'}
         </div>
       )}
+
+      {/* Category Change Button */}
+      <div className="pt-2 border-t border-gray-200">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full text-xs h-6 bg-white/80 hover:bg-white border-gray-300 text-gray-700 font-medium"
+            >
+              <ArrowUpDown className="h-3 w-3 mr-1" />
+              ধাপ পরিবর্তন করুন
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center" className="w-48">
+            <DropdownMenuItem 
+              onClick={() => handleCategoryChange(client.id, 'general')}
+              className={`text-xs ${client.category === 'general' ? 'bg-slate-100 font-semibold' : ''}`}
+            >
+              <User className="h-3 w-3 mr-2 text-slate-600" />
+              সাধারণ ক্লাইন্ট
+              {client.category === 'general' && <span className="ml-auto text-slate-600">✓</span>}
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => handleCategoryChange(client.id, 'regular')}
+              className={`text-xs ${client.category === 'regular' ? 'bg-emerald-100 font-semibold' : ''}`}
+            >
+              <Users className="h-3 w-3 mr-2 text-emerald-600" />
+              নিয়মিত ক্লাইন্ট
+              {client.category === 'regular' && <span className="ml-auto text-emerald-600">✓</span>}
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => handleCategoryChange(client.id, 'premium')}
+              className={`text-xs ${client.category === 'premium' ? 'bg-amber-100 font-semibold' : ''}`}
+            >
+              <Crown className="h-3 w-3 mr-2 text-amber-600" />
+              প্রিমিয়াম ক্লাইন্ট
+              {client.category === 'premium' && <span className="ml-auto text-amber-600">✓</span>}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 }
@@ -456,6 +507,9 @@ export default function RichClients() {
                         key={client.id} 
                         client={client} 
                         onEdit={handleEditClient}
+                        onCategoryChange={(clientId, newCategory) => {
+                          changeCategoryMutation.mutate({ clientId, newCategory });
+                        }}
                       />
                     ))
                   )}
