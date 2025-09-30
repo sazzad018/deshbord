@@ -1664,8 +1664,17 @@ app.use((req, res, next) => {
 });
 (async () => {
   const { initializeDatabase: initializeDatabase2 } = await Promise.resolve().then(() => (init_db_cpanel(), db_cpanel_exports));
-  await initializeDatabase2();
-  console.log("Database initialized successfully");
+  
+  // Try to initialize database, but don't crash if it fails due to permissions
+  try {
+    await initializeDatabase2();
+    console.log("Database initialized successfully");
+  } catch (error) {
+    console.warn("⚠️  Database initialization skipped due to permission error");
+    console.warn("Please fix database permissions manually - see URGENT-FIX.md");
+    console.warn("App will continue to run, but database operations may fail");
+  }
+  
   const server = await registerRoutes(app);
   app.use((err, _req, res, _next) => {
     const status = err.status || err.statusCode || 500;
