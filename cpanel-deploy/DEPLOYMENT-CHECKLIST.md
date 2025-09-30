@@ -74,7 +74,29 @@ Add these environment variables in Node.js App settings:
 - [ ] Check for any error messages
 - [ ] Verify installation completed successfully
 
-### 7. Start Application
+### 7. Setup Database Tables (CRITICAL!)
+⚠️ **This step MUST be completed before starting the application**
+
+- [ ] Access cPanel Terminal or SSH
+- [ ] Navigate to your application directory
+- [ ] Run database setup script:
+  ```bash
+  node setup-database.js
+  ```
+- [ ] Wait for all tables to be created
+- [ ] Look for success messages:
+  - [ ] ✅ Created table: admin_users
+  - [ ] ✅ Created table: clients
+  - [ ] ✅ Created table: spend_logs
+  - [ ] ✅ Created table: meetings
+  - [ ] (and more...)
+- [ ] Confirm "Database setup completed successfully!" message
+- [ ] If errors occur:
+  - [ ] Check environment variables are set correctly
+  - [ ] Verify database connection works
+  - [ ] Ensure database user has CREATE TABLE permission
+
+### 8. Start Application
 - [ ] Click "START" button in Node.js app settings
 - [ ] Wait for status to change to "Running"
 - [ ] Check application logs for any errors

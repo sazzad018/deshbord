@@ -65,9 +65,27 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 1. cPanel এ PostgreSQL database তৈরি করুন
 2. Database user তৈরি করুন এবং full permissions দিন
 3. Database credentials environment variables এ set করুন
-4. Application start হলে automatically সব tables তৈরি হবে
 
-### Step 6: Start Application
+### Step 6: Create Database Tables (IMPORTANT!)
+⚠️ **এই step টি অত্যন্ত গুরুত্বপূর্ণ - Application start করার আগে করতে হবে!**
+
+cPanel Terminal বা SSH access থেকে:
+```bash
+node setup-database.js
+```
+
+এটি automatically সব database tables তৈরি করবে। আপনি দেখবেন:
+- ✅ Created table: admin_users
+- ✅ Created table: clients
+- ✅ Created table: spend_logs
+- (এবং আরো...)
+
+যদি error আসে, নিশ্চিত করুন যে:
+- সব environment variables সঠিকভাবে set করা আছে
+- Database connection working
+- Database user এর CREATE TABLE permission আছে
+
+### Step 7: Start Application
 1. Node.js app settings এ "START" button click করুন
 2. Status "Running" দেখাবে
 3. আপনার domain/subdomain visit করুন
