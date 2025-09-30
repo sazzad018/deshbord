@@ -9,7 +9,7 @@ Your Social Ads Expert CRM application is now fully prepared for cPanel deployme
 ## 📦 What's Included
 
 ### 1. Deployment Package
-- **File**: `social-ads-expert-cpanel.tar.gz` (728 KB)
+- **File**: `social-ads-expert-cpanel.tar.gz` (731 KB)
 - **Location**: Root directory of this project
 - **Contents**: Complete production-ready application
 
@@ -17,6 +17,7 @@ Your Social Ads Expert CRM application is now fully prepared for cPanel deployme
 ```
 cpanel-deploy/
 ├── index.js                      # Bundled Node.js server (68 KB)
+├── setup-database.js             # Database setup script ⭐ NEW!
 ├── package.json                  # Production dependencies
 ├── .env.example                  # Environment variables template
 ├── README.md                     # Comprehensive deployment guide
@@ -60,9 +61,16 @@ Create a ZIP file of all contents inside `cpanel-deploy/` folder for upload to c
 - Setup Node.js App (version 18+)
 - Set environment variables (see .env.example)
 - Run NPM Install
-- Start application
 
-### 5. Login & Secure
+### 5. Setup Database Tables ⚠️ CRITICAL
+**MUST run before starting the app!**
+```bash
+node setup-database.js
+```
+This creates all database tables automatically.
+
+### 6. Start & Login
+- Start the Node.js application in cPanel
 - Visit your domain
 - Login with admin/admin123
 - **Immediately change password**
@@ -255,10 +263,11 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ## 📊 Package Statistics
 
-- **Total Package Size**: 728 KB (compressed)
+- **Total Package Size**: 731 KB (compressed)
 - **Frontend Assets**: 2.5 MB (uncompressed)
 - **Backend Bundle**: 68 KB
-- **Total Files**: 8 files + assets
+- **Database Setup Script**: 14 KB ⭐ NEW!
+- **Total Files**: 9 files + assets
 - **Node.js Version Required**: 18+
 - **Dependencies**: 10 production packages
 
