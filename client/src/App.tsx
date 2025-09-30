@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import NotificationContainer from "@/components/NotificationContainer";
+import { AuthProvider } from "@/components/AuthProvider";
 import Dashboard from "@/pages/dashboard";
 import ClientPortal from "@/pages/client-portal";
 import EmployeePortal from "@/pages/employee-portal";
@@ -22,24 +23,26 @@ import ControlPanel from "@/components/ControlPanel";
 
 function AdminRoutes() {
   return (
-    <NotificationProvider role="admin" userId="admin">
-      <NotificationContainer />
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/dashboard" component={Dashboard} />
-        <Route path="/clients" component={ClientManagementPage} />
-        <Route path="/client-list" component={ClientList} />
-        <Route path="/rich-clients" component={RichClients} />
-        <Route path="/invoice-maker" component={InvoiceMakerPage} />
-        <Route path="/todo-list" component={TodoList} />
-        <Route path="/whatsapp-messaging" component={WhatsAppMessaging} />
-        <Route path="/saved-pdfs" component={SavedPDFs} />
-        <Route path="/website-projects" component={WebsiteProjectsPage} />
-        <Route path="/payment-management" component={PaymentManagement} />
-        <Route path="/project-management" component={ProjectManagement} />
-        <Route path="/control-panel" component={ControlPanel} />
-      </Switch>
-    </NotificationProvider>
+    <AuthProvider>
+      <NotificationProvider role="admin" userId="admin">
+        <NotificationContainer />
+        <Switch>
+          <Route path="/" component={Dashboard} />
+          <Route path="/dashboard" component={Dashboard} />
+          <Route path="/clients" component={ClientManagementPage} />
+          <Route path="/client-list" component={ClientList} />
+          <Route path="/rich-clients" component={RichClients} />
+          <Route path="/invoice-maker" component={InvoiceMakerPage} />
+          <Route path="/todo-list" component={TodoList} />
+          <Route path="/whatsapp-messaging" component={WhatsAppMessaging} />
+          <Route path="/saved-pdfs" component={SavedPDFs} />
+          <Route path="/website-projects" component={WebsiteProjectsPage} />
+          <Route path="/payment-management" component={PaymentManagement} />
+          <Route path="/project-management" component={ProjectManagement} />
+          <Route path="/control-panel" component={ControlPanel} />
+        </Switch>
+      </NotificationProvider>
+    </AuthProvider>
   );
 }
 
