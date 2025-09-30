@@ -11,17 +11,27 @@ var __export = (target, all) => {
 // shared/schema.ts
 var schema_exports = {};
 __export(schema_exports, {
+  adminUsers: () => adminUsers,
   clients: () => clients,
   companySettings: () => companySettings,
   customButtons: () => customButtons,
+  employees: () => employees,
+  insertAdminUserSchema: () => insertAdminUserSchema,
   insertClientSchema: () => insertClientSchema,
   insertCompanySettingsSchema: () => insertCompanySettingsSchema,
   insertCustomButtonSchema: () => insertCustomButtonSchema,
+  insertEmployeeSchema: () => insertEmployeeSchema,
   insertInvoiceItemSchema: () => insertInvoiceItemSchema,
   insertInvoicePdfSchema: () => insertInvoicePdfSchema,
   insertInvoiceSchema: () => insertInvoiceSchema,
   insertMeetingSchema: () => insertMeetingSchema,
+  insertPaymentRequestSchema: () => insertPaymentRequestSchema,
+  insertProjectAssignmentSchema: () => insertProjectAssignmentSchema,
+  insertProjectPaymentSchema: () => insertProjectPaymentSchema,
+  insertProjectSchema: () => insertProjectSchema,
+  insertProjectTypeSchema: () => insertProjectTypeSchema,
   insertQuickMessageSchema: () => insertQuickMessageSchema,
+  insertSalaryPaymentSchema: () => insertSalaryPaymentSchema,
   insertServiceScopeSchema: () => insertServiceScopeSchema,
   insertSpendLogSchema: () => insertSpendLogSchema,
   insertTodoSchema: () => insertTodoSchema,
@@ -31,8 +41,15 @@ __export(schema_exports, {
   invoiceItems: () => invoiceItems,
   invoicePdfs: () => invoicePdfs,
   invoices: () => invoices,
+  loginSchema: () => loginSchema,
   meetings: () => meetings,
+  paymentRequests: () => paymentRequests,
+  projectAssignments: () => projectAssignments,
+  projectPayments: () => projectPayments,
+  projectTypes: () => projectTypes,
+  projects: () => projects,
   quickMessages: () => quickMessages,
+  salaryPayments: () => salaryPayments,
   serviceScopes: () => serviceScopes,
   spendLogs: () => spendLogs,
   todos: () => todos,
@@ -43,10 +60,20 @@ __export(schema_exports, {
 import { sql } from "drizzle-orm";
 import { pgTable, text, varchar, integer, jsonb, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-var clients, spendLogs, serviceScopes, meetings, todos, whatsappTemplates, companySettings, insertClientSchema, insertSpendLogSchema, insertServiceScopeSchema, websiteProjects, insertWebsiteProjectSchema, customButtons, insertCustomButtonSchema, invoices, invoiceItems, insertInvoiceSchema, insertInvoiceItemSchema, uploads, invoicePdfs, insertUploadSchema, insertInvoicePdfSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, quickMessages, insertQuickMessageSchema, insertCompanySettingsSchema;
+import { z } from "zod";
+var adminUsers, clients, spendLogs, serviceScopes, meetings, todos, whatsappTemplates, companySettings, insertClientSchema, insertSpendLogSchema, insertServiceScopeSchema, websiteProjects, insertWebsiteProjectSchema, customButtons, insertCustomButtonSchema, invoices, invoiceItems, insertInvoiceSchema, insertInvoiceItemSchema, uploads, invoicePdfs, insertUploadSchema, insertInvoicePdfSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, quickMessages, paymentRequests, insertQuickMessageSchema, insertPaymentRequestSchema, insertCompanySettingsSchema, projectTypes, projects, employees, projectAssignments, projectPayments, salaryPayments, insertProjectTypeSchema, insertProjectSchema, insertEmployeeSchema, insertProjectAssignmentSchema, insertProjectPaymentSchema, insertSalaryPaymentSchema, insertAdminUserSchema, loginSchema;
 var init_schema = __esm({
   "shared/schema.ts"() {
     "use strict";
+    adminUsers = pgTable("admin_users", {
+      id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+      username: text("username").notNull().unique(),
+      password: text("password").notNull(),
+      fullName: text("full_name").notNull(),
+      email: text("email"),
+      isActive: boolean("is_active").notNull().default(true),
+      createdAt: timestamp("created_at").defaultNow().notNull()
+    });
     clients = pgTable("clients", {
       id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
       name: text("name").notNull(),
@@ -54,11 +81,14 @@ var init_schema = __esm({
       fb: text("fb"),
       profilePicture: text("profile_picture"),
       status: text("status").notNull().default("Active"),
+      isActive: boolean("is_active").notNull().default(true),
       walletDeposited: integer("wallet_deposited").notNull().default(0),
       walletSpent: integer("wallet_spent").notNull().default(0),
       scopes: jsonb("scopes").$type().notNull().default([]),
       portalKey: text("portal_key").notNull(),
       adminNotes: text("admin_notes"),
+      category: text("category").notNull().default("general"),
+      // general, regular, premium
       deleted: boolean("deleted").notNull().default(false),
       createdAt: timestamp("created_at").defaultNow().notNull()
     });
@@ -124,6 +154,12 @@ var init_schema = __esm({
       companyAddress: text("company_address"),
       logoUrl: text("logo_url"),
       brandColor: text("brand_color").notNull().default("#A576FF"),
+      usdExchangeRate: integer("usd_exchange_rate").notNull().default(14500),
+      // USD to BDT rate in paisa (145.00 BDT = 1 USD)
+      baseCurrency: text("base_currency").notNull().default("USD"),
+      // Base currency for calculations
+      displayCurrency: text("display_currency").notNull().default("BDT"),
+      // Display currency for users
       isDefault: boolean("is_default").notNull().default(true),
       createdAt: timestamp("created_at").defaultNow().notNull(),
       updatedAt: timestamp("updated_at").defaultNow().notNull()
@@ -287,15 +323,171 @@ var init_schema = __esm({
       createdAt: timestamp("created_at").defaultNow().notNull(),
       updatedAt: timestamp("updated_at").defaultNow().notNull()
     });
+    paymentRequests = pgTable("payment_requests", {
+      id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+      clientId: varchar("client_id").notNull().references(() => clients.id),
+      amount: integer("amount").notNull(),
+      // Amount in paisa/cents
+      paymentMethod: text("payment_method").notNull(),
+      // "Bank", "bKash", "Nagad"
+      accountNumber: text("account_number"),
+      // Bank account, bKash/Nagad number
+      transactionId: text("transaction_id"),
+      // Transaction/Reference ID from payment
+      status: text("status").notNull().default("Pending"),
+      // "Pending", "Approved", "Rejected"
+      note: text("note"),
+      // Client's note/message
+      adminNote: text("admin_note"),
+      // Admin's note when approving/rejecting
+      requestDate: timestamp("request_date").defaultNow().notNull(),
+      processedDate: timestamp("processed_date"),
+      // When admin approved/rejected
+      processedBy: text("processed_by"),
+      // Admin who processed the request
+      createdAt: timestamp("created_at").defaultNow().notNull()
+    });
     insertQuickMessageSchema = createInsertSchema(quickMessages).omit({
       id: true,
       createdAt: true,
       updatedAt: true
     });
+    insertPaymentRequestSchema = createInsertSchema(paymentRequests).omit({
+      id: true,
+      createdAt: true,
+      requestDate: true
+    });
     insertCompanySettingsSchema = createInsertSchema(companySettings).omit({
       id: true,
       createdAt: true,
       updatedAt: true
+    });
+    projectTypes = pgTable("project_types", {
+      id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+      name: text("name").notNull().unique(),
+      displayName: text("display_name").notNull(),
+      description: text("description"),
+      isDefault: boolean("is_default").notNull().default(false),
+      isActive: boolean("is_active").notNull().default(true),
+      createdAt: timestamp("created_at").defaultNow().notNull()
+    });
+    projects = pgTable("projects", {
+      id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+      name: text("name").notNull(),
+      type: text("type").notNull(),
+      // "website" or "landing_page"
+      clientId: varchar("client_id").references(() => clients.id),
+      description: text("description"),
+      totalAmount: integer("total_amount").notNull().default(0),
+      // Total project cost
+      advanceReceived: integer("advance_received").notNull().default(0),
+      // Advance from client
+      dueAmount: integer("due_amount").notNull().default(0),
+      // Remaining amount
+      status: text("status").notNull().default("pending"),
+      // "pending", "in_progress", "completed", "cancelled"
+      progress: integer("progress").notNull().default(0),
+      // Progress percentage (0-100)
+      startDate: timestamp("start_date"),
+      endDate: timestamp("end_date"),
+      publicUrl: text("public_url"),
+      // Live project URL
+      features: jsonb("features").$type().notNull().default([]),
+      // List of features
+      completedFeatures: jsonb("completed_features").$type().notNull().default([]),
+      // Completed features
+      adminNotes: text("admin_notes"),
+      // Payment tracking fields (available after 20% progress)
+      secondPaymentDate: timestamp("second_payment_date"),
+      thirdPaymentDate: timestamp("third_payment_date"),
+      paymentCompleted: boolean("payment_completed").notNull().default(false),
+      // Website credentials (available after 20% progress)
+      wpUsername: text("wp_username"),
+      wpPassword: text("wp_password"),
+      cpanelUsername: text("cpanel_username"),
+      cpanelPassword: text("cpanel_password"),
+      createdAt: timestamp("created_at").defaultNow().notNull()
+    });
+    employees = pgTable("employees", {
+      id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+      name: text("name").notNull(),
+      email: text("email"),
+      phone: text("phone"),
+      role: text("role").notNull().default("developer"),
+      // "developer", "designer", "manager"
+      totalIncome: integer("total_income").notNull().default(0),
+      // Total earned
+      totalAdvance: integer("total_advance").notNull().default(0),
+      // Total advance taken
+      totalDue: integer("total_due").notNull().default(0),
+      // Amount due to them
+      isActive: boolean("is_active").notNull().default(true),
+      portalKey: text("portal_key").notNull(),
+      // For employee portal access
+      createdAt: timestamp("created_at").defaultNow().notNull()
+    });
+    projectAssignments = pgTable("project_assignments", {
+      id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+      projectId: varchar("project_id").notNull().references(() => projects.id),
+      employeeId: varchar("employee_id").notNull().references(() => employees.id),
+      assignedFeatures: jsonb("assigned_features").$type().notNull().default([]),
+      // Features assigned to this employee
+      completedFeatures: jsonb("completed_features").$type().notNull().default([]),
+      // Features completed by this employee
+      hourlyRate: integer("hourly_rate").notNull().default(0),
+      // Payment per hour/feature
+      totalEarned: integer("total_earned").notNull().default(0),
+      // Total earned from this project
+      status: text("status").notNull().default("assigned"),
+      // "assigned", "working", "completed"
+      assignedDate: timestamp("assigned_date").defaultNow().notNull(),
+      completedDate: timestamp("completed_date")
+    });
+    projectPayments = pgTable("project_payments", {
+      id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+      projectId: varchar("project_id").notNull().references(() => projects.id),
+      amount: integer("amount").notNull(),
+      paymentMethod: text("payment_method"),
+      // "bKash", "Nagad", "Bank", etc.
+      transactionId: text("transaction_id"),
+      paymentDate: timestamp("payment_date").notNull(),
+      notes: text("notes"),
+      createdAt: timestamp("created_at").defaultNow().notNull()
+    });
+    salaryPayments = pgTable("salary_payments", {
+      id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+      employeeId: varchar("employee_id").notNull().references(() => employees.id),
+      projectId: varchar("project_id").references(() => projects.id),
+      // Optional: for project-specific payments
+      amount: integer("amount").notNull(),
+      type: text("type").notNull(),
+      // "salary", "advance", "bonus", "project_payment"
+      paymentMethod: text("payment_method"),
+      transactionId: text("transaction_id"),
+      paymentDate: timestamp("payment_date").notNull(),
+      notes: text("notes"),
+      createdAt: timestamp("created_at").defaultNow().notNull()
+    });
+    insertProjectTypeSchema = createInsertSchema(projectTypes).omit({ id: true, createdAt: true });
+    insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true }).extend({
+      startDate: z.union([z.date(), z.string().datetime(), z.null()]).transform((val) => val ? new Date(val) : null).optional(),
+      endDate: z.union([z.date(), z.string().datetime(), z.null()]).transform((val) => val ? new Date(val) : null).optional(),
+      secondPaymentDate: z.union([z.date(), z.string().datetime(), z.null()]).transform((val) => val ? new Date(val) : null).optional(),
+      thirdPaymentDate: z.union([z.date(), z.string().datetime(), z.null()]).transform((val) => val ? new Date(val) : null).optional()
+    });
+    insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true });
+    insertProjectAssignmentSchema = createInsertSchema(projectAssignments).omit({ id: true, assignedDate: true });
+    insertProjectPaymentSchema = createInsertSchema(projectPayments).omit({ id: true, createdAt: true });
+    insertSalaryPaymentSchema = createInsertSchema(salaryPayments).omit({ id: true, createdAt: true }).extend({
+      paymentDate: z.union([z.date(), z.string().datetime()]).transform((val) => new Date(val))
+    });
+    insertAdminUserSchema = createInsertSchema(adminUsers).omit({
+      id: true,
+      createdAt: true
+    });
+    loginSchema = z.object({
+      username: z.string().min(1, "Username is required"),
+      password: z.string().min(1, "Password is required")
     });
   }
 });
