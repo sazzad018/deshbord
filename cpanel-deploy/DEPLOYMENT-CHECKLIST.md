@@ -101,8 +101,11 @@ Add these environment variables in Node.js App settings:
 - [ ] Wait for status to change to "Running"
 - [ ] Check application logs for any errors
 - [ ] Note the application URL
+- [ ] **If you see "Database tables not found" error:**
+  - [ ] ⚠️ You forgot Step 7! Run `node setup-database.js` first
+  - [ ] Then restart the application
 
-### 8. Initial Testing
+### 9. Initial Testing
 - [ ] Visit your application URL
 - [ ] Verify admin login page loads correctly
 - [ ] Test admin login with default credentials:
@@ -111,7 +114,7 @@ Add these environment variables in Node.js App settings:
 - [ ] Confirm successful login
 - [ ] Verify dashboard loads properly
 
-### 9. Security Configuration
+### 10. Security Configuration
 - [ ] **CRITICAL**: Change admin password immediately
   - [ ] Go to settings/profile section
   - [ ] Change password to a strong password
@@ -122,7 +125,7 @@ Add these environment variables in Node.js App settings:
 - [ ] Force HTTPS redirects in cPanel
 - [ ] Test HTTPS access
 
-### 10. Final Verification
+### 11. Final Verification
 - [ ] Test all major features:
   - [ ] Client list loads
   - [ ] Can create new client
@@ -135,14 +138,14 @@ Add these environment variables in Node.js App settings:
 - [ ] Check browser console for JavaScript errors
 - [ ] Verify all images and styles load correctly
 
-### 11. Production Optimization
+### 12. Production Optimization
 - [ ] Enable gzip compression in cPanel (if available)
 - [ ] Set up database backup schedule
 - [ ] Configure error monitoring (optional)
 - [ ] Set up uptime monitoring (optional)
 - [ ] Document your deployment configuration
 
-### 12. Post-Deployment
+### 13. Post-Deployment
 - [ ] Create admin documentation
 - [ ] Train users on the system
 - [ ] Set up regular backup schedule
