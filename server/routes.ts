@@ -2,9 +2,106 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { notificationService } from "./websocket";
-import { insertClientSchema, insertSpendLogSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, insertCustomButtonSchema, insertUploadSchema, insertInvoicePdfSchema, insertQuickMessageSchema, insertWebsiteProjectSchema, insertPaymentRequestSchema, insertProjectTypeSchema, insertProjectSchema, insertEmployeeSchema, insertProjectAssignmentSchema, insertProjectPaymentSchema, insertSalaryPaymentSchema } from "@shared/schema";
+import { insertClientSchema, insertSpendLogSchema, insertMeetingSchema, insertTodoSchema, insertWhatsappTemplateSchema, insertCustomButtonSchema, insertUploadSchema, insertInvoicePdfSchema, insertQuickMessageSchema, insertWebsiteProjectSchema, insertPaymentRequestSchema, insertProjectTypeSchema, insertProjectSchema, insertEmployeeSchema, insertProjectAssignmentSchema, insertProjectPaymentSchema, insertSalaryPaymentSchema, loginSchema, insertAdminUserSchema } from "@shared/schema";
+import bcrypt from "bcryptjs";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication routes
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = loginSchema.parse(req.body);
+      
+      const admin = await storage.getAdminByUsername(username);
+      if (!admin) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const isValidPassword = await bcrypt.compare(password, admin.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      if (!admin.isActive) {
+        return res.status(403).json({ error: "Account is disabled" });
+      }
+
+      // Store admin session
+      (req.session as any).adminId = admin.id;
+      (req.session as any).adminUsername = admin.username;
+      
+      res.json({
+        id: admin.id,
+        username: admin.username,
+        fullName: admin.fullName,
+        email: admin.email,
+      });
+    } catch (error) {
+      res.status(400).json({ error: "Invalid request" });
+    }
+  });
+
+  app.post("/api/auth/logout", async (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Failed to logout" });
+      }
+      res.json({ success: true });
+    });
+  });
+
+  app.get("/api/auth/session", async (req, res) => {
+    const adminId = (req.session as any).adminId;
+    if (!adminId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const admin = await storage.getAdminByUsername((req.session as any).adminUsername);
+      if (!admin || !admin.isActive) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      res.json({
+        id: admin.id,
+        username: admin.username,
+        fullName: admin.fullName,
+        email: admin.email,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch session" });
+    }
+  });
+
+  // Create first admin (development only)
+  app.post("/api/auth/init-admin", async (req, res) => {
+    try {
+      const { username, password, fullName, email } = insertAdminUserSchema.parse(req.body);
+      
+      // Check if admin already exists
+      const existing = await storage.getAdminByUsername(username);
+      if (existing) {
+        return res.status(400).json({ error: "Admin already exists" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const admin = await storage.createAdminUser({
+        username,
+        password: hashedPassword,
+        fullName,
+        email,
+        isActive: true,
+      });
+
+      res.json({
+        id: admin.id,
+        username: admin.username,
+        fullName: admin.fullName,
+      });
+    } catch (error) {
+      res.status(400).json({ error: "Failed to create admin" });
+    }
+  });
+
   // Client routes
   app.get("/api/clients", async (req, res) => {
     try {
