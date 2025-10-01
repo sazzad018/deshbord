@@ -169,6 +169,117 @@ export default function CompletedWebsitesPanel() {
     }
   };
 
+  const handleDownloadPDF = (website: CompletedWebsite) => {
+    const client = clients.find((c) => c.id === website.clientId);
+    const clientName = client?.name || "Unknown Client";
+    
+    // Create HTML content for PDF
+    const content = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; }
+          h1 { color: #7C3AED; border-bottom: 3px solid #7C3AED; padding-bottom: 10px; }
+          h2 { color: #4B5563; margin-top: 30px; border-bottom: 2px solid #E5E7EB; padding-bottom: 8px; }
+          .info-section { margin: 20px 0; background: #F9FAFB; padding: 20px; border-radius: 8px; }
+          .credential-row { display: flex; margin: 10px 0; }
+          .label { font-weight: bold; width: 200px; color: #374151; }
+          .value { color: #111827; word-break: break-all; }
+          .footer { margin-top: 50px; text-align: center; color: #9CA3AF; font-size: 12px; border-top: 1px solid #E5E7EB; padding-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <h1>🌐 ${website.projectName}</h1>
+        
+        <div class="info-section">
+          <h2>প্রজেক্ট তথ্য</h2>
+          <div class="credential-row">
+            <span class="label">ক্লায়েন্ট নাম:</span>
+            <span class="value">${clientName}</span>
+          </div>
+          <div class="credential-row">
+            <span class="label">ওয়েবসাইট URL:</span>
+            <span class="value">${website.websiteUrl || "N/A"}</span>
+          </div>
+          <div class="credential-row">
+            <span class="label">স্ট্যাটাস:</span>
+            <span class="value">${website.projectStatus}</span>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <h2>🔐 ওয়েবসাইট লগইন তথ্য</h2>
+          <div class="credential-row">
+            <span class="label">ইউজারনেম:</span>
+            <span class="value">${website.websiteUsername || "N/A"}</span>
+          </div>
+          <div class="credential-row">
+            <span class="label">পাসওয়ার্ড:</span>
+            <span class="value">${website.websitePassword || "N/A"}</span>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <h2>🖥️ cPanel লগইন তথ্য</h2>
+          <div class="credential-row">
+            <span class="label">cPanel ইউজারনেম:</span>
+            <span class="value">${website.cpanelUsername || "N/A"}</span>
+          </div>
+          <div class="credential-row">
+            <span class="label">cPanel পাসওয়ার্ড:</span>
+            <span class="value">${website.cpanelPassword || "N/A"}</span>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <h2>🌐 নেমসার্ভার তথ্য</h2>
+          <div class="credential-row">
+            <span class="label">Nameserver 1:</span>
+            <span class="value">${website.nameserver1 || "N/A"}</span>
+          </div>
+          <div class="credential-row">
+            <span class="label">Nameserver 2:</span>
+            <span class="value">${website.nameserver2 || "N/A"}</span>
+          </div>
+          <div class="credential-row">
+            <span class="label">Service Provider:</span>
+            <span class="value">${website.serviceProvider || "N/A"}</span>
+          </div>
+        </div>
+
+        ${website.notes ? `
+        <div class="info-section">
+          <h2>📝 নোট</h2>
+          <p>${website.notes}</p>
+        </div>
+        ` : ''}
+
+        <div class="footer">
+          <p>Generated on ${new Date().toLocaleString('bn-BD')} | Social Ads Expert CRM</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Create a new window and print
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(content);
+      printWindow.document.close();
+      
+      // Wait for content to load then trigger print
+      printWindow.onload = () => {
+        printWindow.print();
+        // Close window after printing or canceling
+        setTimeout(() => {
+          printWindow.close();
+        }, 100);
+      };
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     saveMutation.mutate(formData);
@@ -446,6 +557,16 @@ export default function CompletedWebsitesPanel() {
                       <p className="text-sm text-slate-600">{client?.name}</p>
                     </div>
                     <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDownloadPDF(website)}
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                        data-testid={`button-download-pdf-${website.id}`}
+                        title="Download PDF"
+                      >
+                        <FileDown className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
