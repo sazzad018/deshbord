@@ -898,7 +898,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/website-projects", async (req, res) => {
     try {
+      console.log("Received website project data:", JSON.stringify(req.body, null, 2));
       const validatedData = insertWebsiteProjectSchema.parse(req.body);
+      console.log("Validated data:", JSON.stringify(validatedData, null, 2));
       
       // Generate a unique portal key
       const portalKey = `WEB-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -907,10 +909,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...validatedData,
         portalKey,
       } as any);
+      console.log("Created project:", project);
       res.status(201).json(project);
     } catch (error) {
       console.error("Create website project error:", error);
-      res.status(400).json({ error: "Invalid website project data" });
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+      res.status(400).json({ error: "Invalid website project data", details: error });
     }
   });
 
