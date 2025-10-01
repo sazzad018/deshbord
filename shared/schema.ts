@@ -141,6 +141,8 @@ export const insertWebsiteProjectSchema = createInsertSchema(websiteProjects).om
   id: true,
   createdAt: true,
   portalKey: true,
+}).extend({
+  completedDate: z.string().optional().nullable().transform((val) => val ? new Date(val) : null),
 });
 
 // Custom Control Panel Buttons Table

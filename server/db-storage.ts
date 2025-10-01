@@ -436,11 +436,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createWebsiteProject(insertProject: InsertWebsiteProject): Promise<WebsiteProject> {
-    // Generate unique portal key if not provided
-    const portalKey = insertProject.portalKey || `${insertProject.projectName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+    // Generate unique portal key
+    const portalKey = `${insertProject.projectName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
     
     const [project] = await db.insert(websiteProjects)
-      .values({ ...insertProject, portalKey })
+      .values({ ...insertProject, portalKey } as any)
       .returning();
     return project;
   }
