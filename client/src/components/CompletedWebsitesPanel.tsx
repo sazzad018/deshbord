@@ -34,6 +34,8 @@ import {
   Search,
   ExternalLink,
 } from "lucide-react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 interface CompletedWebsite {
   id: string;
@@ -392,16 +394,54 @@ export default function CompletedWebsitesPanel() {
       </html>
     `;
 
-    // Create a new window and print
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(content);
-      printWindow.document.close();
-      
-      // Wait for content to load then trigger print
-      printWindow.onload = () => {
-        printWindow.print();
-      };
+    // Create temporary container
+    const container = document.createElement('div');
+    container.innerHTML = content;
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.width = '800px';
+    document.body.appendChild(container);
+
+    // Convert HTML to canvas, then to PDF
+    const bodyElement = container.querySelector('body');
+    if (bodyElement) {
+      html2canvas(bodyElement as HTMLElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      }).then((canvas) => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        
+        const imgWidth = 210; // A4 width in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        // Add first page
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= 297; // A4 height in mm
+        
+        // Add additional pages if needed
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= 297;
+        }
+        
+        // Download PDF
+        const fileName = `${website.projectName.replace(/\s+/g, '_')}_Credentials.pdf`;
+        pdf.save(fileName);
+        
+        // Clean up
+        document.body.removeChild(container);
+      }).catch((error) => {
+        console.error('PDF generation failed:', error);
+        document.body.removeChild(container);
+      });
     }
   };
 
