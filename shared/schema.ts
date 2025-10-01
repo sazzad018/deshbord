@@ -140,6 +140,7 @@ export const websiteProjects = pgTable("website_projects", {
 export const insertWebsiteProjectSchema = createInsertSchema(websiteProjects).omit({
   id: true,
   createdAt: true,
+  portalKey: true,
 });
 
 // Custom Control Panel Buttons Table

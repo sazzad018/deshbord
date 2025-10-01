@@ -899,9 +899,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/website-projects", async (req, res) => {
     try {
       const validatedData = insertWebsiteProjectSchema.parse(req.body);
-      const project = await storage.createWebsiteProject(validatedData);
+      
+      // Generate a unique portal key
+      const portalKey = `WEB-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      
+      const project = await storage.createWebsiteProject({
+        ...validatedData,
+        portalKey,
+      } as any);
       res.status(201).json(project);
     } catch (error) {
+      console.error("Create website project error:", error);
       res.status(400).json({ error: "Invalid website project data" });
     }
   });
