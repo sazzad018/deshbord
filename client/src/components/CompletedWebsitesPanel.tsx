@@ -171,13 +171,14 @@ export default function CompletedWebsitesPanel() {
     }
   };
 
-  const handleDownloadPDF = (website: CompletedWebsite) => {
-    const client = clients.find((c) => c.id === website.clientId);
-    const clientName = client?.name || "Unknown Client";
-    const brandColor = "#7A4DEE";
+  const handleDownloadPDF = async (website: CompletedWebsite) => {
+    try {
+      const client = clients.find((c) => c.id === website.clientId);
+      const clientName = client?.name || "Unknown Client";
+      const brandColor = "#7A4DEE";
     
-    // Create HTML content for PDF
-    const content = `
+      // Create HTML content for PDF
+      const content = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -394,23 +395,26 @@ export default function CompletedWebsitesPanel() {
       </html>
     `;
 
-    // Create temporary container
-    const container = document.createElement('div');
-    container.innerHTML = content;
-    container.style.position = 'absolute';
-    container.style.left = '-9999px';
-    container.style.width = '800px';
-    document.body.appendChild(container);
+      // Create temporary container
+      const container = document.createElement('div');
+      container.innerHTML = content;
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.width = '800px';
+      document.body.appendChild(container);
 
-    // Convert HTML to canvas, then to PDF
-    const bodyElement = container.querySelector('body');
-    if (bodyElement) {
-      html2canvas(bodyElement as HTMLElement, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      }).then((canvas) => {
+      // Convert HTML to canvas, then to PDF
+      const bodyElement = container.querySelector('body');
+      if (bodyElement) {
+        const canvas = await html2canvas(bodyElement as HTMLElement, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          windowWidth: 800,
+          windowHeight: bodyElement.scrollHeight
+        });
+
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
         
@@ -438,10 +442,10 @@ export default function CompletedWebsitesPanel() {
         
         // Clean up
         document.body.removeChild(container);
-      }).catch((error) => {
-        console.error('PDF generation failed:', error);
-        document.body.removeChild(container);
-      });
+      }
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      alert('PDF ডাউনলোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
     }
   };
 
