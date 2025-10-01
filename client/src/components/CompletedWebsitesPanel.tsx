@@ -233,15 +233,30 @@ export default function CompletedWebsitesPanel() {
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
           }
           .section-header {
-            color: ${brandColor};
+            color: white;
             font-size: 18px;
             font-weight: 600;
             margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid ${brandColor};
+            padding: 12px 15px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             gap: 10px;
+          }
+          .section-header.project-info {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          }
+          .section-header.website-login {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          }
+          .section-header.cpanel-login {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          }
+          .section-header.nameserver {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+          }
+          .section-header.notes {
+            background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
           }
           .credential-table {
             width: 100%;
@@ -279,14 +294,6 @@ export default function CompletedWebsitesPanel() {
             font-size: 14px;
             line-height: 1.6;
           }
-          .footer { 
-            margin-top: 40px; 
-            text-align: center; 
-            color: #6c757d; 
-            font-size: 12px; 
-            border-top: 2px solid #e9ecef; 
-            padding-top: 20px;
-          }
           @media print {
             body { padding: 20px; }
             .header-banner { break-inside: avoid; }
@@ -306,7 +313,7 @@ export default function CompletedWebsitesPanel() {
         </div>
         
         <div class="info-section">
-          <div class="section-header">
+          <div class="section-header project-info">
             <span>🌐</span> প্রজেক্ট তথ্য
           </div>
           <table class="credential-table">
@@ -322,7 +329,7 @@ export default function CompletedWebsitesPanel() {
         </div>
 
         <div class="info-section">
-          <div class="section-header">
+          <div class="section-header website-login">
             <span>🔐</span> ওয়েবসাইট লগইন তথ্য
           </div>
           <table class="credential-table">
@@ -338,7 +345,7 @@ export default function CompletedWebsitesPanel() {
         </div>
 
         <div class="info-section">
-          <div class="section-header">
+          <div class="section-header cpanel-login">
             <span>🖥️</span> cPanel লগইন তথ্য
           </div>
           <table class="credential-table">
@@ -354,7 +361,7 @@ export default function CompletedWebsitesPanel() {
         </div>
 
         <div class="info-section">
-          <div class="section-header">
+          <div class="section-header nameserver">
             <span>🌍</span> নেমসার্ভার ও হোস্টিং তথ্য
           </div>
           <table class="credential-table">
@@ -375,20 +382,12 @@ export default function CompletedWebsitesPanel() {
 
         ${website.notes ? `
         <div class="info-section">
-          <div class="section-header">
+          <div class="section-header notes">
             <span>📝</span> অতিরিক্ত নোট
           </div>
           <div class="notes-content">${website.notes}</div>
         </div>
         ` : ''}
-
-        <div class="footer">
-          <p><strong>Social Ads Expert</strong> | তারিখ: ${new Date().toLocaleDateString('bn-BD', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}</p>
-        </div>
       </body>
       </html>
     `;
