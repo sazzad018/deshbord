@@ -117,7 +117,7 @@ export const insertServiceScopeSchema = createInsertSchema(serviceScopes).omit({
   createdAt: true,
 });
 
-// Website Projects Table for Portal Links
+// Website Projects Table for Portal Links and Completed Websites
 export const websiteProjects = pgTable("website_projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: varchar("client_id").notNull().references(() => clients.id),
@@ -125,6 +125,13 @@ export const websiteProjects = pgTable("website_projects", {
   portalKey: varchar("portal_key").notNull().unique(),
   projectStatus: varchar("project_status").notNull().default("In Progress"),
   websiteUrl: varchar("website_url"),
+  websiteUsername: text("website_username"), // Website admin username
+  websitePassword: text("website_password"), // Website admin password
+  cpanelUsername: text("cpanel_username"), // cPanel username
+  cpanelPassword: text("cpanel_password"), // cPanel password
+  nameserver1: text("nameserver1"), // Primary nameserver
+  nameserver2: text("nameserver2"), // Secondary nameserver
+  serviceProvider: text("service_provider"), // Hosting provider name (e.g., Hostinger, GoDaddy)
   notes: text("notes"),
   completedDate: timestamp("completed_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

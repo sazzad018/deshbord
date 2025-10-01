@@ -2,7 +2,30 @@
 
 ## Overview
 
-This is a client relationship management (CRM) and operations application built for the Bangladeshi market. The system manages client information, financial tracking (deposits and spending), meeting scheduling, and provides AI-powered query capabilities. The application features a Bengali-language interface and is designed to handle client portfolios with wallet-based financial management.
+This is a comprehensive client relationship management (CRM) and operations application built for the Bangladeshi market. The system manages client information, financial tracking (deposits and spending), meeting scheduling, project management, completed website credentials storage, and provides AI-powered query capabilities. The application features a Bengali-language interface and is designed to handle client portfolios with wallet-based financial management.
+
+## Recent Changes (October 1, 2025)
+
+### Completed Websites Management Section
+Added a new section in the Project Management page for tracking completed websites with full credential management:
+- **Features**:
+  - Store website admin login credentials (username/password)
+  - Store cPanel credentials for hosting management
+  - Track nameserver configuration (NS1 and NS2)
+  - Record service provider information (Hostinger, GoDaddy, etc.)
+  - Add project notes and completion dates
+  - Search and filter completed websites
+  - Edit and delete website records
+  - Password visibility toggle for security
+  
+- **Database Schema**: Extended `websiteProjects` table with new fields:
+  - `websiteUsername`, `websitePassword` - Website admin credentials
+  - `cpanelUsername`, `cpanelPassword` - cPanel hosting credentials
+  - `nameserver1`, `nameserver2` - DNS nameserver configuration
+  - `serviceProvider` - Hosting provider name
+  
+- **UI Components**: New `CompletedWebsitesPanel` component with responsive card-based design
+- **API Endpoints**: Full CRUD operations via existing `/api/website-projects` routes
 
 ## User Preferences
 
@@ -36,6 +59,14 @@ Preferred communication style: Simple, everyday language.
 - **Clients Table**: Core client information with wallet balances, scopes, and portal keys
 - **Spend Logs Table**: Financial transaction tracking linked to clients
 - **Meetings Table**: Appointment scheduling with reminder capabilities
+- **Website Projects Table**: Complete website credentials management with hosting details
+  - Website admin login (username/password)
+  - cPanel credentials (username/password)
+  - Nameserver configuration (NS1/NS2)
+  - Service provider information
+  - Project status tracking (In Progress/Completed)
+- **Projects Table**: Advanced project management with employee assignments, payments, and features tracking
+- **Employees Table**: Employee management with salary tracking
 - **Relationships**: Foreign key constraints ensuring data integrity
 
 ### Authentication and Authorization

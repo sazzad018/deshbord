@@ -5,9 +5,10 @@ import RunningProjectsPanel from "@/components/RunningProjectsPanel";
 import AdminProjectManagement from "@/components/AdminProjectManagement";
 import ProjectListPanel from "@/components/ProjectListPanel";
 import SalaryManagementPanel from "@/components/SalaryManagementPanel";
+import CompletedWebsitesPanel from "@/components/CompletedWebsitesPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Settings, Clock, GripVertical, Minus, Plus } from "lucide-react";
+import { Users, Settings, Clock, GripVertical, Minus, Plus, Globe } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -146,6 +147,16 @@ export default function ProjectManagement() {
       iconColor: "text-purple-800",
       isMinimized: false,
     },
+    {
+      id: "completed-websites",
+      title: "সম্পূর্ণ ওয়েবসাইট তালিকা",
+      icon: Globe,
+      component: "CompletedWebsitesPanel",
+      borderColor: "border-2 border-green-200",
+      bgColor: "bg-green-50",
+      iconColor: "text-green-800",
+      isMinimized: false,
+    },
   ]);
 
   // Drag and drop sensors
@@ -193,6 +204,8 @@ export default function ProjectManagement() {
         return <SalaryManagementPanel />;
       case "AdminProjectManagement":
         return <AdminProjectManagement />;
+      case "CompletedWebsitesPanel":
+        return <CompletedWebsitesPanel />;
       default:
         return null;
     }
