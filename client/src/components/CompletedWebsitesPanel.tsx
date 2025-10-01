@@ -172,6 +172,7 @@ export default function CompletedWebsitesPanel() {
   const handleDownloadPDF = (website: CompletedWebsite) => {
     const client = clients.find((c) => c.id === website.clientId);
     const clientName = client?.name || "Unknown Client";
+    const brandColor = "#7A4DEE";
     
     // Create HTML content for PDF
     const content = `
@@ -180,84 +181,213 @@ export default function CompletedWebsitesPanel() {
       <head>
         <meta charset="UTF-8">
         <style>
-          body { font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; }
-          h1 { color: #7C3AED; border-bottom: 3px solid #7C3AED; padding-bottom: 10px; }
-          h2 { color: #4B5563; margin-top: 30px; border-bottom: 2px solid #E5E7EB; padding-bottom: 8px; }
-          .info-section { margin: 20px 0; background: #F9FAFB; padding: 20px; border-radius: 8px; }
-          .credential-row { display: flex; margin: 10px 0; }
-          .label { font-weight: bold; width: 200px; color: #374151; }
-          .value { color: #111827; word-break: break-all; }
-          .footer { margin-top: 50px; text-align: center; color: #9CA3AF; font-size: 12px; border-top: 1px solid #E5E7EB; padding-top: 20px; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 40px; 
+            line-height: 1.8; 
+            background: #ffffff;
+            color: #333;
+          }
+          .header-banner {
+            background: linear-gradient(135deg, ${brandColor} 0%, #9D6FFF 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          }
+          .header-banner h1 {
+            font-size: 28px;
+            margin-bottom: 15px;
+            font-weight: 700;
+          }
+          .header-banner p {
+            font-size: 16px;
+            opacity: 0.95;
+            line-height: 1.6;
+          }
+          .project-title {
+            background: #f8f9fa;
+            padding: 20px;
+            border-left: 5px solid ${brandColor};
+            margin-bottom: 25px;
+            border-radius: 8px;
+          }
+          .project-title h2 {
+            color: ${brandColor};
+            font-size: 24px;
+            margin-bottom: 8px;
+          }
+          .project-title .client-name {
+            color: #666;
+            font-size: 16px;
+          }
+          .info-section { 
+            margin: 25px 0; 
+            background: #ffffff; 
+            padding: 25px; 
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+          }
+          .section-header {
+            color: ${brandColor};
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid ${brandColor};
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+          .credential-table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          .credential-table tr {
+            border-bottom: 1px solid #e9ecef;
+          }
+          .credential-table tr:last-child {
+            border-bottom: none;
+          }
+          .credential-table td {
+            padding: 12px 8px;
+          }
+          .label { 
+            font-weight: 600; 
+            width: 200px; 
+            color: #495057;
+            font-size: 14px;
+          }
+          .value { 
+            color: #212529; 
+            word-break: break-all;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 4px;
+          }
+          .notes-content {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            color: #495057;
+            font-size: 14px;
+            line-height: 1.6;
+          }
+          .footer { 
+            margin-top: 40px; 
+            text-align: center; 
+            color: #6c757d; 
+            font-size: 12px; 
+            border-top: 2px solid #e9ecef; 
+            padding-top: 20px;
+          }
+          @media print {
+            body { padding: 20px; }
+            .header-banner { break-inside: avoid; }
+            .info-section { break-inside: avoid; page-break-inside: avoid; }
+          }
         </style>
       </head>
       <body>
-        <h1>🌐 ${website.projectName}</h1>
+        <div class="header-banner">
+          <h1>✅ প্রজেক্ট হস্তান্তর সম্পন্ন</h1>
+          <p>ক্লায়েন্টকে সমস্ত কিছু হস্তান্তর করা হলো।<br/>নিচে সমস্ত ইনফরমেশন দেয়া আছে।</p>
+        </div>
+
+        <div class="project-title">
+          <h2>${website.projectName}</h2>
+          <div class="client-name">ক্লায়েন্ট: ${clientName}</div>
+        </div>
         
         <div class="info-section">
-          <h2>প্রজেক্ট তথ্য</h2>
-          <div class="credential-row">
-            <span class="label">ক্লায়েন্ট নাম:</span>
-            <span class="value">${clientName}</span>
+          <div class="section-header">
+            <span>🌐</span> প্রজেক্ট তথ্য
           </div>
-          <div class="credential-row">
-            <span class="label">ওয়েবসাইট URL:</span>
-            <span class="value">${website.websiteUrl || "N/A"}</span>
-          </div>
-          <div class="credential-row">
-            <span class="label">স্ট্যাটাস:</span>
-            <span class="value">${website.projectStatus}</span>
-          </div>
+          <table class="credential-table">
+            <tr>
+              <td class="label">ওয়েবসাইট URL</td>
+              <td class="value">${website.websiteUrl || "N/A"}</td>
+            </tr>
+            <tr>
+              <td class="label">স্ট্যাটাস</td>
+              <td class="value">${website.projectStatus}</td>
+            </tr>
+          </table>
         </div>
 
         <div class="info-section">
-          <h2>🔐 ওয়েবসাইট লগইন তথ্য</h2>
-          <div class="credential-row">
-            <span class="label">ইউজারনেম:</span>
-            <span class="value">${website.websiteUsername || "N/A"}</span>
+          <div class="section-header">
+            <span>🔐</span> ওয়েবসাইট লগইন তথ্য
           </div>
-          <div class="credential-row">
-            <span class="label">পাসওয়ার্ড:</span>
-            <span class="value">${website.websitePassword || "N/A"}</span>
-          </div>
+          <table class="credential-table">
+            <tr>
+              <td class="label">ইউজারনেম</td>
+              <td class="value">${website.websiteUsername || "N/A"}</td>
+            </tr>
+            <tr>
+              <td class="label">পাসওয়ার্ড</td>
+              <td class="value">${website.websitePassword || "N/A"}</td>
+            </tr>
+          </table>
         </div>
 
         <div class="info-section">
-          <h2>🖥️ cPanel লগইন তথ্য</h2>
-          <div class="credential-row">
-            <span class="label">cPanel ইউজারনেম:</span>
-            <span class="value">${website.cpanelUsername || "N/A"}</span>
+          <div class="section-header">
+            <span>🖥️</span> cPanel লগইন তথ্য
           </div>
-          <div class="credential-row">
-            <span class="label">cPanel পাসওয়ার্ড:</span>
-            <span class="value">${website.cpanelPassword || "N/A"}</span>
-          </div>
+          <table class="credential-table">
+            <tr>
+              <td class="label">cPanel ইউজারনেম</td>
+              <td class="value">${website.cpanelUsername || "N/A"}</td>
+            </tr>
+            <tr>
+              <td class="label">cPanel পাসওয়ার্ড</td>
+              <td class="value">${website.cpanelPassword || "N/A"}</td>
+            </tr>
+          </table>
         </div>
 
         <div class="info-section">
-          <h2>🌐 নেমসার্ভার তথ্য</h2>
-          <div class="credential-row">
-            <span class="label">Nameserver 1:</span>
-            <span class="value">${website.nameserver1 || "N/A"}</span>
+          <div class="section-header">
+            <span>🌍</span> নেমসার্ভার ও হোস্টিং তথ্য
           </div>
-          <div class="credential-row">
-            <span class="label">Nameserver 2:</span>
-            <span class="value">${website.nameserver2 || "N/A"}</span>
-          </div>
-          <div class="credential-row">
-            <span class="label">Service Provider:</span>
-            <span class="value">${website.serviceProvider || "N/A"}</span>
-          </div>
+          <table class="credential-table">
+            <tr>
+              <td class="label">Nameserver 1</td>
+              <td class="value">${website.nameserver1 || "N/A"}</td>
+            </tr>
+            <tr>
+              <td class="label">Nameserver 2</td>
+              <td class="value">${website.nameserver2 || "N/A"}</td>
+            </tr>
+            <tr>
+              <td class="label">Service Provider</td>
+              <td class="value">${website.serviceProvider || "N/A"}</td>
+            </tr>
+          </table>
         </div>
 
         ${website.notes ? `
         <div class="info-section">
-          <h2>📝 নোট</h2>
-          <p>${website.notes}</p>
+          <div class="section-header">
+            <span>📝</span> অতিরিক্ত নোট
+          </div>
+          <div class="notes-content">${website.notes}</div>
         </div>
         ` : ''}
 
         <div class="footer">
-          <p>Generated on ${new Date().toLocaleString('bn-BD')} | Social Ads Expert CRM</p>
+          <p><strong>Social Ads Expert</strong> | তারিখ: ${new Date().toLocaleDateString('bn-BD', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          })}</p>
         </div>
       </body>
       </html>
@@ -272,10 +402,6 @@ export default function CompletedWebsitesPanel() {
       // Wait for content to load then trigger print
       printWindow.onload = () => {
         printWindow.print();
-        // Close window after printing or canceling
-        setTimeout(() => {
-          printWindow.close();
-        }, 100);
       };
     }
   };
