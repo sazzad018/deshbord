@@ -898,7 +898,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/website-projects", async (req, res) => {
     try {
-      const validatedData = insertWebsiteProjectSchema.parse(req.body);
+      // Convert completedDate string to Date if present
+      const requestData = {
+        ...req.body,
+        completedDate: req.body.completedDate ? new Date(req.body.completedDate) : null,
+      };
+      
+      const validatedData = insertWebsiteProjectSchema.parse(requestData);
       
       // Generate a unique portal key
       const portalKey = `WEB-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
