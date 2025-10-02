@@ -34,6 +34,8 @@ import {
   Search,
   ExternalLink,
 } from "lucide-react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 interface CompletedWebsite {
   id: string;
@@ -169,13 +171,14 @@ export default function CompletedWebsitesPanel() {
     }
   };
 
-  const handleDownloadPDF = (website: CompletedWebsite) => {
-    const client = clients.find((c) => c.id === website.clientId);
-    const clientName = client?.name || "Unknown Client";
-    const brandColor = "#7A4DEE";
-    
-    // Create HTML content for PDF
-    const content = `
+  const handleDownloadPDF = async (website: CompletedWebsite) => {
+    try {
+      const client = clients.find((c) => c.id === website.clientId);
+      const clientName = client?.name || "Unknown Client";
+      const brandColor = "#7A4DEE";
+      
+      // Create HTML content for PDF
+      const content = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -392,26 +395,67 @@ export default function CompletedWebsitesPanel() {
       </html>
     `;
 
-    // Open in new window and print
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-    if (printWindow) {
-      printWindow.document.write(content);
-      printWindow.document.close();
+      // Create a temporary container for rendering
+      const container = document.createElement('div');
+      container.innerHTML = content;
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.width = '800px';
+      document.body.appendChild(container);
+
+      // Wait a moment for styles to apply
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Get the body element from our HTML
+      const bodyElement = container.querySelector('body');
+      if (!bodyElement) {
+        throw new Error('Could not find body element');
+      }
+
+      // Convert HTML to canvas
+      const canvas = await html2canvas(bodyElement as HTMLElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 800,
+      });
+
+      // Convert canvas to image
+      const imgData = canvas.toDataURL('image/png');
       
-      // Wait for content to load, then print
-      printWindow.onload = () => {
-        printWindow.focus();
-        // Small delay to ensure rendering is complete
-        setTimeout(() => {
-          printWindow.print();
-          // Close window after printing (user can cancel)
-          printWindow.onafterprint = () => {
-            printWindow.close();
-          };
-        }, 250);
-      };
-    } else {
-      alert('পপআপ ব্লক করা আছে। দয়া করে পপআপ allow করুন।');
+      // Create PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = 210; // A4 width in mm
+      const pdfHeight = 297; // A4 height in mm
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      // Add more pages if content is longer
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      // Download the PDF
+      const fileName = `${website.projectName.replace(/\s+/g, '_')}_Credentials.pdf`;
+      pdf.save(fileName);
+
+      // Clean up
+      document.body.removeChild(container);
+      
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      alert('PDF তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
     }
   };
 
