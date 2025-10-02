@@ -171,13 +171,18 @@ export default function CompletedWebsitesPanel() {
     }
   };
 
-  const handleDownloadPDF = (website: CompletedWebsite) => {
+  const handleDownloadPDF = async (website: CompletedWebsite) => {
     const client = clients.find((c) => c.id === website.clientId);
     const clientName = client?.name || "Unknown Client";
     const brandColor = "#7A4DEE";
-    
-    // Create HTML content for PDF
-    const content = `
+
+    try {
+      // Import libraries dynamically
+      const { jsPDF } = await import("jspdf");
+      const html2canvas = (await import("html2canvas")).default;
+
+      // Create HTML content for PDF
+      const content = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -394,30 +399,86 @@ export default function CompletedWebsitesPanel() {
       </html>
     `;
 
-    // Create a blob from the HTML content
-    const blob = new Blob([content], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    
-    // Open in new window
-    const printWindow = window.open(url, '_blank');
-    
-    if (printWindow) {
-      // Wait for content to load
-      printWindow.onload = () => {
-        printWindow.focus();
-        setTimeout(() => {
-          // Trigger print dialog with "Save as PDF" option
-          printWindow.print();
+      // Create temporary container for rendering
+      const container = document.createElement('div');
+      container.innerHTML = content;
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.width = '800px';
+      document.body.appendChild(container);
+
+      // Wait for styles to apply
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Get the body element
+      const bodyElement = container.querySelector('body');
+      if (!bodyElement) {
+        throw new Error('Could not find body element');
+      }
+
+      // Convert to canvas
+      const canvas = await html2canvas(bodyElement as HTMLElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: 800,
+      });
+
+      // Clean up container
+      document.body.removeChild(container);
+
+      // Create PDF
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth - 40; // 20pt margins
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+
+      if (imgHeight < pageHeight - 40) {
+        // Single page
+        pdf.addImage(imgData, 'PNG', 20, 20, imgWidth, imgHeight);
+      } else {
+        // Multi-page handling
+        let remaining = imgHeight;
+        const sliceHeight = pageHeight - 40;
+        const ratio = imgWidth / canvas.width;
+        let drawn = 0;
+        
+        while (remaining > 0) {
+          const pageCanvas = document.createElement('canvas');
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = Math.min(canvas.height - Math.floor(drawn / ratio), Math.floor(sliceHeight / ratio));
+          const ctx = pageCanvas.getContext('2d');
           
-          // Clean up after print
-          printWindow.onafterprint = () => {
-            printWindow.close();
-            URL.revokeObjectURL(url);
-          };
-        }, 500);
-      };
-    } else {
-      alert('পপআপ ব্লক করা আছে। দয়া করে পপআপ allow করুন এবং আবার চেষ্টা করুন।');
+          if (ctx) {
+            ctx.drawImage(
+              canvas,
+              0, Math.floor(drawn / ratio),
+              pageCanvas.width, pageCanvas.height,
+              0, 0, pageCanvas.width, pageCanvas.height
+            );
+            const pageData = pageCanvas.toDataURL('image/png');
+            if (pageData) {
+              pdf.addImage(pageData, 'PNG', 20, 20, imgWidth, pageCanvas.height * ratio);
+            }
+          }
+          
+          drawn += pageCanvas.height * ratio;
+          remaining -= sliceHeight;
+          if (remaining > 0) pdf.addPage();
+        }
+      }
+
+      // Download the PDF automatically
+      const fileName = `${website.projectName.replace(/\s+/g, '_')}_Credentials.pdf`;
+      pdf.save(fileName);
+
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      alert('PDF তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
     }
   };
 
