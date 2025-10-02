@@ -186,12 +186,17 @@ export default function CompletedWebsitesPanel() {
         description: "অনুগ্রহ করে অপেক্ষা করুন",
       });
 
-      // Create HTML content for PDF
-      const content = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
+      // Create a properly styled container for PDF
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.width = '800px';
+      tempContainer.style.background = '#ffffff';
+      tempContainer.style.padding = '40px';
+      tempContainer.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+      
+      // Build the content HTML
+      tempContainer.innerHTML = `
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
@@ -400,29 +405,16 @@ export default function CompletedWebsitesPanel() {
           <div class="notes-content">${website.notes}</div>
         </div>
         ` : ''}
-      </body>
-      </html>
-    `;
+      `;
 
-      // Create temporary container for rendering
-      const container = document.createElement('div');
-      container.innerHTML = content;
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.width = '800px';
-      document.body.appendChild(container);
+      // Add to DOM
+      document.body.appendChild(tempContainer);
 
       // Wait for styles to apply
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      // Get the body element
-      const bodyElement = container.querySelector('body');
-      if (!bodyElement) {
-        throw new Error('Could not find body element');
-      }
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       // Convert to canvas
-      const canvas = await html2canvas(bodyElement as HTMLElement, {
+      const canvas = await html2canvas(tempContainer, {
         scale: 2,
         useCORS: true,
         logging: false,
@@ -431,7 +423,7 @@ export default function CompletedWebsitesPanel() {
       });
 
       // Clean up container
-      document.body.removeChild(container);
+      document.body.removeChild(tempContainer);
 
       // Create PDF
       const imgData = canvas.toDataURL('image/png');
