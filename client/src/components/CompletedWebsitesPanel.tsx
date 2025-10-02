@@ -171,14 +171,13 @@ export default function CompletedWebsitesPanel() {
     }
   };
 
-  const handleDownloadPDF = async (website: CompletedWebsite) => {
-    try {
-      const client = clients.find((c) => c.id === website.clientId);
-      const clientName = client?.name || "Unknown Client";
-      const brandColor = "#7A4DEE";
-      
-      // Create HTML content for PDF
-      const content = `
+  const handleDownloadPDF = (website: CompletedWebsite) => {
+    const client = clients.find((c) => c.id === website.clientId);
+    const clientName = client?.name || "Unknown Client";
+    const brandColor = "#7A4DEE";
+    
+    // Create HTML content for PDF
+    const content = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -395,67 +394,30 @@ export default function CompletedWebsitesPanel() {
       </html>
     `;
 
-      // Create a temporary container for rendering
-      const container = document.createElement('div');
-      container.innerHTML = content;
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.width = '800px';
-      document.body.appendChild(container);
-
-      // Wait a moment for styles to apply
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Get the body element from our HTML
-      const bodyElement = container.querySelector('body');
-      if (!bodyElement) {
-        throw new Error('Could not find body element');
-      }
-
-      // Convert HTML to canvas
-      const canvas = await html2canvas(bodyElement as HTMLElement, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowWidth: 800,
-      });
-
-      // Convert canvas to image
-      const imgData = canvas.toDataURL('image/png');
-      
-      // Create PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = 210; // A4 width in mm
-      const pdfHeight = 297; // A4 height in mm
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      // Add first page
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pdfHeight;
-
-      // Add more pages if content is longer
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pdfHeight;
-      }
-
-      // Download the PDF
-      const fileName = `${website.projectName.replace(/\s+/g, '_')}_Credentials.pdf`;
-      pdf.save(fileName);
-
-      // Clean up
-      document.body.removeChild(container);
-      
-    } catch (error) {
-      console.error('PDF generation error:', error);
-      alert('PDF তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+    // Create a blob from the HTML content
+    const blob = new Blob([content], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    
+    // Open in new window
+    const printWindow = window.open(url, '_blank');
+    
+    if (printWindow) {
+      // Wait for content to load
+      printWindow.onload = () => {
+        printWindow.focus();
+        setTimeout(() => {
+          // Trigger print dialog with "Save as PDF" option
+          printWindow.print();
+          
+          // Clean up after print
+          printWindow.onafterprint = () => {
+            printWindow.close();
+            URL.revokeObjectURL(url);
+          };
+        }, 500);
+      };
+    } else {
+      alert('পপআপ ব্লক করা আছে। দয়া করে পপআপ allow করুন এবং আবার চেষ্টা করুন।');
     }
   };
 
