@@ -184,13 +184,30 @@ var init_schema = __esm({
       portalKey: varchar("portal_key").notNull().unique(),
       projectStatus: varchar("project_status").notNull().default("In Progress"),
       websiteUrl: varchar("website_url"),
+      websiteUsername: text("website_username"),
+      // Website admin username
+      websitePassword: text("website_password"),
+      // Website admin password
+      cpanelUsername: text("cpanel_username"),
+      // cPanel username
+      cpanelPassword: text("cpanel_password"),
+      // cPanel password
+      nameserver1: text("nameserver1"),
+      // Primary nameserver
+      nameserver2: text("nameserver2"),
+      // Secondary nameserver
+      serviceProvider: text("service_provider"),
+      // Hosting provider name (e.g., Hostinger, GoDaddy)
       notes: text("notes"),
       completedDate: timestamp("completed_date"),
       createdAt: timestamp("created_at").defaultNow().notNull()
     });
     insertWebsiteProjectSchema = createInsertSchema(websiteProjects).omit({
       id: true,
-      createdAt: true
+      createdAt: true,
+      portalKey: true
+    }).extend({
+      completedDate: z.coerce.date().optional().nullable()
     });
     customButtons = pgTable("custom_buttons", {
       id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -492,32 +509,20 @@ var init_schema = __esm({
   }
 });
 
-// server/db-cpanel.ts
-var db_cpanel_exports = {};
-__export(db_cpanel_exports, {
+// server/db.ts
+var db_exports = {};
+__export(db_exports, {
   db: () => db,
   initializeDatabase: () => initializeDatabase
 });
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 async function initializeDatabase() {
   try {
-    console.log("Checking database connection and tables...");
-    try {
-      const existingClients = await db.select().from(clients).limit(1);
-      if (existingClients.length > 0) {
-        console.log("Database already has data, skipping initialization");
-        return;
-      }
-    } catch (error) {
-      if (error.code === "42P01") {
-        console.error("\u274C Database tables do not exist!");
-        console.log("\u{1F4CB} Please run the database setup script first:");
-        console.log("   node setup-database.js");
-        console.log("   Then restart your application");
-        throw new Error("Database tables not found. Run setup-database.js first.");
-      }
-      throw error;
+    const existingClients = await db.select().from(clients).limit(1);
+    if (existingClients.length > 0) {
+      console.log("Database already has data, skipping initialization");
+      return;
     }
     console.log("Initializing database with sample data...");
     const [client1, client2] = await db.insert(clients).values([
@@ -625,36 +630,158 @@ async function initializeDatabase() {
     throw error;
   }
 }
-var connection, db;
-var init_db_cpanel = __esm({
-  "server/db-cpanel.ts"() {
+var sql2, db;
+var init_db = __esm({
+  "server/db.ts"() {
     "use strict";
     init_schema();
     if (!process.env.DATABASE_URL) {
       throw new Error("DATABASE_URL is required");
     }
-    connection = postgres(process.env.DATABASE_URL, {
-      ssl: false,
-      // Disable SSL for cPanel hosting (most don't support SSL for internal connections)
-      max: 10,
-      idle_timeout: 20,
-      connect_timeout: 10
-    });
-    db = drizzle(connection);
+    sql2 = neon(process.env.DATABASE_URL);
+    db = drizzle(sql2);
   }
 });
 
-// server/index-cpanel.ts
-import express2 from "express";
+// vite.config.ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path2 from "path";
+import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+var vite_config_default;
+var init_vite_config = __esm({
+  async "vite.config.ts"() {
+    "use strict";
+    vite_config_default = defineConfig({
+      plugins: [
+        react(),
+        runtimeErrorOverlay(),
+        ...process.env.NODE_ENV !== "production" && process.env.REPL_ID !== void 0 ? [
+          await import("@replit/vite-plugin-cartographer").then(
+            (m) => m.cartographer()
+          ),
+          await import("@replit/vite-plugin-dev-banner").then(
+            (m) => m.devBanner()
+          )
+        ] : []
+      ],
+      resolve: {
+        alias: {
+          "@": path2.resolve(import.meta.dirname, "client", "src"),
+          "@shared": path2.resolve(import.meta.dirname, "shared"),
+          "@assets": path2.resolve(import.meta.dirname, "attached_assets")
+        }
+      },
+      root: path2.resolve(import.meta.dirname, "client"),
+      build: {
+        outDir: path2.resolve(import.meta.dirname, "dist/public"),
+        emptyOutDir: true
+      },
+      server: {
+        fs: {
+          strict: true,
+          deny: ["**/.*"]
+        }
+      }
+    });
+  }
+});
 
-// server/routes-cpanel.ts
+// server/vite.ts
+var vite_exports = {};
+__export(vite_exports, {
+  log: () => log2,
+  serveStatic: () => serveStatic2,
+  setupVite: () => setupVite
+});
+import express2 from "express";
+import fs2 from "fs";
+import path3 from "path";
+import { createServer as createViteServer, createLogger } from "vite";
+import { nanoid } from "nanoid";
+function log2(message, source = "express") {
+  const formattedTime = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  });
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
+async function setupVite(app2, server) {
+  const serverOptions = {
+    middlewareMode: true,
+    hmr: { server },
+    allowedHosts: true
+  };
+  const vite = await createViteServer({
+    ...vite_config_default,
+    configFile: false,
+    customLogger: {
+      ...viteLogger,
+      error: (msg, options) => {
+        viteLogger.error(msg, options);
+        process.exit(1);
+      }
+    },
+    server: serverOptions,
+    appType: "custom"
+  });
+  app2.use(vite.middlewares);
+  app2.use("*", async (req, res, next) => {
+    const url = req.originalUrl;
+    try {
+      const clientTemplate = path3.resolve(
+        import.meta.dirname,
+        "..",
+        "client",
+        "index.html"
+      );
+      let template = await fs2.promises.readFile(clientTemplate, "utf-8");
+      template = template.replace(
+        `src="/src/main.tsx"`,
+        `src="/src/main.tsx?v=${nanoid()}"`
+      );
+      const page = await vite.transformIndexHtml(url, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+    } catch (e) {
+      vite.ssrFixStacktrace(e);
+      next(e);
+    }
+  });
+}
+function serveStatic2(app2) {
+  const distPath = path3.resolve(import.meta.dirname, "public");
+  if (!fs2.existsSync(distPath)) {
+    throw new Error(
+      `Could not find the build directory: ${distPath}, make sure to build the client first`
+    );
+  }
+  app2.use(express2.static(distPath));
+  app2.use("*", (_req, res) => {
+    res.sendFile(path3.resolve(distPath, "index.html"));
+  });
+}
+var viteLogger;
+var init_vite = __esm({
+  async "server/vite.ts"() {
+    "use strict";
+    await init_vite_config();
+    viteLogger = createLogger();
+  }
+});
+
+// server/index.ts
+import express3 from "express";
+import session from "express-session";
+
+// server/routes.ts
 import { createServer } from "http";
 
-// server/db-storage-cpanel.ts
+// server/db-storage.ts
 init_schema();
-init_db_cpanel();
-import { eq, desc, sum, sql as sql2, and, gte } from "drizzle-orm";
-import { randomUUID } from "crypto";
+init_db();
+import { eq, desc, sum, sql as sql3, and, gte } from "drizzle-orm";
 var DatabaseStorage = class {
   async getClients() {
     return await db.select().from(clients).where(eq(clients.deleted, false)).orderBy(desc(clients.createdAt));
@@ -682,8 +809,6 @@ var DatabaseStorage = class {
   async createClient(insertClient) {
     const portalKey = Math.random().toString(36).slice(2, 7);
     const insertData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js instead of database
       name: insertClient.name,
       phone: insertClient.phone,
       fb: insertClient.fb || null,
@@ -693,6 +818,8 @@ var DatabaseStorage = class {
       walletDeposited: 0,
       walletSpent: 0,
       scopes: insertClient.scopes || ["Facebook Marketing"],
+      category: insertClient.category || "general",
+      // Add category field
       portalKey
     };
     const [client] = await db.insert(clients).values(insertData).returning();
@@ -705,9 +832,9 @@ var DatabaseStorage = class {
   async deleteClient(id) {
     try {
       const [spendLogsCount, meetingsCount, serviceScopesCount] = await Promise.all([
-        db.select({ count: sql2`count(*)` }).from(spendLogs).where(eq(spendLogs.clientId, id)),
-        db.select({ count: sql2`count(*)` }).from(meetings).where(eq(meetings.clientId, id)),
-        db.select({ count: sql2`count(*)` }).from(serviceScopes).where(eq(serviceScopes.clientId, id))
+        db.select({ count: sql3`count(*)` }).from(spendLogs).where(eq(spendLogs.clientId, id)),
+        db.select({ count: sql3`count(*)` }).from(meetings).where(eq(meetings.clientId, id)),
+        db.select({ count: sql3`count(*)` }).from(serviceScopes).where(eq(serviceScopes.clientId, id))
       ]);
       const dependencies = [];
       if (spendLogsCount[0].count > 0) dependencies.push(`${spendLogsCount[0].count} spend logs`);
@@ -716,8 +843,8 @@ var DatabaseStorage = class {
       if (dependencies.length > 0) {
         throw new Error(`Cannot permanently delete client with existing ${dependencies.join(", ")}. Please remove them first or use soft delete (trash) instead.`);
       }
-      const result = await db.delete(clients).where(eq(clients.id, id)).returning({ id: clients.id });
-      return result.length > 0;
+      const result = await db.delete(clients).where(eq(clients.id, id));
+      return result.rowCount > 0;
     } catch (error) {
       throw error;
     }
@@ -736,8 +863,6 @@ var DatabaseStorage = class {
     const newWalletSpent = client.walletSpent + insertSpendLog.amount;
     const balanceAfter = client.walletDeposited - newWalletSpent;
     const [spendLog] = await db.insert(spendLogs).values({
-      id: randomUUID(),
-      // Generate UUID in Node.js
       clientId: insertSpendLog.clientId,
       date: insertSpendLog.date,
       amount: insertSpendLog.amount,
@@ -745,7 +870,7 @@ var DatabaseStorage = class {
       balanceAfter
     }).returning();
     await db.update(clients).set({
-      walletSpent: sql2`${clients.walletSpent} + ${insertSpendLog.amount}`
+      walletSpent: sql3`${clients.walletSpent} + ${insertSpendLog.amount}`
     }).where(eq(clients.id, insertSpendLog.clientId));
     return spendLog;
   }
@@ -758,8 +883,6 @@ var DatabaseStorage = class {
   }
   async createMeeting(insertMeeting) {
     const meetingData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
       clientId: insertMeeting.clientId,
       title: insertMeeting.title,
       datetime: new Date(insertMeeting.datetime),
@@ -774,8 +897,8 @@ var DatabaseStorage = class {
     return updated;
   }
   async deleteMeeting(id) {
-    const result = await db.delete(meetings).where(eq(meetings.id, id)).returning({ id: meetings.id });
-    return result.length > 0;
+    const result = await db.delete(meetings).where(eq(meetings.id, id));
+    return result.rowCount > 0;
   }
   // Todo operations
   async getTodos() {
@@ -786,12 +909,7 @@ var DatabaseStorage = class {
     return result[0];
   }
   async createTodo(insertTodo) {
-    const todoData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
-      ...insertTodo
-    };
-    const [todo] = await db.insert(todos).values(todoData).returning();
+    const [todo] = await db.insert(todos).values(insertTodo).returning();
     return todo;
   }
   async updateTodo(id, updates) {
@@ -799,8 +917,8 @@ var DatabaseStorage = class {
     return updated;
   }
   async deleteTodo(id) {
-    const result = await db.delete(todos).where(eq(todos.id, id)).returning({ id: todos.id });
-    return result.length > 0;
+    const result = await db.delete(todos).where(eq(todos.id, id));
+    return result.rowCount > 0;
   }
   // WhatsApp template operations
   async getWhatsappTemplates() {
@@ -811,12 +929,7 @@ var DatabaseStorage = class {
     return result[0];
   }
   async createWhatsappTemplate(insertTemplate) {
-    const templateData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
-      ...insertTemplate
-    };
-    const [template] = await db.insert(whatsappTemplates).values(templateData).returning();
+    const [template] = await db.insert(whatsappTemplates).values(insertTemplate).returning();
     return template;
   }
   async updateWhatsappTemplate(id, updates) {
@@ -824,8 +937,8 @@ var DatabaseStorage = class {
     return updated;
   }
   async deleteWhatsappTemplate(id) {
-    const result = await db.delete(whatsappTemplates).where(eq(whatsappTemplates.id, id)).returning({ id: whatsappTemplates.id });
-    return result.length > 0;
+    const result = await db.delete(whatsappTemplates).where(eq(whatsappTemplates.id, id));
+    return result.rowCount > 0;
   }
   async getDashboardMetrics() {
     const allClients = await this.getClients();
@@ -851,13 +964,10 @@ var DatabaseStorage = class {
   }
   async createCompanySettings(insertCompanySettings) {
     await db.update(companySettings).set({ isDefault: false });
-    const settingsData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
+    const [settings] = await db.insert(companySettings).values({
       ...insertCompanySettings,
       isDefault: true
-    };
-    const [settings] = await db.insert(companySettings).values(settingsData).returning();
+    }).returning();
     return settings;
   }
   async updateCompanySettings(id, updates) {
@@ -876,12 +986,7 @@ var DatabaseStorage = class {
     return result[0];
   }
   async createServiceScope(insertServiceScope) {
-    const serviceScopeData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
-      ...insertServiceScope
-    };
-    const [serviceScope] = await db.insert(serviceScopes).values(serviceScopeData).returning();
+    const [serviceScope] = await db.insert(serviceScopes).values(insertServiceScope).returning();
     return serviceScope;
   }
   async updateServiceScope(id, updates) {
@@ -889,8 +994,8 @@ var DatabaseStorage = class {
     return updated;
   }
   async deleteServiceScope(id) {
-    const result = await db.delete(serviceScopes).where(eq(serviceScopes.id, id)).returning({ id: serviceScopes.id });
-    return result.length > 0;
+    const result = await db.delete(serviceScopes).where(eq(serviceScopes.id, id));
+    return result.rowCount > 0;
   }
   async getServiceAnalytics(serviceName) {
     const clientsWithService = await db.select().from(serviceScopes).where(eq(serviceScopes.serviceName, serviceName));
@@ -903,8 +1008,8 @@ var DatabaseStorage = class {
       date: spendLogs.date,
       amount: sum(spendLogs.amount).as("amount")
     }).from(spendLogs).where(and(
-      sql2`${spendLogs.clientId} = ANY(${clientIds})`,
-      gte(sql2`DATE(${spendLogs.date})`, sevenDaysAgo.toISOString().split("T")[0])
+      sql3`${spendLogs.clientId} = ANY(${clientIds})`,
+      gte(sql3`DATE(${spendLogs.date})`, sevenDaysAgo.toISOString().split("T")[0])
     )).groupBy(spendLogs.date).orderBy(spendLogs.date);
     return {
       serviceName,
@@ -932,15 +1037,12 @@ var DatabaseStorage = class {
     return await db.select().from(customButtons).where(eq(customButtons.isActive, true)).orderBy(customButtons.sortOrder, customButtons.createdAt);
   }
   async createCustomButton(insertButton) {
-    const maxOrder = await db.select({ max: sql2`max(${customButtons.sortOrder})` }).from(customButtons);
+    const maxOrder = await db.select({ max: sql3`max(${customButtons.sortOrder})` }).from(customButtons);
     const nextOrder = (maxOrder[0]?.max || 0) + 1;
-    const buttonData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
+    const [button] = await db.insert(customButtons).values({
       ...insertButton,
       sortOrder: nextOrder
-    };
-    const [button] = await db.insert(customButtons).values(buttonData).returning();
+    }).returning();
     return button;
   }
   async updateCustomButton(id, updates) {
@@ -965,14 +1067,29 @@ var DatabaseStorage = class {
   async getWebsiteProjects(clientId) {
     return await db.select().from(websiteProjects).where(eq(websiteProjects.clientId, clientId)).orderBy(desc(websiteProjects.createdAt));
   }
+  async getAllWebsiteProjects() {
+    return await db.select().from(websiteProjects).orderBy(desc(websiteProjects.createdAt));
+  }
+  async getWebsiteProject(id) {
+    const [project] = await db.select().from(websiteProjects).where(eq(websiteProjects.id, id));
+    return project;
+  }
+  async createWebsiteProject(insertProject) {
+    const portalKey = `${insertProject.projectName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`;
+    const [project] = await db.insert(websiteProjects).values({ ...insertProject, portalKey }).returning();
+    return project;
+  }
+  async updateWebsiteProject(id, updates) {
+    const [project] = await db.update(websiteProjects).set(updates).where(eq(websiteProjects.id, id)).returning();
+    return project;
+  }
+  async deleteWebsiteProject(id) {
+    const [deleted] = await db.delete(websiteProjects).where(eq(websiteProjects.id, id)).returning({ id: websiteProjects.id });
+    return !!deleted;
+  }
   // File upload operations
   async saveUpload(insertUpload) {
-    const uploadData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
-      ...insertUpload
-    };
-    const [upload] = await db.insert(uploads).values(uploadData).returning();
+    const [upload] = await db.insert(uploads).values(insertUpload).returning();
     return upload;
   }
   async getUpload(id) {
@@ -985,12 +1102,7 @@ var DatabaseStorage = class {
   }
   // Invoice PDF operations
   async saveInvoicePdf(insertInvoicePdf) {
-    const invoicePdfData = {
-      id: randomUUID(),
-      // Generate UUID in Node.js
-      ...insertInvoicePdf
-    };
-    const [invoicePdf] = await db.insert(invoicePdfs).values(invoicePdfData).returning();
+    const [invoicePdf] = await db.insert(invoicePdfs).values(insertInvoicePdf).returning();
     return invoicePdf;
   }
   async getInvoicePdfs() {
@@ -1004,14 +1116,519 @@ var DatabaseStorage = class {
     const [deleted] = await db.delete(invoicePdfs).where(eq(invoicePdfs.id, id)).returning({ id: invoicePdfs.id });
     return !!deleted;
   }
+  // Quick Message operations
+  async getQuickMessages() {
+    return await db.select().from(quickMessages).where(eq(quickMessages.isActive, true)).orderBy(desc(quickMessages.sortOrder), desc(quickMessages.createdAt));
+  }
+  async getQuickMessage(id) {
+    const result = await db.select().from(quickMessages).where(eq(quickMessages.id, id)).limit(1);
+    return result[0];
+  }
+  async createQuickMessage(insertQuickMessage) {
+    const [quickMessage] = await db.insert(quickMessages).values(insertQuickMessage).returning();
+    return quickMessage;
+  }
+  async updateQuickMessage(id, updates) {
+    const [updated] = await db.update(quickMessages).set({
+      ...updates,
+      updatedAt: sql3`now()`
+    }).where(eq(quickMessages.id, id)).returning();
+    return updated;
+  }
+  async deleteQuickMessage(id) {
+    const [deleted] = await db.delete(quickMessages).where(eq(quickMessages.id, id)).returning({ id: quickMessages.id });
+    return !!deleted;
+  }
+  // Payment Request operations
+  async getPaymentRequests() {
+    return await db.select().from(paymentRequests).orderBy(desc(paymentRequests.requestDate));
+  }
+  async getPaymentRequest(id) {
+    const result = await db.select().from(paymentRequests).where(eq(paymentRequests.id, id)).limit(1);
+    return result[0];
+  }
+  async getClientPaymentRequests(clientId) {
+    return await db.select().from(paymentRequests).where(eq(paymentRequests.clientId, clientId)).orderBy(desc(paymentRequests.requestDate));
+  }
+  async createPaymentRequest(insertPaymentRequest) {
+    const [paymentRequest] = await db.insert(paymentRequests).values(insertPaymentRequest).returning();
+    return paymentRequest;
+  }
+  async updatePaymentRequest(id, updates) {
+    const [updated] = await db.update(paymentRequests).set(updates).where(eq(paymentRequests.id, id)).returning();
+    return updated;
+  }
+  async approvePaymentRequest(id, adminNote, processedBy) {
+    const paymentRequest = await this.getPaymentRequest(id);
+    if (!paymentRequest || paymentRequest.status !== "Pending") {
+      return void 0;
+    }
+    const client = await this.getClient(paymentRequest.clientId);
+    if (!client) {
+      return void 0;
+    }
+    await this.updateClient(paymentRequest.clientId, {
+      walletDeposited: client.walletDeposited + paymentRequest.amount
+    });
+    const [updated] = await db.update(paymentRequests).set({
+      status: "Approved",
+      adminNote: adminNote || null,
+      processedBy: processedBy || null,
+      processedDate: sql3`now()`
+    }).where(eq(paymentRequests.id, id)).returning();
+    return updated;
+  }
+  async rejectPaymentRequest(id, adminNote, processedBy) {
+    const [updated] = await db.update(paymentRequests).set({
+      status: "Rejected",
+      adminNote: adminNote || null,
+      processedBy: processedBy || null,
+      processedDate: sql3`now()`
+    }).where(eq(paymentRequests.id, id)).returning();
+    return updated;
+  }
+  // Project Management Methods
+  // Project Type operations
+  async getProjectTypes() {
+    return await db.select().from(projectTypes).where(eq(projectTypes.isActive, true)).orderBy(desc(projectTypes.isDefault), desc(projectTypes.createdAt));
+  }
+  async getProjectType(id) {
+    const result = await db.select().from(projectTypes).where(eq(projectTypes.id, id)).limit(1);
+    return result[0];
+  }
+  async createProjectType(insertProjectType) {
+    const [projectType] = await db.insert(projectTypes).values(insertProjectType).returning();
+    return projectType;
+  }
+  async updateProjectType(id, updates) {
+    const [updated] = await db.update(projectTypes).set(updates).where(eq(projectTypes.id, id)).returning();
+    return updated;
+  }
+  async deleteProjectType(id) {
+    const result = await db.delete(projectTypes).where(eq(projectTypes.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+  // Project operations
+  async getProjects() {
+    return await db.select().from(projects).orderBy(desc(projects.createdAt));
+  }
+  async getProject(id) {
+    const result = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
+    return result[0];
+  }
+  async getProjectWithDetails(id) {
+    const project = await this.getProject(id);
+    if (!project) return void 0;
+    const [client, assignments, payments] = await Promise.all([
+      project.clientId ? this.getClient(project.clientId) : Promise.resolve(void 0),
+      this.getProjectAssignments(id),
+      this.getProjectPayments(id)
+    ]);
+    const assignmentsWithEmployees = await Promise.all(
+      assignments.map(async (assignment) => {
+        const employee = await this.getEmployee(assignment.employeeId);
+        return { ...assignment, employee };
+      })
+    );
+    return { ...project, client, assignments: assignmentsWithEmployees, payments };
+  }
+  async getClientProjects(clientId) {
+    return await db.select().from(projects).where(eq(projects.clientId, clientId)).orderBy(desc(projects.createdAt));
+  }
+  async createProject(insertProject) {
+    const [created] = await db.insert(projects).values(insertProject).returning();
+    return created;
+  }
+  async updateProject(id, updates) {
+    const [updated] = await db.update(projects).set(updates).where(eq(projects.id, id)).returning();
+    return updated;
+  }
+  async deleteProject(id) {
+    const result = await db.delete(projects).where(eq(projects.id, id));
+    return result.rowCount > 0;
+  }
+  // Employee operations
+  async getEmployees() {
+    return await db.select().from(employees).where(eq(employees.isActive, true)).orderBy(desc(employees.createdAt));
+  }
+  async getEmployee(id) {
+    const result = await db.select().from(employees).where(eq(employees.id, id)).limit(1);
+    return result[0];
+  }
+  async getEmployeeWithDetails(id) {
+    const employee = await this.getEmployee(id);
+    if (!employee) return void 0;
+    const [assignments, salaryPayments2] = await Promise.all([
+      this.getEmployeeAssignments(id),
+      this.getSalaryPayments(id)
+    ]);
+    const assignmentsWithProjects = await Promise.all(
+      assignments.map(async (assignment) => {
+        const project = await this.getProject(assignment.projectId);
+        return { ...assignment, project };
+      })
+    );
+    return { ...employee, assignments: assignmentsWithProjects, salaryPayments: salaryPayments2 };
+  }
+  async getEmployeeByPortalKey(portalKey) {
+    const result = await db.select().from(employees).where(eq(employees.portalKey, portalKey)).limit(1);
+    return result[0];
+  }
+  async createEmployee(insertEmployee) {
+    const portalKey = insertEmployee.portalKey || Math.random().toString(36).slice(2, 7);
+    const [created] = await db.insert(employees).values({
+      ...insertEmployee,
+      portalKey
+    }).returning();
+    return created;
+  }
+  async updateEmployee(id, updates) {
+    const [updated] = await db.update(employees).set(updates).where(eq(employees.id, id)).returning();
+    return updated;
+  }
+  async deleteEmployee(id) {
+    const result = await db.update(employees).set({ isActive: false }).where(eq(employees.id, id));
+    return result.rowCount > 0;
+  }
+  // Project Assignment operations
+  async getAllProjectAssignments() {
+    return await db.select().from(projectAssignments).orderBy(desc(projectAssignments.assignedDate));
+  }
+  async getProjectAssignments(projectId) {
+    return await db.select().from(projectAssignments).where(eq(projectAssignments.projectId, projectId)).orderBy(desc(projectAssignments.assignedDate));
+  }
+  async getEmployeeAssignments(employeeId) {
+    return await db.select().from(projectAssignments).where(eq(projectAssignments.employeeId, employeeId)).orderBy(desc(projectAssignments.assignedDate));
+  }
+  async createProjectAssignment(insertAssignment) {
+    const [created] = await db.insert(projectAssignments).values(insertAssignment).returning();
+    return created;
+  }
+  async updateProjectAssignment(id, updates) {
+    const [updated] = await db.update(projectAssignments).set(updates).where(eq(projectAssignments.id, id)).returning();
+    return updated;
+  }
+  async deleteProjectAssignment(id) {
+    const result = await db.delete(projectAssignments).where(eq(projectAssignments.id, id));
+    return result.rowCount > 0;
+  }
+  // Project Payment operations
+  async getProjectPayments(projectId) {
+    return await db.select().from(projectPayments).where(eq(projectPayments.projectId, projectId)).orderBy(desc(projectPayments.createdAt));
+  }
+  async createProjectPayment(insertPayment) {
+    const [created] = await db.insert(projectPayments).values(insertPayment).returning();
+    return created;
+  }
+  async updateProjectPayment(id, updates) {
+    const [updated] = await db.update(projectPayments).set(updates).where(eq(projectPayments.id, id)).returning();
+    return updated;
+  }
+  async deleteProjectPayment(id) {
+    const result = await db.delete(projectPayments).where(eq(projectPayments.id, id));
+    return result.rowCount > 0;
+  }
+  // Salary Payment operations
+  async getSalaryPayments(employeeId) {
+    return await db.select().from(salaryPayments).where(eq(salaryPayments.employeeId, employeeId)).orderBy(desc(salaryPayments.createdAt));
+  }
+  async getAllSalaryPayments() {
+    return await db.select().from(salaryPayments).orderBy(desc(salaryPayments.createdAt));
+  }
+  async createSalaryPayment(insertPayment) {
+    const [created] = await db.insert(salaryPayments).values(insertPayment).returning();
+    const employee = await this.getEmployee(insertPayment.employeeId);
+    if (employee) {
+      let updates = {};
+      if (insertPayment.type === "advance") {
+        updates.totalAdvance = employee.totalAdvance + insertPayment.amount;
+      } else if (insertPayment.type === "salary" || insertPayment.type === "project_payment" || insertPayment.type === "bonus") {
+        updates.totalIncome = employee.totalIncome + insertPayment.amount;
+        updates.totalDue = Math.max(0, employee.totalDue - insertPayment.amount);
+      }
+      if (Object.keys(updates).length > 0) {
+        await this.updateEmployee(insertPayment.employeeId, updates);
+      }
+    }
+    return created;
+  }
+  async updateSalaryPayment(id, updates) {
+    const [updated] = await db.update(salaryPayments).set(updates).where(eq(salaryPayments.id, id)).returning();
+    return updated;
+  }
+  async deleteSalaryPayment(id) {
+    const result = await db.delete(salaryPayments).where(eq(salaryPayments.id, id));
+    return result.rowCount > 0;
+  }
+  // Admin User operations
+  async getAdminByUsername(username) {
+    const result = await db.select().from(adminUsers).where(eq(adminUsers.username, username)).limit(1);
+    return result[0];
+  }
+  async createAdminUser(insertAdmin) {
+    const [created] = await db.insert(adminUsers).values(insertAdmin).returning();
+    return created;
+  }
+  async updateAdminUser(id, updates) {
+    const [updated] = await db.update(adminUsers).set(updates).where(eq(adminUsers.id, id)).returning();
+    return updated;
+  }
 };
 
-// server/storage-cpanel.ts
+// server/storage.ts
 var storage = new DatabaseStorage();
 
-// server/routes-cpanel.ts
+// server/websocket.ts
+import { WebSocketServer, WebSocket } from "ws";
+var NotificationService = class {
+  wss = null;
+  connections = /* @__PURE__ */ new Map();
+  initialize(port) {
+    this.wss = new WebSocketServer({
+      port,
+      clientTracking: true
+    });
+    console.log(`[WebSocket] Notification server running on port ${port}`);
+    this.wss.on("connection", (ws, request) => {
+      console.log("[WebSocket] New client connected");
+      ws.isAlive = true;
+      const url = new URL(request.url || "", `http://${request.headers.host}`);
+      const role = url.searchParams.get("role");
+      const userId = url.searchParams.get("userId");
+      ws.role = role || "admin";
+      ws.userId = userId || "anonymous";
+      if (!this.connections.has(ws.role)) {
+        this.connections.set(ws.role, []);
+      }
+      this.connections.get(ws.role)?.push(ws);
+      this.sendToClient(ws, {
+        id: "welcome",
+        type: "payment_request",
+        title: "Connection Established",
+        message: `Connected as ${ws.role}`,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+        data: {}
+      });
+      ws.on("message", (data) => {
+        try {
+          const message = JSON.parse(data.toString());
+          console.log("[WebSocket] Received:", message);
+          if (message.type === "ping") {
+            ws.send(JSON.stringify({ type: "pong" }));
+          }
+        } catch (error) {
+          console.error("[WebSocket] Error parsing message:", error);
+        }
+      });
+      ws.on("pong", () => {
+        ws.isAlive = true;
+      });
+      ws.on("close", () => {
+        console.log("[WebSocket] Client disconnected");
+        this.removeConnection(ws);
+      });
+      ws.on("error", (error) => {
+        console.error("[WebSocket] Connection error:", error);
+        this.removeConnection(ws);
+      });
+    });
+    this.startHeartbeat();
+  }
+  removeConnection(ws) {
+    Array.from(this.connections.entries()).forEach(([role, connections]) => {
+      const index = connections.indexOf(ws);
+      if (index !== -1) {
+        connections.splice(index, 1);
+      }
+    });
+  }
+  startHeartbeat() {
+    const interval = setInterval(() => {
+      if (!this.wss) return;
+      this.wss.clients.forEach((ws) => {
+        if (ws.isAlive === false) {
+          console.log("[WebSocket] Terminating dead connection");
+          this.removeConnection(ws);
+          return ws.terminate();
+        }
+        ws.isAlive = false;
+        ws.ping();
+      });
+    }, 3e4);
+    this.wss?.on("close", () => {
+      clearInterval(interval);
+    });
+  }
+  sendToClient(ws, notification) {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(notification));
+    }
+  }
+  // Send notification to all admin clients
+  notifyAdmins(notification) {
+    const adminConnections = this.connections.get("admin") || [];
+    let sentCount = 0;
+    adminConnections.forEach((ws) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        this.sendToClient(ws, notification);
+        sentCount++;
+      } else {
+        this.removeConnection(ws);
+      }
+    });
+    console.log(`[WebSocket] Notification sent to ${sentCount} admin(s):`, notification.title);
+    return sentCount;
+  }
+  // Send notification to specific client
+  notifyClient(clientId, notification) {
+    const clientConnections = this.connections.get("client") || [];
+    let sentCount = 0;
+    clientConnections.forEach((ws) => {
+      if (ws.userId === clientId && ws.readyState === WebSocket.OPEN) {
+        this.sendToClient(ws, notification);
+        sentCount++;
+      }
+    });
+    console.log(`[WebSocket] Notification sent to client ${clientId}:`, notification.title);
+    return sentCount;
+  }
+  // Broadcast to all connected clients
+  broadcast(notification) {
+    if (!this.wss) return 0;
+    let sentCount = 0;
+    this.wss.clients.forEach((ws) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        this.sendToClient(ws, notification);
+        sentCount++;
+      }
+    });
+    console.log(`[WebSocket] Broadcast sent to ${sentCount} client(s):`, notification.title);
+    return sentCount;
+  }
+  // Create notification for new payment request
+  createPaymentRequestNotification(paymentRequest, client) {
+    return {
+      id: `payment_${paymentRequest.id}_${Date.now()}`,
+      type: "payment_request",
+      title: "\u09A8\u09A4\u09C1\u09A8 \u09AA\u09C7\u09AE\u09C7\u09A8\u09CD\u099F \u09B0\u09BF\u0995\u09CB\u09AF\u09BC\u09C7\u09B8\u09CD\u099F",
+      message: `${client.name} \u098F\u0995\u099F\u09BF ${paymentRequest.amount / 100} \u099F\u09BE\u0995\u09BE\u09B0 \u09AA\u09C7\u09AE\u09C7\u09A8\u09CD\u099F \u09B0\u09BF\u0995\u09CB\u09AF\u09BC\u09C7\u09B8\u09CD\u099F \u09AA\u09BE\u09A0\u09BF\u09AF\u09BC\u09C7\u099B\u09C7\u09A8`,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      data: {
+        paymentRequest,
+        client
+      }
+    };
+  }
+  // Get connection stats
+  getStats() {
+    const stats = {
+      totalConnections: 0,
+      adminConnections: 0,
+      clientConnections: 0,
+      connectionsByRole: {}
+    };
+    Array.from(this.connections.entries()).forEach(([role, connections]) => {
+      const activeConnections = connections.filter((ws) => ws.readyState === WebSocket.OPEN);
+      stats.connectionsByRole[role] = activeConnections.length;
+      stats.totalConnections += activeConnections.length;
+      if (role === "admin") stats.adminConnections = activeConnections.length;
+      if (role === "client") stats.clientConnections = activeConnections.length;
+    });
+    return stats;
+  }
+  // Close all connections and stop server
+  close() {
+    if (this.wss) {
+      this.wss.close();
+      this.connections.clear();
+      console.log("[WebSocket] Server closed");
+    }
+  }
+};
+var notificationService = new NotificationService();
+
+// server/routes.ts
 init_schema();
+import bcrypt from "bcryptjs";
 async function registerRoutes(app2) {
+  app2.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = loginSchema.parse(req.body);
+      const admin = await storage.getAdminByUsername(username);
+      if (!admin) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      const isValidPassword = await bcrypt.compare(password, admin.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      if (!admin.isActive) {
+        return res.status(403).json({ error: "Account is disabled" });
+      }
+      req.session.adminId = admin.id;
+      req.session.adminUsername = admin.username;
+      res.json({
+        id: admin.id,
+        username: admin.username,
+        fullName: admin.fullName,
+        email: admin.email
+      });
+    } catch (error) {
+      res.status(400).json({ error: "Invalid request" });
+    }
+  });
+  app2.post("/api/auth/logout", async (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Failed to logout" });
+      }
+      res.json({ success: true });
+    });
+  });
+  app2.get("/api/auth/session", async (req, res) => {
+    const adminId = req.session.adminId;
+    if (!adminId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const admin = await storage.getAdminByUsername(req.session.adminUsername);
+      if (!admin || !admin.isActive) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      res.json({
+        id: admin.id,
+        username: admin.username,
+        fullName: admin.fullName,
+        email: admin.email
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch session" });
+    }
+  });
+  app2.post("/api/auth/init-admin", async (req, res) => {
+    try {
+      const { username, password, fullName, email } = insertAdminUserSchema.parse(req.body);
+      const existing = await storage.getAdminByUsername(username);
+      if (existing) {
+        return res.status(400).json({ error: "Admin already exists" });
+      }
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const admin = await storage.createAdminUser({
+        username,
+        password: hashedPassword,
+        fullName,
+        email,
+        isActive: true
+      });
+      res.json({
+        id: admin.id,
+        username: admin.username,
+        fullName: admin.fullName
+      });
+    } catch (error) {
+      res.status(400).json({ error: "Failed to create admin" });
+    }
+  });
   app2.get("/api/clients", async (req, res) => {
     try {
       const clients2 = await storage.getClients();
@@ -1046,6 +1663,20 @@ async function registerRoutes(app2) {
       res.status(201).json(client);
     } catch (error) {
       res.status(400).json({ error: "Invalid client data" });
+    }
+  });
+  app2.patch("/api/clients/:id/toggle-active", async (req, res) => {
+    try {
+      const currentClient = await storage.getClient(req.params.id);
+      if (!currentClient) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+      const updatedClient = await storage.updateClient(req.params.id, {
+        status: currentClient.status === "Active" ? "Inactive" : "Active"
+      });
+      res.json(updatedClient);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to toggle client status" });
     }
   });
   app2.patch("/api/clients/:id", async (req, res) => {
@@ -1290,6 +1921,46 @@ ${message}`;
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to generate WhatsApp link" });
+    }
+  });
+  app2.get("/api/quick-messages", async (req, res) => {
+    try {
+      const quickMessages2 = await storage.getQuickMessages();
+      res.json(quickMessages2);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch quick messages" });
+    }
+  });
+  app2.post("/api/quick-messages", async (req, res) => {
+    try {
+      const validatedData = insertQuickMessageSchema.parse(req.body);
+      const quickMessage = await storage.createQuickMessage(validatedData);
+      res.status(201).json(quickMessage);
+    } catch (error) {
+      console.error("Quick message creation error:", error);
+      res.status(400).json({ error: "Invalid quick message data" });
+    }
+  });
+  app2.patch("/api/quick-messages/:id", async (req, res) => {
+    try {
+      const quickMessage = await storage.updateQuickMessage(req.params.id, req.body);
+      if (!quickMessage) {
+        return res.status(404).json({ error: "Quick message not found" });
+      }
+      res.json(quickMessage);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update quick message" });
+    }
+  });
+  app2.delete("/api/quick-messages/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteQuickMessage(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Quick message not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete quick message" });
     }
   });
   app2.get("/api/company-settings", async (req, res) => {
@@ -1601,6 +2272,508 @@ ${message}`;
       res.status(500).json({ error: "Failed to delete invoice PDF" });
     }
   });
+  app2.get("/api/website-projects", async (req, res) => {
+    try {
+      const projects2 = await storage.getAllWebsiteProjects();
+      res.json(projects2);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch website projects" });
+    }
+  });
+  app2.get("/api/website-projects/client/:clientId", async (req, res) => {
+    try {
+      const projects2 = await storage.getWebsiteProjects(req.params.clientId);
+      res.json(projects2);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch client website projects" });
+    }
+  });
+  app2.get("/api/website-projects/:id", async (req, res) => {
+    try {
+      const project = await storage.getWebsiteProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ error: "Website project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch website project" });
+    }
+  });
+  app2.post("/api/website-projects", async (req, res) => {
+    try {
+      const requestData = {
+        ...req.body,
+        completedDate: req.body.completedDate ? new Date(req.body.completedDate) : null
+      };
+      const validatedData = insertWebsiteProjectSchema.parse(requestData);
+      const portalKey = `WEB-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const project = await storage.createWebsiteProject({
+        ...validatedData,
+        portalKey
+      });
+      res.status(201).json(project);
+    } catch (error) {
+      console.error("Create website project error:", error);
+      res.status(400).json({ error: "Invalid website project data" });
+    }
+  });
+  app2.patch("/api/website-projects/:id", async (req, res) => {
+    try {
+      const project = await storage.updateWebsiteProject(req.params.id, req.body);
+      if (!project) {
+        return res.status(404).json({ error: "Website project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update website project" });
+    }
+  });
+  app2.delete("/api/website-projects/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteWebsiteProject(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Website project not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete website project" });
+    }
+  });
+  app2.get("/api/payment-requests", async (req, res) => {
+    try {
+      const paymentRequests2 = await storage.getPaymentRequests();
+      res.json(paymentRequests2);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch payment requests" });
+    }
+  });
+  app2.get("/api/payment-requests/:id", async (req, res) => {
+    try {
+      const paymentRequest = await storage.getPaymentRequest(req.params.id);
+      if (!paymentRequest) {
+        return res.status(404).json({ error: "Payment request not found" });
+      }
+      res.json(paymentRequest);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch payment request" });
+    }
+  });
+  app2.get("/api/clients/:clientId/payment-requests", async (req, res) => {
+    try {
+      const paymentRequests2 = await storage.getClientPaymentRequests(req.params.clientId);
+      res.json(paymentRequests2);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch client payment requests" });
+    }
+  });
+  app2.post("/api/payment-requests", async (req, res) => {
+    try {
+      const validatedData = insertPaymentRequestSchema.parse(req.body);
+      const paymentRequest = await storage.createPaymentRequest(validatedData);
+      try {
+        const client = await storage.getClient(paymentRequest.clientId);
+        if (client) {
+          const notification = notificationService.createPaymentRequestNotification(paymentRequest, client);
+          const sentCount = notificationService.notifyAdmins(notification);
+          console.log(`[Notification] Payment request notification sent to ${sentCount} admin(s)`);
+        }
+      } catch (notificationError) {
+        console.error("Failed to send payment request notification:", notificationError);
+      }
+      res.status(201).json(paymentRequest);
+    } catch (error) {
+      console.error("Payment request creation error:", error);
+      res.status(400).json({ error: "Invalid payment request data" });
+    }
+  });
+  app2.patch("/api/payment-requests/:id", async (req, res) => {
+    try {
+      const paymentRequest = await storage.updatePaymentRequest(req.params.id, req.body);
+      if (!paymentRequest) {
+        return res.status(404).json({ error: "Payment request not found" });
+      }
+      res.json(paymentRequest);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update payment request" });
+    }
+  });
+  app2.patch("/api/payment-requests/:id/approve", async (req, res) => {
+    try {
+      const { adminNote, processedBy } = req.body;
+      const paymentRequest = await storage.approvePaymentRequest(req.params.id, adminNote, processedBy);
+      if (!paymentRequest) {
+        return res.status(404).json({ error: "Payment request not found or already processed" });
+      }
+      res.json(paymentRequest);
+    } catch (error) {
+      console.error("Payment approval error:", error);
+      res.status(500).json({ error: "Failed to approve payment request" });
+    }
+  });
+  app2.patch("/api/payment-requests/:id/reject", async (req, res) => {
+    try {
+      const { adminNote, processedBy } = req.body;
+      const paymentRequest = await storage.rejectPaymentRequest(req.params.id, adminNote, processedBy);
+      if (!paymentRequest) {
+        return res.status(404).json({ error: "Payment request not found or already processed" });
+      }
+      res.json(paymentRequest);
+    } catch (error) {
+      console.error("Payment rejection error:", error);
+      res.status(500).json({ error: "Failed to reject payment request" });
+    }
+  });
+  app2.get("/api/project-types", async (req, res) => {
+    try {
+      const projectTypes2 = await storage.getProjectTypes();
+      res.json(projectTypes2);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project types" });
+    }
+  });
+  app2.get("/api/project-types/:id", async (req, res) => {
+    try {
+      const projectType = await storage.getProjectType(req.params.id);
+      if (!projectType) {
+        return res.status(404).json({ error: "Project type not found" });
+      }
+      res.json(projectType);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project type" });
+    }
+  });
+  app2.post("/api/project-types", async (req, res) => {
+    try {
+      const validatedData = insertProjectTypeSchema.parse(req.body);
+      const projectType = await storage.createProjectType(validatedData);
+      res.status(201).json(projectType);
+    } catch (error) {
+      console.error("Project type creation error:", error);
+      res.status(400).json({ error: "Invalid project type data" });
+    }
+  });
+  app2.patch("/api/project-types/:id", async (req, res) => {
+    try {
+      const validatedData = insertProjectTypeSchema.partial().parse(req.body);
+      const projectType = await storage.updateProjectType(req.params.id, validatedData);
+      if (!projectType) {
+        return res.status(404).json({ error: "Project type not found" });
+      }
+      res.json(projectType);
+    } catch (error) {
+      console.error("Project type update error:", error);
+      res.status(400).json({ error: "Invalid project type data" });
+    }
+  });
+  app2.delete("/api/project-types/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteProjectType(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Project type not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Project type deletion error:", error);
+      res.status(500).json({ error: "Failed to delete project type" });
+    }
+  });
+  app2.get("/api/projects", async (req, res) => {
+    try {
+      const projects2 = await storage.getProjects();
+      res.json(projects2);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch projects" });
+    }
+  });
+  app2.get("/api/projects/:id", async (req, res) => {
+    try {
+      const project = await storage.getProjectWithDetails(req.params.id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project" });
+    }
+  });
+  app2.get("/api/clients/:clientId/projects", async (req, res) => {
+    try {
+      const projects2 = await storage.getClientProjects(req.params.clientId);
+      res.json(projects2);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch client projects" });
+    }
+  });
+  app2.post("/api/projects", async (req, res) => {
+    try {
+      console.log("Creating project with data:", req.body);
+      const preprocessedData = { ...req.body };
+      if (preprocessedData.features) {
+        preprocessedData.features = Array.from(preprocessedData.features).map(String);
+      }
+      if (preprocessedData.completedFeatures) {
+        preprocessedData.completedFeatures = Array.from(preprocessedData.completedFeatures).map(String);
+      }
+      const validatedData = insertProjectSchema.parse(preprocessedData);
+      console.log("Validated data:", validatedData);
+      const project = await storage.createProject(validatedData);
+      res.status(201).json(project);
+    } catch (error) {
+      console.error("Project creation error:", error);
+      res.status(400).json({ error: "Invalid project data", details: error?.message || "Unknown error" });
+    }
+  });
+  app2.patch("/api/projects/:id", async (req, res) => {
+    try {
+      console.log("Updating project with data:", JSON.stringify(req.body, null, 2));
+      const updateData = { ...req.body };
+      if (updateData.features) {
+        updateData.features = Array.from(updateData.features).map(String);
+        console.log("Features array processed:", updateData.features);
+      }
+      if (updateData.endDate && typeof updateData.endDate === "string") {
+        updateData.endDate = new Date(updateData.endDate);
+        console.log("EndDate processed:", updateData.endDate);
+      }
+      console.log("Final update data:", JSON.stringify(updateData, null, 2));
+      const project = await storage.updateProject(req.params.id, updateData);
+      console.log("Update result:", project ? "Success" : "Not found");
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      console.error("Project update error details:");
+      console.error("Error message:", error?.message);
+      console.error("Error stack:", error?.stack);
+      console.error("Error details:", error);
+      res.status(500).json({
+        error: "Failed to update project",
+        details: error?.message || "Unknown error",
+        stack: error?.stack
+      });
+    }
+  });
+  app2.delete("/api/projects/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteProject(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete project" });
+    }
+  });
+  app2.get("/api/employees", async (req, res) => {
+    try {
+      const employees2 = await storage.getEmployees();
+      res.json(employees2);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch employees" });
+    }
+  });
+  app2.get("/api/employees/:id", async (req, res) => {
+    try {
+      const employee = await storage.getEmployeeWithDetails(req.params.id);
+      if (!employee) {
+        return res.status(404).json({ error: "Employee not found" });
+      }
+      res.json(employee);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch employee" });
+    }
+  });
+  app2.get("/api/employees/portal/:portalKey", async (req, res) => {
+    try {
+      const employee = await storage.getEmployeeByPortalKey(req.params.portalKey);
+      if (!employee) {
+        return res.status(404).json({ error: "Employee not found" });
+      }
+      res.json(employee);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch employee by portal key" });
+    }
+  });
+  app2.post("/api/employees", async (req, res) => {
+    try {
+      const validatedData = insertEmployeeSchema.parse(req.body);
+      const employee = await storage.createEmployee(validatedData);
+      res.status(201).json(employee);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid employee data" });
+    }
+  });
+  app2.patch("/api/employees/:id", async (req, res) => {
+    try {
+      const employee = await storage.updateEmployee(req.params.id, req.body);
+      if (!employee) {
+        return res.status(404).json({ error: "Employee not found" });
+      }
+      res.json(employee);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update employee" });
+    }
+  });
+  app2.delete("/api/employees/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteEmployee(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Employee not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete employee" });
+    }
+  });
+  app2.get("/api/projects/:projectId/assignments", async (req, res) => {
+    try {
+      const assignments = await storage.getProjectAssignments(req.params.projectId);
+      res.json(assignments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project assignments" });
+    }
+  });
+  app2.get("/api/employees/:employeeId/assignments", async (req, res) => {
+    try {
+      const assignments = await storage.getEmployeeAssignments(req.params.employeeId);
+      res.json(assignments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch employee assignments" });
+    }
+  });
+  app2.get("/api/project-assignments", async (req, res) => {
+    try {
+      const assignments = await storage.getAllProjectAssignments();
+      res.json(assignments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project assignments" });
+    }
+  });
+  app2.post("/api/project-assignments", async (req, res) => {
+    try {
+      const preprocessedData = { ...req.body };
+      if (preprocessedData.assignedFeatures) {
+        preprocessedData.assignedFeatures = Array.from(preprocessedData.assignedFeatures).map(String);
+      }
+      if (preprocessedData.completedFeatures) {
+        preprocessedData.completedFeatures = Array.from(preprocessedData.completedFeatures).map(String);
+      }
+      const validatedData = insertProjectAssignmentSchema.parse(preprocessedData);
+      const assignment = await storage.createProjectAssignment(validatedData);
+      res.status(201).json(assignment);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid assignment data" });
+    }
+  });
+  app2.patch("/api/project-assignments/:id", async (req, res) => {
+    try {
+      const assignment = await storage.updateProjectAssignment(req.params.id, req.body);
+      if (!assignment) {
+        return res.status(404).json({ error: "Assignment not found" });
+      }
+      res.json(assignment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update assignment" });
+    }
+  });
+  app2.delete("/api/project-assignments/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteProjectAssignment(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Assignment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete assignment" });
+    }
+  });
+  app2.get("/api/projects/:projectId/payments", async (req, res) => {
+    try {
+      const payments = await storage.getProjectPayments(req.params.projectId);
+      res.json(payments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project payments" });
+    }
+  });
+  app2.post("/api/project-payments", async (req, res) => {
+    try {
+      const validatedData = insertProjectPaymentSchema.parse(req.body);
+      const payment = await storage.createProjectPayment(validatedData);
+      res.status(201).json(payment);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid payment data" });
+    }
+  });
+  app2.patch("/api/project-payments/:id", async (req, res) => {
+    try {
+      const payment = await storage.updateProjectPayment(req.params.id, req.body);
+      if (!payment) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+      res.json(payment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update payment" });
+    }
+  });
+  app2.delete("/api/project-payments/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteProjectPayment(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete payment" });
+    }
+  });
+  app2.get("/api/employees/:employeeId/salary-payments", async (req, res) => {
+    try {
+      const payments = await storage.getSalaryPayments(req.params.employeeId);
+      res.json(payments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch salary payments" });
+    }
+  });
+  app2.get("/api/salary-payments", async (req, res) => {
+    try {
+      const payments = await storage.getAllSalaryPayments();
+      res.json(payments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch all salary payments" });
+    }
+  });
+  app2.post("/api/salary-payments", async (req, res) => {
+    try {
+      const validatedData = insertSalaryPaymentSchema.parse(req.body);
+      const payment = await storage.createSalaryPayment(validatedData);
+      res.status(201).json(payment);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid salary payment data" });
+    }
+  });
+  app2.patch("/api/salary-payments/:id", async (req, res) => {
+    try {
+      const payment = await storage.updateSalaryPayment(req.params.id, req.body);
+      if (!payment) {
+        return res.status(404).json({ error: "Salary payment not found" });
+      }
+      res.json(payment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update salary payment" });
+    }
+  });
+  app2.delete("/api/salary-payments/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteSalaryPayment(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Salary payment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete salary payment" });
+    }
+  });
   const httpServer = createServer(app2);
   return httpServer;
 }
@@ -1634,13 +2807,26 @@ function serveStatic(app2) {
   });
 }
 
-// server/index-cpanel.ts
-var app = express2();
-app.use(express2.json({ limit: "50mb" }));
-app.use(express2.urlencoded({ extended: false, limit: "50mb" }));
+// server/index.ts
+var app = express3();
+app.use(express3.json({ limit: "50mb" }));
+app.use(express3.urlencoded({ extended: false, limit: "50mb" }));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "social-ads-expert-secret-key-change-in-production",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1e3
+      // 24 hours
+    }
+  })
+);
 app.use((req, res, next) => {
   const start = Date.now();
-  const path2 = req.path;
+  const path4 = req.path;
   let capturedJsonResponse = void 0;
   const originalResJson = res.json;
   res.json = function(bodyJson, ...args) {
@@ -1649,8 +2835,8 @@ app.use((req, res, next) => {
   };
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path2.startsWith("/api")) {
-      let logLine = `${req.method} ${path2} ${res.statusCode} in ${duration}ms`;
+    if (path4.startsWith("/api")) {
+      let logLine = `${req.method} ${path4} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -1663,18 +2849,9 @@ app.use((req, res, next) => {
   next();
 });
 (async () => {
-  const { initializeDatabase: initializeDatabase2 } = await Promise.resolve().then(() => (init_db_cpanel(), db_cpanel_exports));
-  
-  // Try to initialize database, but don't crash if it fails due to permissions
-  try {
-    await initializeDatabase2();
-    console.log("Database initialized successfully");
-  } catch (error) {
-    console.warn("⚠️  Database initialization skipped due to permission error");
-    console.warn("Please fix database permissions manually - see URGENT-FIX.md");
-    console.warn("App will continue to run, but database operations may fail");
-  }
-  
+  const { initializeDatabase: initializeDatabase2 } = await Promise.resolve().then(() => (init_db(), db_exports));
+  await initializeDatabase2();
+  console.log("Database initialized successfully");
   const server = await registerRoutes(app);
   app.use((err, _req, res, _next) => {
     const status = err.status || err.statusCode || 500;
@@ -1682,7 +2859,12 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
     throw err;
   });
-  serveStatic(app);
+  if (process.env.NODE_ENV !== "production") {
+    const { setupVite: setupVite2 } = await init_vite().then(() => vite_exports);
+    await setupVite2(app, server);
+  } else {
+    serveStatic(app);
+  }
   const port = parseInt(process.env.PORT || "5000", 10);
   server.listen({
     port,
