@@ -65,6 +65,7 @@ export default function CompletedWebsitesPanel() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingWebsite, setEditingWebsite] = useState<CompletedWebsite | null>(null);
   const [showPasswords, setShowPasswords] = useState<{ [key: string]: boolean }>({});
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const { toast } = useToast();
 
   // Form state
@@ -176,10 +177,14 @@ export default function CompletedWebsitesPanel() {
     const clientName = client?.name || "Unknown Client";
     const brandColor = "#7A4DEE";
 
+    setIsGeneratingPDF(true);
+    
     try {
-      // Import libraries dynamically
-      const { jsPDF } = await import("jspdf");
-      const html2canvas = (await import("html2canvas")).default;
+      // Show loading toast
+      toast({
+        title: "PDF তৈরি হচ্ছে...",
+        description: "অনুগ্রহ করে অপেক্ষা করুন",
+      });
 
       // Create HTML content for PDF
       const content = `
@@ -476,9 +481,20 @@ export default function CompletedWebsitesPanel() {
       const fileName = `${website.projectName.replace(/\s+/g, '_')}_Credentials.pdf`;
       pdf.save(fileName);
 
+      toast({
+        title: "সফল!",
+        description: "PDF সফলভাবে ডাউনলোড হয়েছে!",
+      });
+
     } catch (error) {
       console.error('PDF generation error:', error);
-      alert('PDF তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      toast({
+        title: "ত্রুটি",
+        description: "PDF তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPDF(false);
     }
   };
 
@@ -763,11 +779,12 @@ export default function CompletedWebsitesPanel() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDownloadPDF(website)}
-                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                        disabled={isGeneratingPDF}
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50 disabled:opacity-50"
                         data-testid={`button-download-pdf-${website.id}`}
                         title="Download PDF"
                       >
-                        <FileDown className="h-4 w-4" />
+                        <FileDown className={`h-4 w-4 ${isGeneratingPDF ? 'animate-bounce' : ''}`} />
                       </Button>
                       <Button
                         variant="ghost"
