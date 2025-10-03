@@ -156,6 +156,29 @@ https://yourdomain.com
 
 ## 🔧 Troubleshooting
 
+### 🚨 Most Common Error: Module Not Found
+
+**Error Message:**
+```
+Error: Cannot find package '@neondatabase/serverless'
+```
+
+**Quick Fix:**
+```bash
+# 1. Stop app in cPanel
+# 2. Terminal এ:
+cd ~/your-app-directory
+source /home/YOUR_USERNAME/nodevenv/YOUR_DOMAIN/22/bin/activate
+rm -rf node_modules package-lock.json
+npm install --production
+
+# 3. Restart app
+```
+
+**📖 Detailed Guide:** `QUICK-FIX.md` এবং `FIX-MODULE-NOT-FOUND.md` দেখুন
+
+---
+
 ### Application Start না হলে:
 ```bash
 # Terminal এ error logs দেখুন:

@@ -1,5 +1,16 @@
 # 🚀 START HERE - cPanel Deployment
 
+## 🚨 Common Error Fix (দেখলে এটা পড়ুন):
+
+**যদি এই error দেখেন:**
+```
+Error: Cannot find package '@neondatabase/serverless'
+```
+
+**Quick Fix:** `QUICK-FIX.md` অথবা `FIX-MODULE-NOT-FOUND.md` দেখুন
+
+---
+
 ## ✅ এই Package এ কি কি আছে:
 
 ### 📂 Files:
