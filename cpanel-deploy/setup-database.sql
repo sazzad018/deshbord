@@ -22,7 +22,7 @@ CREATE TABLE `admin_users` (
 
 -- Insert default admin user (username: admin, password: admin123)
 INSERT INTO `admin_users` (`id`, `username`, `password`, `full_name`, `is_active`) VALUES
-(UUID(), 'admin', '$2a$10$YourBcryptHashedPasswordGoesHere', 'Administrator', TRUE);
+(UUID(), 'admin', '$2b$10$vegxq0xoqsof3LUGLsNJMON2cICrfgTj5Mik2UnqwZLPmlkDG9NCS', 'System Administrator', TRUE);
 
 -- ============================================
 -- CLIENTS TABLE
