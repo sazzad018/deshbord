@@ -42,13 +42,15 @@ STEP 3: CREATE NODE.JS APP
 cPanel → Software → Setup Node.js App → Create Application
 
 Settings:
-- Node.js Version: 20.x (or latest available)
+- Node.js Version: 18.x or 20.x (⚠️ NOT 22.x - use 18 or 20!)
 - Application Mode: Production
 - Application Root: crm-app (your folder name)
 - Application URL: your-domain.com
 - Application Startup File: index.js
 
 Click "Create"
+
+⚠️ IMPORTANT: Use Node 18.x or 20.x for best compatibility!
 
 STEP 4: ENVIRONMENT VARIABLES
 ------------------------------
@@ -68,10 +70,18 @@ Save/Update
 
 STEP 5: INSTALL DEPENDENCIES
 -----------------------------
-Click "Run NPM Install" button
-Wait 5-15 minutes for installation to complete
+⚠️ VERY IMPORTANT STEP - DO NOT SKIP!
+
+1. Click "Run NPM Install" button
+2. ⏳ Wait 10-20 minutes (এটা সময় নেয়!)
+3. Page refresh করে status check করুন
+4. নিশ্চিত করুন "npm install completed" দেখাচ্ছে
 
 ✅ All packages including mysql2 will be installed
+
+⚠️ Common Mistake:
+- Restart করার আগে npm install সম্পূর্ণ হওয়ার জন্য অপেক্ষা করুন!
+- যদি mysql2 error দেখান, FIX-MYSQL2-ERROR.txt পড়ুন
 
 STEP 6: SETUP DATABASE
 -----------------------
@@ -128,24 +138,29 @@ Login: admin / admin123
 TROUBLESHOOTING
 ========================================
 
+❌ "Cannot find package mysql2" (MOST COMMON!)
+→ Read FIX-MYSQL2-ERROR.txt file
+→ Delete node_modules folder
+→ Run NPM Install again (wait 15+ minutes!)
+→ Use Node 18.x instead of 22.x
+→ Verify mysql2 folder exists in node_modules
+
 ❌ "Cannot connect to database"
 → Check DATABASE_URL format
 → Verify MySQL credentials
 → Ensure database exists
 
-❌ "Module 'mysql2' not found"
-→ Run NPM Install again
-→ Check Node.js version (use 18.x or 20.x)
-
 ❌ App won't start
 → Check error logs in cPanel Node.js App page
 → Verify all environment variables set
+→ Make sure npm install completed
 → Run setup-database.js first
 
-❌ NPM Install fails
-→ Try different Node version
-→ Clear browser cache
-→ Contact hosting support
+❌ NPM Install fails or takes too long
+→ Be patient! It can take 15-20 minutes
+→ Try Node version 18.x (most stable)
+→ Clear browser cache and try again
+→ Contact hosting support if still fails
 
 ========================================
 MYSQL CONNECTION STRING FORMAT

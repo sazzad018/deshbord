@@ -1,0 +1,157 @@
+========================================
+FIX: mysql2 Package Not Found Error
+========================================
+
+আপনার error টা common এবং সহজেই fix করা যাবে!
+
+ERROR MESSAGE:
+--------------
+Cannot find package 'mysql2/index.js'
+
+এটা হয় কারণ cPanel এ npm install ঠিকভাবে হয়নি বা 
+mysql2 package install হয়নি।
+
+========================================
+SOLUTION - STEP BY STEP
+========================================
+
+STEP 1: cPanel Node.js App Settings
+------------------------------------
+1. cPanel → Setup Node.js App
+2. আপনার app select করুন
+3. নিচে scroll করে "Detected configuration files" দেখুন
+
+STEP 2: Clear Previous Installation
+------------------------------------
+1. "Stop App" button ক্লিক করুন
+2. File Manager এ যান
+3. আপনার app folder → node_modules delete করুন
+4. যদি package-lock.json থাকে সেটাও delete করুন
+
+STEP 3: Fresh NPM Install
+--------------------------
+1. Setup Node.js App page এ ফিরে যান
+2. নিশ্চিত করুন Node version 18.x বা 20.x আছে
+3. "Run NPM Install" button ক্লিক করুন
+4. ⏳ Wait 10-15 minutes (এটা সময় নেয়)
+5. Page refresh করে status check করুন
+
+⚠️ IMPORTANT: NPM Install সম্পূর্ণ হওয়ার জন্য অপেক্ষা করুন!
+
+STEP 4: Verify mysql2 Installation
+-----------------------------------
+File Manager দিয়ে check করুন:
+your-app-folder/node_modules/mysql2 folder আছে কিনা
+
+যদি না থাকে:
+1. Terminal access চালু করুন (যদি available)
+2. অথবা SSH access দিয়ে manually install করুন:
+   cd /home/sociala1/crm-app
+   npm install mysql2
+
+STEP 5: Restart Application
+----------------------------
+1. Setup Node.js App page এ ফিরে যান
+2. "Restart" button ক্লিক করুন
+3. Status "Running" হওয়া পর্যন্ত wait করুন
+4. আপনার website visit করুন
+
+========================================
+ALTERNATIVE SOLUTION
+========================================
+
+যদি উপরের solution কাজ না করে:
+
+Method A: Manual Package Installation
+--------------------------------------
+যদি আপনার SSH বা Terminal access থাকে:
+
+cd /home/sociala1/your-app-folder
+rm -rf node_modules package-lock.json
+npm install
+npm install mysql2 --save
+
+Method B: Different Node Version
+---------------------------------
+1. Node.js version 18.x try করুন (22.x এর বদলে)
+2. Node 18 বেশি stable shared hosting এ
+3. cPanel → Setup Node.js App → Edit
+4. Node version change করুন
+5. "Run NPM Install" আবার করুন
+
+Method C: Contact Hosting Support
+----------------------------------
+যদি কিছুই কাজ না করে:
+1. Hosting support contact করুন
+2. বলুন: "npm install mysql2 কাজ করছে না"
+3. তারা manually install করে দিতে পারবে
+
+========================================
+ROOT CAUSE
+========================================
+
+এই error টা হয় যখন:
+
+1. ❌ npm install সম্পূর্ণ হয়নি
+   → Wait করুন এবং আবার try করুন
+
+2. ❌ Node version compatibility issue
+   → Node 18.x বা 20.x use করুন
+
+3. ❌ mysql2 native binding build হয়নি
+   → Hosting environment এ python/gcc missing থাকলে হতে পারে
+
+4. ❌ package-lock.json conflict
+   → Delete করে fresh install করুন
+
+========================================
+PREVENTION (ভবিষ্যতে)
+========================================
+
+Deploy করার সময়:
+
+1. ✅ Node version 18.x বা 20.x use করুন
+2. ✅ npm install সম্পূর্ণ হওয়ার জন্য যথেষ্ট সময় দিন
+3. ✅ node_modules folder verify করুন
+4. ✅ Error logs check করুন before restart
+
+========================================
+QUICK CHECK
+========================================
+
+আপনার app ঠিক আছে কিনা verify করুন:
+
+□ Node.js version 18.x or 20.x
+□ npm install completed (no errors in log)
+□ node_modules/mysql2 folder exists
+□ node_modules/drizzle-orm folder exists
+□ Environment variables set করা আছে
+□ DATABASE_URL correct format
+
+All checked? Restart app এবং test করুন!
+
+========================================
+STILL NOT WORKING?
+========================================
+
+যদি এখনও error থাকে:
+
+1. Error log এর screenshot নিন
+2. cPanel Setup Node.js App settings screenshot নিন
+3. Hosting support কে পাঠান
+4. বলুন: "mysql2 package installation issue"
+
+They should be able to help! 🚀
+
+========================================
+SUCCESS INDICATOR
+========================================
+
+আপনার app সফলভাবে start হয়েছে যখন:
+
+✅ Status: Running (green)
+✅ No errors in log
+✅ Website loads properly
+✅ Login page দেখা যাচ্ছে
+
+Good luck! 💪
