@@ -9,15 +9,17 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
 // Session middleware for authentication
+// Note: secure cookie requires HTTPS. For cPanel without SSL, use secure: false
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "social-ads-expert-secret-key-change-in-production",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Set to false for HTTP, true for HTTPS
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax', // Better compatibility
     },
   })
 );
