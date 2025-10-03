@@ -1,0 +1,196 @@
+========================================
+⚠️ URGENT FIX - Vite Error (IMMEDIATE SOLUTION!)
+========================================
+
+আপনি এখনও vite error পাচ্ছেন কারণ
+পুরনো index.js file use হচ্ছে!
+
+========================================
+✅ IMMEDIATE SOLUTION (2 MINUTES!)
+========================================
+
+STOP using index.js!
+START using server.cjs instead!
+
+STEP 1: Change Startup File
+----------------------------
+cPanel → Setup Node.js App → Your app select
+
+Application startup file:
+  
+  পুরনো: index.js ❌
+  নতুন: server.cjs ✅
+
+Change করুন এবং Save করুন!
+
+STEP 2: Restart
+---------------
+"Restart" button click করুন
+
+STEP 3: Test
+------------
+Website open করুন
+✅ কোন vite error থাকবে না!
+
+========================================
+WHY THIS WORKS
+========================================
+
+server.cjs হলো একটা wrapper যা:
+✅ CommonJS format (no ESM issues)
+✅ Automatically loads index.js properly
+✅ No vite imports needed
+✅ Works perfectly on cPanel
+
+এটা already আপনার server এ আছে!
+শুধু startup file change করুন!
+
+========================================
+ALTERNATIVE: Upload New index.js
+========================================
+
+যদি server.cjs কাজ না করে:
+
+STEP 1: Make Sure You Have Latest Package
+------------------------------------------
+Check করুন আপনার কাছে latest cpanel-deploy
+folder আছে (Version 2.0 FINAL)
+
+STEP 2: Delete ALL Old Files
+-----------------------------
+cPanel → File Manager
+→ Your app folder
+→ Delete these files:
+  - index.js (old one with vite!)
+  - server.js (if exists)
+  - Any other .js files
+
+STEP 3: Upload Fresh
+--------------------
+Upload from cpanel-deploy folder:
+  - index.js (NEW 104 KB, no vite!)
+  - server.cjs (375 bytes, wrapper)
+  
+STEP 4: Set Startup File
+-------------------------
+Application startup file: server.cjs
+
+STEP 5: Restart
+---------------
+✅ কাজ হবে!
+
+========================================
+VERIFY YOU HAVE CORRECT FILE
+========================================
+
+সঠিক index.js file এর লক্ষণ:
+
+File size: 104 KB (exactly)
+Created: October 3, 2025
+Version: 2.0 FINAL
+
+ভুল file এর লক্ষণ:
+File size: 107-108 KB ❌
+Has vite references ❌
+Old version ❌
+
+========================================
+COMMON MISTAKE
+========================================
+
+❌ ভুল: index.js upload করলাম কিন্তু
+        পুরনো file ছিল (107 KB)
+        
+✅ সঠিক: cpanel-deploy folder থেকে
+         নতুন index.js (104 KB) upload
+
+অথবা
+
+✅ আরও সহজ: শুধু startup file change
+             করুন → server.cjs use করুন!
+
+========================================
+STARTUP FILE MUST BE server.cjs
+========================================
+
+এটা খুবই গুরুত্বপূর্ণ:
+
+cPanel → Setup Node.js App
+→ Application startup file: server.cjs
+
+NOT index.js!
+NOT server.js!
+MUST BE: server.cjs
+
+এটা একটা special wrapper যা:
+- No vite dependency
+- Proper ESM handling
+- Production ready
+- Already on your server!
+
+========================================
+IF STILL NOT WORKING
+========================================
+
+যদি server.cjs দিয়েও vite error আসে:
+
+এর মানে আপনার server এ পুরনো package আছে।
+
+Complete Re-upload:
+-------------------
+1. Backup environment variables
+2. Delete entire app folder
+3. Upload fresh cpanel-deploy folder
+4. Extract all files
+5. Setup Node.js app fresh
+6. Set startup file: server.cjs
+7. Add environment variables
+8. npm install
+9. Restart
+
+✅ এখন কাজ করবে!
+
+========================================
+QUICK CHECKLIST
+========================================
+
+□ Change startup file to: server.cjs ✅
+□ Restart app ✅
+□ Check logs (no vite error) ✅
+□ Test website ✅
+□ Login works ✅
+
+First checkbox is most important!
+Just change to server.cjs!
+
+========================================
+PACKAGE VERSION CHECK
+========================================
+
+আপনার package Version 2.0 FINAL আছে?
+
+Check করুন:
+- VERSION.txt file আছে?
+- index.js exactly 104 KB?
+- server.cjs file আছে?
+
+হ্যাঁ থাকলে: ✅ সঠিক package
+না থাকলে: ❌ পুরনো package, নতুন download করুন
+
+========================================
+FINAL INSTRUCTION
+========================================
+
+সবচেয়ে সহজ solution:
+
+1. cPanel খুলুন
+2. Setup Node.js App
+3. Startup file: server.cjs
+4. Save
+5. Restart
+6. ✅ DONE!
+
+কোন file upload/delete করার দরকার নেই!
+শুধু startup file change করুন!
+
+Good luck! 🚀
