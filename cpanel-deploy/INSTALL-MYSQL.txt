@@ -54,21 +54,32 @@ Click "Create"
 - Use Node 18.x or 20.x for best compatibility!
 - Use server.cjs as startup file (fixes ESM compatibility)
 
-STEP 4: ENVIRONMENT VARIABLES
-------------------------------
-In the same page, add these variables:
+STEP 4: ENVIRONMENT VARIABLES (VERY IMPORTANT!)
+-----------------------------------------------
+In the same page, add these variables ONE BY ONE:
 
-DATABASE_URL=mysql://yourname_admin:yourpassword@localhost:3306/yourname_socialads
-NODE_ENV=production
-PORT=5000
-SESSION_SECRET=generate-random-32-character-string
+Variable 1:
+Key: DATABASE_URL
+Value: mysql://yourname_admin:yourpassword@localhost:3306/yourname_socialads
 
-⚠️ IMPORTANT: Replace these values:
-- yourname_admin → Your MySQL username
-- yourpassword → Your MySQL password  
-- yourname_socialads → Your database name
+Variable 2:
+Key: NODE_ENV
+Value: production
 
-Save/Update
+Variable 3:
+Key: PORT
+Value: 5000
+
+Variable 4:
+Key: SESSION_SECRET
+Value: generate-random-32-character-string
+
+⚠️ CRITICAL: 
+- NODE_ENV=production is MANDATORY (without this app won't work!)
+- Replace yourname_admin, yourpassword, yourname_socialads with actual values
+- SESSION_SECRET should be a random 32+ character string
+
+Save/Update after adding ALL variables
 
 STEP 5: INSTALL DEPENDENCIES
 -----------------------------
@@ -142,7 +153,13 @@ Login: admin / admin123
 TROUBLESHOOTING
 ========================================
 
-❌ "ERR_REQUIRE_ESM" - ES Module Error (VERY COMMON!)
+❌ "Cannot find package vite" (VERY COMMON!)
+→ Read FIX-VITE-ERROR.txt file
+→ Set NODE_ENV=production in environment variables
+→ This is MANDATORY for production!
+→ Restart application
+
+❌ "ERR_REQUIRE_ESM" - ES Module Error
 → Read FIX-ESM-ERROR.txt file
 → Change startup file to: server.cjs (NOT index.js)
 → Restart application

@@ -1,0 +1,138 @@
+========================================
+FIX: Cannot find package 'vite' Error
+========================================
+
+ERROR MESSAGE:
+--------------
+Cannot find package 'vite' imported from index.js
+
+এটা হয় কারণ NODE_ENV properly set করা নেই।
+
+========================================
+SOLUTION - SET NODE_ENV
+========================================
+
+STEP 1: Check Environment Variables
+------------------------------------
+cPanel → Setup Node.js App → Environment Variables
+
+নিশ্চিত করুন এই variable আছে:
+NODE_ENV=production
+
+যদি না থাকে, add করুন:
+- Key: NODE_ENV
+- Value: production
+
+Save/Update
+
+STEP 2: Verify Other Variables
+-------------------------------
+এই variables গুলোও check করুন:
+
+DATABASE_URL=mysql://user:pass@localhost:3306/dbname
+PORT=5000
+SESSION_SECRET=your-random-32-character-string
+
+STEP 3: Restart Application
+----------------------------
+1. Save all variables
+2. Click "Restart" button
+3. Wait for "Running" status
+
+========================================
+WHY THIS HAPPENS
+========================================
+
+❌ Without NODE_ENV=production:
+- App tries to run in development mode
+- Looks for vite (dev dependency)
+- Vite is not installed in production
+- Error occurs
+
+✅ With NODE_ENV=production:
+- App runs in production mode
+- Uses pre-built files from public/
+- No vite needed
+- Works perfectly!
+
+========================================
+ALTERNATIVE SOLUTION
+========================================
+
+If environment variable doesn't work:
+
+OPTION 1: Use Production Package
+---------------------------------
+আপনি যে package.json upload করেছেন সেটাতে:
+
+npm install --production
+
+এটা শুধু dependencies install করবে, 
+devDependencies (vite সহ) skip করবে।
+
+OPTION 2: Manual Fix
+--------------------
+যদি cPanel automatic npm install করে এবং 
+আপনি control করতে না পারেন:
+
+Terminal/SSH access থাকলে:
+cd /home/sociala1/crm.socialads.expert
+export NODE_ENV=production
+npm start
+
+========================================
+VERIFICATION
+========================================
+
+Environment variables ঠিক আছে কিনা check করুন:
+
+□ NODE_ENV=production ✅
+□ DATABASE_URL=mysql://... ✅
+□ PORT=5000 ✅
+□ SESSION_SECRET=... ✅
+
+All checked? Restart and test!
+
+========================================
+EXPECTED BEHAVIOR
+========================================
+
+Production mode এ:
+✅ Vite load হয় না
+✅ Static files serve হয় public/ থেকে
+✅ Server port 5000 এ চলে
+✅ Database connect হয়
+✅ Website properly কাজ করে
+
+========================================
+STILL NOT WORKING?
+========================================
+
+যদি NODE_ENV set করার পরও কাজ না করে:
+
+1. Check Error Logs
+   → "vite" mention আছে কিনা
+   
+2. Verify Package Installation
+   → node_modules folder check করুন
+   → মনে রাখবেন vite থাকবে না (it's ok!)
+   
+3. Try Fresh Restart
+   → Stop app
+   → Clear cache (if possible)
+   → Start again
+
+4. Contact Support
+   → "NODE_ENV environment variable not working"
+   → Ask them to check app configuration
+
+========================================
+IMPORTANT NOTES
+========================================
+
+⚠️ vite একটা development tool
+⚠️ Production এ এটা লাগে না
+⚠️ NODE_ENV=production খুবই গুরুত্বপূর্ণ
+⚠️ এটা ছাড়া app ঠিকমতো চলবে না
+
+Good luck! 🚀

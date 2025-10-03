@@ -57,15 +57,20 @@ Detailed guide: INSTALL-MYSQL.txt
 COMMON ERRORS & SOLUTIONS:
 ========================================
 
-Error 1: ERR_REQUIRE_ESM
+Error 1: Cannot find package 'vite' (MOST COMMON!)
+→ Solution: Set NODE_ENV=production in environment variables
+→ Guide: FIX-VITE-ERROR.txt
+→ This is MANDATORY!
+
+Error 2: ERR_REQUIRE_ESM
 → Solution: Use server.cjs as startup file
 → Guide: FIX-ESM-ERROR.txt
 
-Error 2: Cannot find mysql2
+Error 3: Cannot find mysql2
 → Solution: Fresh npm install with Node 18.x
 → Guide: FIX-MYSQL2-ERROR.txt
 
-Error 3: Database connection failed
+Error 4: Database connection failed
 → Solution: Check DATABASE_URL format
 → Example: mysql://user:pass@localhost:3306/dbname
 
