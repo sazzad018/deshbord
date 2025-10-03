@@ -1,244 +1,302 @@
-# Social Ads Expert - cPanel Deployment Instructions
+# 🚀 cPanel Deployment Guide - Social Ads Expert CRM
 
-## 📋 Overview
-Social Ads Expert একটি CRM application যা Bengali language support সহ তৈরি করা হয়েছে। এতে admin authentication, client management, financial tracking, এবং project management features রয়েছে।
+## ⚠️ Important: Latest Error Fix
 
-## ✅ Prerequisites (প্রয়োজনীয়)
-- cPanel hosting with Node.js support (version 18 or higher)
-- PostgreSQL database access
-- SSL certificate (recommended for production)
+**যদি এই error দেখেন:**
+```
+Error: Cannot find package 'vite'
+```
 
-## 🚀 Deployment Steps
+**Solution:** `YOUR-ERROR-SOLUTION.md` এবং `FIX-VITE-ERROR.md` দেখুন
+
+**Quick Fix:**
+```bash
+cd ~/crm.socialads.expert
+source /home/sociala1/nodevenv/crm.socialads.expert/20/bin/activate
+rm -rf node_modules package-lock.json
+npm install  # WITHOUT --production flag!
+```
+
+---
+
+## 📦 Package Contents:
+
+- ✅ `index.js` (110KB) - Production server
+- ✅ `public/` - Frontend build
+- ✅ `package.json` - Dependencies list
+- ✅ `setup-database.js` - Database auto-setup
+- ✅ `fix-permissions.sql` - Permission fixes
+- ✅ Documentation guides
+
+---
+
+## 🎯 Quick Deployment (5 Steps):
 
 ### Step 1: Upload Files
-1. এই folder এর সব contents একটি ZIP file এ compress করুন
-2. cPanel File Manager দিয়ে login করুন
-3. আপনার Node.js app directory তে ZIP file upload করুন
-4. ZIP file extract করুন
+1. ZIP this `cpanel-deploy` folder
+2. Upload to cPanel File Manager
+3. Extract in your app directory (e.g., `~/crm.socialads.expert`)
 
-### Step 2: Configure Node.js App in cPanel
-1. cPanel এ "Setup Node.js App" অপশনে যান
-2. "CREATE APPLICATION" button click করুন
-3. নিম্নলিখিত configuration set করুন:
-   - **Node.js version**: 18.x বা higher
-   - **Application mode**: Production
-   - **Application root**: /home/yourusername/your-app-folder
-   - **Application URL**: Your domain বা subdomain
-   - **Startup file**: index.js
-4. "CREATE" button click করুন
+### Step 2: Setup Node.js App
+**cPanel → Setup Node.js App → Create Application**
 
-### Step 3: Install Dependencies
-1. Node.js app settings page এ যান
-2. "Run NPM Install" button click করুন
-3. Installation complete হওয়ার জন্য অপেক্ষা করুন (2-5 minutes)
-
-### Step 4: Set Environment Variables
-Node.js app settings এ নিম্নলিখিত environment variables add করুন:
-
-#### Database Configuration:
+**Configuration:**
 ```
-DATABASE_URL=postgresql://username:password@hostname:5432/database_name
+Node.js Version: 20.x or 22.x
+Application Mode: Production
+Application Root: ~/crm.socialads.expert
+Application URL: crm.socialads.expert (your domain)
+Application Startup File: index.js
+```
+
+### Step 3: Set Environment Variables
+Add these in cPanel Node.js App:
+
+```bash
+DATABASE_URL=postgresql://username:password@localhost:5432/database_name
 PGUSER=your_database_username
 PGPASSWORD=your_database_password
 PGDATABASE=your_database_name
-PGHOST=your_database_host
+PGHOST=localhost
 PGPORT=5432
-```
-
-#### Application Configuration:
-```
 NODE_ENV=production
 PORT=5000
+SESSION_SECRET=<generate-random-32-chars>
 ```
 
-#### Session Secret (32+ characters required):
-```
-SESSION_SECRET=generate-a-secure-random-32-character-key
-```
-
-💡 **Tip**: Generate secure session secret:
+**Generate SESSION_SECRET:**
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-### Step 5: Database Setup
-1. cPanel এ PostgreSQL database তৈরি করুন
-2. Database user তৈরি করুন এবং full permissions দিন
-3. Database credentials environment variables এ set করুন
+### Step 4: Install Dependencies & Setup Database
 
-### Step 6: Create Database Tables (IMPORTANT!)
-⚠️ **এই step টি অত্যন্ত গুরুত্বপূর্ণ - Application start করার আগে করতে হবে!**
+**Terminal এ যান এবং run করুন:**
 
-cPanel Terminal বা SSH access থেকে:
 ```bash
+# Navigate to app directory
+cd ~/crm.socialads.expert
+
+# Activate Node.js virtual environment
+source /home/sociala1/nodevenv/crm.socialads.expert/20/bin/activate
+
+# Install ALL dependencies (NO --production flag!)
+npm install
+
+# Setup database
 node setup-database.js
 ```
 
-এটি automatically সব database tables তৈরি করবে। আপনি দেখবেন:
-- ✅ Created table: admin_users
-- ✅ Created table: clients
-- ✅ Created table: spend_logs
-- (এবং আরো...)
+**⚠️ Critical:** `npm install` করুন **without** `--production` flag!
 
-যদি error আসে, নিশ্চিত করুন যে:
-- সব environment variables সঠিকভাবে set করা আছে
-- Database connection working
-- Database user এর CREATE TABLE permission আছে
+### Step 5: Start App
 
-### Step 7: Start Application
-1. Node.js app settings এ "START" button click করুন
-2. Status "Running" দেখাবে
-3. আপনার domain/subdomain visit করুন
+**cPanel → Setup Node.js App → Start App**
 
-## 🔐 Default Admin Login
+Wait for status to show "Running"
 
-Application deploy এর পর, নিম্নলিখিত credentials দিয়ে admin login করতে পারবেন:
+---
 
+## ✅ Verification:
+
+### 1. Check Browser:
 ```
-Username: admin
-Password: admin123
+https://crm.socialads.expert
 ```
 
-### ⚠️ IMPORTANT Security Steps:
-1. **First login এর পরে অবশ্যই password change করুন**
-2. Strong password ব্যবহার করুন (minimum 8 characters, mix of letters, numbers, symbols)
-3. Admin credentials কাউকে share করবেন না
-4. Production এ HTTPS/SSL certificate enable করুন
+You should see the login page.
 
-## 📁 File Structure
-```
-cpanel-deploy/
-├── index.js              # Main server file (bundled)
-├── package.json          # Production dependencies
-├── .env.example          # Environment variables template
-├── README.md            # This file
-└── public/              # React frontend (built)
-    ├── index.html
-    ├── .htaccess        # React routing support
-    └── assets/          # Compiled CSS, JS files
-```
+### 2. Login:
+- **Username:** `admin`
+- **Password:** `admin123`
 
-## 🔧 Troubleshooting
+**⚠️ Change password immediately after first login!**
 
-### Common Issues:
+### 3. Test Features:
+- Dashboard loads
+- Project Management → সম্পূর্ণ ওয়েবসাইট তালিকা section visible
+- Can add website credentials
+- PDF download works
 
-#### 1. Application Won't Start
-- ✓ Check Node.js version (must be 18 or higher)
-- ✓ Verify all environment variables are set correctly
-- ✓ Check application logs in cPanel
-- ✓ Ensure npm install completed successfully
+---
 
-#### 2. Database Connection Error
-- ✓ Verify DATABASE_URL format is correct
-- ✓ Check database credentials
-- ✓ Ensure PostgreSQL service is running
-- ✓ Test database connection from cPanel
+## 🔧 Common Errors & Fixes:
 
-#### 3. Login Page Not Working
-- ✓ Wait 2-3 minutes after first start for database initialization
-- ✓ Check browser console for errors
-- ✓ Verify SESSION_SECRET is set (32+ characters)
-- ✓ Clear browser cache and try again
+### Error 1: "Cannot find package 'vite'"
+**Fix:** `YOUR-ERROR-SOLUTION.md` বা `FIX-VITE-ERROR.md`
 
-#### 4. React Routes Not Working (404 errors)
-- ✓ Ensure .htaccess file exists in public/ folder
-- ✓ Check if mod_rewrite is enabled in Apache
-- ✓ Verify Application URL is set correctly
-
-#### 5. Static Files Not Loading
-- ✓ Check file permissions (755 for folders, 644 for files)
-- ✓ Verify public/ folder structure is intact
-- ✓ Check Apache error logs
-
-### Checking Logs:
-1. cPanel → Node.js App Settings → "Show Logs" / "Error Logs"
-2. Look for error messages and stack traces
-3. Common errors will show database connection issues or missing environment variables
-
-### Testing Database Connection:
-If you have terminal access:
+**Quick Solution:**
 ```bash
-node -e "console.log(process.env.DATABASE_URL)"
+npm install  # WITHOUT --production
 ```
 
-## 🎨 Application Features
+### Error 2: "Cannot find package '@neondatabase/serverless'"
+**Fix:** Same as above - run `npm install` without --production
 
-### Admin Panel:
-- ✅ Bengali language interface
-- ✅ Client management with Rich Clients categorization
-- ✅ Financial tracking (deposits, spending, wallet)
-- ✅ Project management with employee assignments
-- ✅ Meeting scheduling with reminders
-- ✅ AI-powered query system
-- ✅ Export to PDF/Excel
-- ✅ Dual currency support (USD/BDT)
+### Error 3: Database Permission Error
+**Fix:**
+```bash
+psql $DATABASE_URL < fix-permissions.sql
+# অথবা
+node setup-database.js
+```
 
-### Public Portals:
-- ✅ Client Portal (accessible via unique portal key)
-- ✅ Employee Portal (for project tracking)
+### Error 4: App Won't Start
+**Debug:**
+```bash
+# Check logs
+cPanel → Node.js App → View Logs
 
-## 🔒 Security Notes
-
-1. **SESSION_SECRET**: Must be at least 32 characters random string
-2. **Database Passwords**: Use strong, unique passwords
-3. **Admin Password**: Change default password immediately
-4. **HTTPS**: Enable SSL certificate in production
-5. **Environment Variables**: Never commit actual values to code repository
-6. **Regular Backups**: Set up automated database backups
-
-## 📊 Production Optimization
-
-1. **Enable HTTPS**
-   - Install SSL certificate in cPanel
-   - Force HTTPS redirects
-
-2. **Database Optimization**
-   - Regular database backups
-   - Monitor database size
-   - Index optimization if needed
-
-3. **Performance**
-   - Enable gzip compression
-   - Use CDN for static assets (optional)
-   - Monitor memory usage
-
-4. **Monitoring**
-   - Set up application monitoring
-   - Check logs regularly
-   - Monitor disk space
-
-## 💼 Support & Maintenance
-
-### Regular Maintenance:
-- Check application logs weekly
-- Update dependencies monthly (with testing)
-- Regular database backups
-- Monitor server resources
-
-### If You Encounter Issues:
-1. Check Node.js app logs in cPanel
-2. Verify database connection
-3. Confirm all environment variables are set
-4. Contact your hosting provider for server-specific issues
+# Manual test
+cd ~/crm.socialads.expert
+npm start
+```
 
 ---
 
-## 📝 Quick Start Checklist
+## 📋 Deployment Checklist:
 
-- [ ] Upload and extract files to cPanel
-- [ ] Create Node.js app with correct configuration
-- [ ] Create PostgreSQL database
-- [ ] Set all environment variables
-- [ ] Run NPM install
-- [ ] Start the application
-- [ ] Test admin login (admin/admin123)
-- [ ] **Change admin password immediately**
-- [ ] Enable HTTPS/SSL
-- [ ] Set up database backups
+**Pre-Deployment:**
+- [ ] cPanel access ready
+- [ ] PostgreSQL database created
+- [ ] Database credentials ready
+- [ ] Files uploaded and extracted
+
+**Installation:**
+- [ ] Node.js app configured in cPanel
+- [ ] Environment variables set
+- [ ] npm install completed (without --production)
+- [ ] Database setup run successfully
+
+**Verification:**
+- [ ] App status showing "Running"
+- [ ] Website loads in browser
+- [ ] Login works
+- [ ] Dashboard displays
+- [ ] All features accessible
 
 ---
 
-**Version**: 1.0.0  
-**Language**: Bengali (বাংলা) + English  
-**Framework**: React + Node.js + Express + PostgreSQL  
-**License**: Proprietary
+## 🗂️ Folder Structure (After Deploy):
+
+```
+~/crm.socialads.expert/
+├── index.js                    # Main server
+├── public/                     # Frontend files
+│   ├── index.html
+│   └── assets/
+│       ├── index-xxx.js       # JS bundle
+│       └── index-xxx.css      # Styles
+├── package.json
+├── package-lock.json
+├── node_modules/              # All dependencies
+├── setup-database.js
+└── fix-permissions.sql
+```
+
+---
+
+## 🆘 Troubleshooting:
+
+### Get Error Logs:
+```
+cPanel → Setup Node.js App → Your App → View Logs
+```
+
+### Manual Debugging:
+```bash
+# Check installation
+cd ~/crm.socialads.expert
+npm list vite
+npm list @neondatabase/serverless
+
+# Test database connection
+node setup-database.js
+
+# Test app startup
+npm start
+```
+
+### Clear and Reinstall:
+```bash
+cd ~/crm.socialads.expert
+rm -rf node_modules package-lock.json
+npm cache clean --force
+npm install
+```
+
+---
+
+## 💡 Important Notes:
+
+### 1. Always Install ALL Dependencies:
+```bash
+npm install  # ✅ Correct
+```
+
+**NOT:**
+```bash
+npm install --production  # ❌ Will cause errors!
+```
+
+**Why?** This build includes development dependencies (vite, typescript) in the runtime.
+
+### 2. Node Version:
+Use Node.js v20 or v22. Error logs show you're using v20.19.4.
+
+### 3. Virtual Environment:
+Always activate before running npm commands:
+```bash
+source /home/sociala1/nodevenv/crm.socialads.expert/20/bin/activate
+```
+
+---
+
+## 🆕 Latest Features Included:
+
+### Completed Websites Management:
+- Store website + cPanel credentials
+- Nameserver configuration
+- Service provider tracking
+- Professional PDF download
+- Search & filter functionality
+
+**Location:** Project Management → সম্পূর্ণ ওয়েবসাইট তালিকা
+
+---
+
+## 📞 Need Help?
+
+**Guides Available:**
+1. `YOUR-ERROR-SOLUTION.md` - Your specific errors with exact paths
+2. `FIX-VITE-ERROR.md` - Vite package error detailed fix
+
+**Debug Steps:**
+1. Check error logs in cPanel
+2. Run `npm install` (without --production)
+3. Run `node setup-database.js`
+4. Restart app in cPanel
+5. Test in browser
+
+---
+
+## ✅ Success Indicators:
+
+```
+✓ npm install completes without errors
+✓ vite@5.4.20 installed
+✓ @neondatabase/serverless@0.10.4 installed
+✓ Database setup successful
+✓ App status: Running
+✓ Website loads: https://crm.socialads.expert
+✓ Login works
+✓ All features accessible
+```
+
+---
+
+## 🎉 Ready to Deploy!
+
+Follow the 5 steps above and your app will be live!
+
+**Good luck! 🚀**
