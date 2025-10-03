@@ -1,0 +1,162 @@
+========================================
+QUICK START GUIDE - READ THIS FIRST!
+========================================
+
+আপনার Error Fix হয়েছে! ✅
+
+========================================
+YOUR ERROR WAS:
+========================================
+
+❌ Error [ERR_REQUIRE_ESM]: require() of ES Module not supported
+
+এটা CommonJS/ESM compatibility issue ছিল।
+
+========================================
+SOLUTION (IMMEDIATE FIX):
+========================================
+
+cPanel → Setup Node.js App → Edit
+
+Change This:
+❌ Application Startup File: index.js
+
+To This:
+✅ Application Startup File: server.cjs
+
+Then:
+1. Save
+2. Restart
+3. ✅ Done!
+
+========================================
+WHY server.cjs?
+========================================
+
+✅ server.cjs = CommonJS wrapper (cPanel compatible)
+✅ It loads our ES Module code properly
+✅ Bridges the gap between old and new Node.js
+
+========================================
+FULL DEPLOYMENT STEPS:
+========================================
+
+1. ✅ Create MySQL database
+2. ✅ Upload cpanel-deploy folder
+3. ✅ Create Node.js app (Node 18.x)
+4. ✅ Set startup file: server.cjs (IMPORTANT!)
+5. ✅ Add environment variables
+6. ✅ Run NPM Install (wait 15+ mins)
+7. ✅ Run setup-database.js (for admin user)
+8. ✅ Change startup back to: server.cjs
+9. ✅ Restart and test
+
+Detailed guide: INSTALL-MYSQL.txt
+
+========================================
+COMMON ERRORS & SOLUTIONS:
+========================================
+
+Error 1: ERR_REQUIRE_ESM
+→ Solution: Use server.cjs as startup file
+→ Guide: FIX-ESM-ERROR.txt
+
+Error 2: Cannot find mysql2
+→ Solution: Fresh npm install with Node 18.x
+→ Guide: FIX-MYSQL2-ERROR.txt
+
+Error 3: Database connection failed
+→ Solution: Check DATABASE_URL format
+→ Example: mysql://user:pass@localhost:3306/dbname
+
+========================================
+PACKAGE CONTENTS:
+========================================
+
+📄 QUICK-START.txt (this file)
+📘 INSTALL-MYSQL.txt (full guide)
+📗 DATABASE-SETUP-GUIDE.txt (DB setup options)
+📕 FIX-ESM-ERROR.txt (ESM error fix)
+📙 FIX-MYSQL2-ERROR.txt (mysql2 error fix)
+
+💾 server.cjs (startup file - USE THIS!)
+💾 index.js (main app code)
+💾 setup-database.js (DB setup script)
+💾 setup-database.sql (DB import file)
+💾 package.json (dependencies)
+📁 public/ (frontend files)
+
+========================================
+DEPLOYMENT CHECKLIST:
+========================================
+
+Before you start:
+□ MySQL database created
+□ Database credentials ready
+□ Domain/subdomain configured
+
+During setup:
+□ Node.js version: 18.x or 20.x
+□ Startup file: server.cjs (NOT index.js!)
+□ Environment variables set
+□ NPM install completed (15+ mins)
+
+After deployment:
+□ Database setup done
+□ App status: Running
+□ Website loads
+□ Login works (admin/admin123)
+□ Password changed
+
+========================================
+ENVIRONMENT VARIABLES:
+========================================
+
+DATABASE_URL=mysql://username:password@localhost:3306/database_name
+NODE_ENV=production
+PORT=5000
+SESSION_SECRET=your-random-32-character-string
+
+⚠️ Replace with your actual values!
+
+========================================
+DEFAULT LOGIN:
+========================================
+
+Username: admin
+Password: admin123
+
+⚠️ CHANGE PASSWORD IMMEDIATELY AFTER FIRST LOGIN!
+
+========================================
+NEED HELP?
+========================================
+
+1. Check error logs in cPanel
+2. Read relevant FIX-*.txt file
+3. Follow INSTALL-MYSQL.txt step by step
+4. Contact hosting support if needed
+
+========================================
+SUCCESS INDICATORS:
+========================================
+
+✅ Status: Running (green in cPanel)
+✅ No errors in logs
+✅ Website loads at your domain
+✅ Login page visible
+✅ Can login with admin/admin123
+
+========================================
+READY TO DEPLOY!
+========================================
+
+Total Package Size: 3.1 MB
+Files: 11 files ready
+MySQL Compatible: ✅
+ESM Compatible: ✅ (via server.cjs)
+Production Ready: ✅
+
+Start with: INSTALL-MYSQL.txt
+
+Good luck! 🚀

@@ -1,0 +1,83 @@
+========================================
+FIX: ES Module Error (ERR_REQUIRE_ESM)
+========================================
+
+ERROR MESSAGE:
+--------------
+Error [ERR_REQUIRE_ESM]: require() of ES Module not supported
+
+এটা হয় কারণ আপনার hosting environment CommonJS format 
+expect করছে কিন্তু আমাদের app ES Module format এ।
+
+========================================
+SOLUTION - USE WRAPPER FILE
+========================================
+
+STEP 1: Change Startup File
+----------------------------
+cPanel → Setup Node.js App → Edit
+
+Application Startup File: server.cjs
+(NOT index.js)
+
+Save
+
+STEP 2: Restart Application
+----------------------------
+Click "Restart" button
+Wait for "Running" status
+
+STEP 3: Test
+------------
+Visit your website
+Should load properly now!
+
+========================================
+WHY THIS WORKS
+========================================
+
+✅ server.cjs is CommonJS format (cPanel compatible)
+✅ It uses dynamic import() to load our ES Module code
+✅ This bridges the gap between CommonJS and ESM
+
+========================================
+ALTERNATIVE SOLUTION
+========================================
+
+If server.cjs doesn't work, try this:
+
+OPTION 1: Use Different Hosting
+--------------------------------
+Some shared hosting environments don't support 
+modern Node.js features properly.
+
+Consider using:
+- VPS hosting (more control)
+- Vercel/Netlify (free for small apps)
+- Railway/Render (easy deployment)
+
+OPTION 2: Rebuild as CommonJS
+------------------------------
+This requires code changes - NOT recommended.
+
+========================================
+VERIFICATION
+========================================
+
+App is working when you see:
+✅ Status: Running (green)
+✅ No errors in logs
+✅ Website loads
+✅ Login page visible
+
+========================================
+STILL HAVING ISSUES?
+========================================
+
+Contact your hosting support and ask:
+"Does your Node.js environment support ES Modules (ESM)?"
+
+If NO → You need different hosting or use server.cjs wrapper
+If YES → There may be configuration issues
+
+Good luck! 🚀

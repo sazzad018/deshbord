@@ -46,11 +46,13 @@ Settings:
 - Application Mode: Production
 - Application Root: crm-app (your folder name)
 - Application URL: your-domain.com
-- Application Startup File: index.js
+- Application Startup File: server.cjs (⚠️ NOT index.js!)
 
 Click "Create"
 
-⚠️ IMPORTANT: Use Node 18.x or 20.x for best compatibility!
+⚠️ IMPORTANT: 
+- Use Node 18.x or 20.x for best compatibility!
+- Use server.cjs as startup file (fixes ESM compatibility)
 
 STEP 4: ENVIRONMENT VARIABLES
 ------------------------------
@@ -124,9 +126,11 @@ VALUES (
 STEP 7: START APPLICATION
 --------------------------
 In Setup Node.js App page:
-- Ensure Application Startup File is: index.js
+- Ensure Application Startup File is: server.cjs (NOT index.js!)
 - Click "Restart" button
 - Wait for status to show "Running"
+
+⚠️ IMPORTANT: Use server.cjs to avoid ES Module errors!
 
 STEP 8: TEST
 ------------
@@ -138,7 +142,13 @@ Login: admin / admin123
 TROUBLESHOOTING
 ========================================
 
-❌ "Cannot find package mysql2" (MOST COMMON!)
+❌ "ERR_REQUIRE_ESM" - ES Module Error (VERY COMMON!)
+→ Read FIX-ESM-ERROR.txt file
+→ Change startup file to: server.cjs (NOT index.js)
+→ Restart application
+→ This fixes CommonJS/ESM compatibility
+
+❌ "Cannot find package mysql2"
 → Read FIX-MYSQL2-ERROR.txt file
 → Delete node_modules folder
 → Run NPM Install again (wait 15+ minutes!)
