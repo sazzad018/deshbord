@@ -1,0 +1,140 @@
+========================================
+DATABASE SETUP - TWO METHODS
+========================================
+
+আপনার MySQL database setup করার জন্য দুইটি উপায় আছে:
+
+METHOD 1: SQL FILE IMPORT (সহজ)
+========================================
+
+✅ phpMyAdmin ব্যবহার করে সরাসরি import করুন
+
+STEPS:
+------
+1. cPanel → phpMyAdmin
+2. আপনার database select করুন
+3. "Import" tab এ যান
+4. "Choose File" → setup-database.sql select করুন
+5. "Go" button ক্লিক করুন
+6. ✅ সব tables তৈরি হয়ে যাবে!
+
+⚠️ IMPORTANT:
+-------------
+এই method এ admin password একটি placeholder দিয়ে তৈরি হবে।
+তাই আপনাকে manually password update করতে হবে:
+
+Option A - Bcrypt hash online তৈরি করুন:
+1. Visit: https://bcrypt-generator.com/
+2. আপনার password লিখুন (উদাহরণ: admin123)
+3. Rounds: 10 select করুন
+4. Hash generate করুন
+5. phpMyAdmin → admin_users table → Edit
+6. password field এ hash paste করুন
+
+Option B - Default password রাখুন:
+SQL file এ একটি placeholder hash আছে যা কাজ করবে না।
+setup-database.js use করুন (Method 2)
+
+METHOD 2: SETUP SCRIPT (নিরাপদ)
+========================================
+
+✅ Proper bcrypt password সহ automatic setup
+
+STEPS:
+------
+1. cPanel → Setup Node.js App
+2. Application Startup File: setup-database.js
+3. Environment variables যোগ করুন:
+   DATABASE_URL=mysql://user:pass@localhost:3306/dbname
+4. "Restart" button ক্লিক করুন
+5. ✅ Tables + Admin user (admin/admin123) তৈরি হবে!
+6. Startup file আবার index.js এ পরিবর্তন করুন
+7. আবার "Restart" করুন
+
+এই method টি automatically:
+- সব tables তৈরি করবে
+- Default admin user তৈরি করবে
+- Proper bcrypt password hash করবে
+- Login: admin / admin123
+
+========================================
+WHICH METHOD TO USE?
+========================================
+
+🔥 RECOMMENDED: Method 2 (Setup Script)
+কারণ:
+- Automatic bcrypt hashing
+- কোন manual password update লাগবে না
+- আরও নিরাপদ
+- দ্রুত এবং সহজ
+
+✅ Alternative: Method 1 (SQL Import)
+যদি আপনি:
+- শুধু table structure চান
+- Manual password setup পছন্দ করেন
+- phpMyAdmin এ comfortable
+
+========================================
+DEFAULT LOGIN CREDENTIALS
+========================================
+
+Username: admin
+Password: admin123
+
+⚠️ প্রথম login এর পর অবশ্যই password পরিবর্তন করুন!
+
+========================================
+TROUBLESHOOTING
+========================================
+
+❌ SQL Import fails
+→ Check MySQL version (minimum 5.7+)
+→ Verify JSON column support
+→ Check file upload limit in phpMyAdmin
+
+❌ Login doesn't work after SQL import
+→ Password hash ঠিক নেই
+→ Method 2 use করুন অথবা
+→ Online bcrypt tool দিয়ে hash generate করুন
+
+❌ Tables already exist error
+→ Drop existing tables first অথবা
+→ Different database use করুন
+
+========================================
+VERIFICATION
+========================================
+
+Setup সফল হয়েছে কিনা check করুন:
+
+1. phpMyAdmin → Your Database
+2. এই tables দেখতে পাবেন:
+   ✓ admin_users
+   ✓ clients
+   ✓ spend_logs
+   ✓ meetings
+   ✓ projects
+   ✓ employees
+   ✓ invoices
+   ... এবং আরও 20+ tables
+
+3. admin_users table এ 1টি row থাকবে
+4. Username: admin
+
+========================================
+NEXT STEPS AFTER SETUP
+========================================
+
+1. ✅ Application startup file: index.js set করুন
+2. ✅ App restart করুন
+3. ✅ Website visit করুন
+4. ✅ admin/admin123 দিয়ে login করুন
+5. ✅ Password পরিবর্তন করুন!
+
+========================================
+NEED HELP?
+========================================
+
+Full deployment guide দেখুন: INSTALL-MYSQL.txt
+
+Good luck! 🚀
