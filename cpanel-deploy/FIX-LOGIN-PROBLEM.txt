@@ -1,0 +1,258 @@
+========================================
+FIX: Login "Invalid Credentials" Error
+========================================
+
+সমস্যা: admin/admin123 দিয়ে login করছে না
+"Invalid credentials" error দেখাচ্ছে
+
+========================================
+কেন এই সমস্যা হয়?
+========================================
+
+Database এ admin user এর password hash সঠিকভাবে 
+setup হয়নি। 
+
+যদি আপনি setup-database.sql manually import করে থাকেন
+(phpMyAdmin দিয়ে), তাহলে password hash সঠিক ছিল না।
+
+========================================
+SOLUTION 1: Automatic Fix (Recommended)
+========================================
+
+✅ এটা সবচেয়ে সহজ এবং নিরাপদ!
+
+STEP 1: Setup Database Script Run করুন
+-----------------------------------------
+cPanel → Setup Node.js App → আপনার app select করুন
+
+"Run JS script" section এ:
+  
+  Script name: setup-database.js
+  
+Click "Run" button
+
+STEP 2: Check Output
+--------------------
+Output এ দেখবেন:
+
+✅ Connected to MySQL database
+✅ admin_users table created/verified
+✅ Default admin user created
+   Username: admin
+   Password: admin123
+   ⚠️  CHANGE PASSWORD AFTER FIRST LOGIN!
+
+🎉 Database setup completed successfully!
+
+STEP 3: Restart App
+-------------------
+"Restart" button click করুন
+
+STEP 4: Test Login
+------------------
+এবার website এ যান এবং login করুন:
+  Username: admin
+  Password: admin123
+
+✅ কাজ করবে!
+
+========================================
+SOLUTION 2: Manual Fix (phpMyAdmin)
+========================================
+
+যদি Solution 1 কাজ না করে, manual করুন:
+
+STEP 1: Open phpMyAdmin
+-----------------------
+cPanel → phpMyAdmin → Your database select করুন
+
+STEP 2: Delete Old Admin User
+------------------------------
+SQL tab এ যান, এই query run করুন:
+
+DELETE FROM admin_users WHERE username = 'admin';
+
+Click "Go"
+
+STEP 3: Insert New Admin User
+------------------------------
+এই query run করুন (একবারে copy করুন):
+
+INSERT INTO admin_users (id, username, password, full_name, is_active) 
+VALUES (
+  UUID(), 
+  'admin', 
+  '$2b$10$vegxq0xoqsof3LUGLsNJMON2cICrfgTj5Mik2UnqwZLPmlkDG9NCS', 
+  'System Administrator', 
+  TRUE
+);
+
+Click "Go"
+
+STEP 4: Verify
+--------------
+Browse tab → admin_users table
+নিশ্চিত করুন 'admin' user আছে
+
+STEP 5: Test Login
+------------------
+এবার website এ গিয়ে login করুন:
+  Username: admin
+  Password: admin123
+
+✅ কাজ করবে!
+
+========================================
+SOLUTION 3: Complete Database Reset
+========================================
+
+যদি উপরের কোনটাই কাজ না করে:
+
+STEP 1: Backup Important Data
+-----------------------------
+যদি আপনার কোন important data থাকে,
+প্রথমে export করে নিন (phpMyAdmin → Export)
+
+STEP 2: Drop All Tables
+-----------------------
+phpMyAdmin → SQL tab
+
+এই query run করুন:
+
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS admin_users;
+DROP TABLE IF EXISTS clients;
+DROP TABLE IF EXISTS spend_logs;
+DROP TABLE IF EXISTS meetings;
+DROP TABLE IF EXISTS todos;
+DROP TABLE IF EXISTS whatsapp_templates;
+DROP TABLE IF EXISTS service_scopes;
+DROP TABLE IF EXISTS custom_buttons;
+DROP TABLE IF EXISTS invoices;
+DROP TABLE IF EXISTS invoice_items;
+DROP TABLE IF EXISTS uploads;
+DROP TABLE IF EXISTS invoice_pdfs;
+DROP TABLE IF EXISTS quick_messages;
+DROP TABLE IF EXISTS payment_requests;
+DROP TABLE IF EXISTS company_settings;
+DROP TABLE IF EXISTS project_types;
+DROP TABLE IF EXISTS projects;
+DROP TABLE IF EXISTS employees;
+DROP TABLE IF EXISTS project_assignments;
+DROP TABLE IF EXISTS project_payments;
+DROP TABLE IF EXISTS salary_payments;
+DROP TABLE IF EXISTS website_projects;
+SET FOREIGN_KEY_CHECKS = 1;
+
+STEP 3: Import Complete SQL
+----------------------------
+phpMyAdmin → Import tab
+
+File: setup-database.sql (from your package)
+Click "Go"
+
+STEP 4: Restart App
+-------------------
+cPanel → Setup Node.js App → Restart
+
+STEP 5: Test Login
+------------------
+Username: admin
+Password: admin123
+
+✅ একদম fresh database, সব কাজ করবে!
+
+========================================
+PASSWORD HASH EXPLAINED
+========================================
+
+সঠিক password hash হলো:
+$2b$10$vegxq0xoqsof3LUGLsNJMON2cICrfgTj5Mik2UnqwZLPmlkDG9NCS
+
+এটা "admin123" এর bcrypt hash।
+
+❌ যদি আপনার database এ এটার বদলে অন্য কিছু থাকে
+   (যেমন: $2a$10$YourBcryptHashedPasswordGoesHere),
+   তাহলে login কাজ করবে না!
+
+✅ সঠিক hash দিলে login কাজ করবে!
+
+========================================
+VERIFY ADMIN USER
+========================================
+
+Check করতে চান admin user ঠিক আছে কিনা?
+
+phpMyAdmin → admin_users table → Browse
+
+দেখবেন:
+✓ username: admin
+✓ password: $2b$10$vegxq... (লম্বা hash)
+✓ full_name: System Administrator
+✓ is_active: TRUE (or 1)
+
+সব ঠিক থাকলে login কাজ করবে!
+
+========================================
+IMPORTANT NOTES
+========================================
+
+⚠️ Password case-sensitive!
+   admin123 ✅
+   Admin123 ❌
+   ADMIN123 ❌
+
+⚠️ Username lowercase!
+   admin ✅
+   Admin ❌
+   ADMIN ❌
+
+⚠️ First login এর পরে password change করুন!
+
+⚠️ যদি কোন solution কাজ না করে:
+   - Check error logs in cPanel
+   - Verify DATABASE_URL environment variable
+   - Ensure app is running
+
+========================================
+STILL NOT WORKING?
+========================================
+
+যদি তারপরও কাজ না করে:
+
+1. Check Browser Console
+   → F12 → Console tab
+   → কোন error message দেখা যাচ্ছে?
+
+2. Check App Logs
+   → cPanel → Setup Node.js App
+   → Click on your app
+   → Scroll down to "Log" section
+   → POST /api/auth/login খুঁজুন
+
+3. Verify Environment Variables
+   → DATABASE_URL সঠিক?
+   → PORT=5000 set আছে?
+   → NODE_ENV=production set আছে?
+
+4. Test Database Connection
+   → Try to run setup-database.js
+   → যদি connection error আসে, DATABASE_URL wrong
+
+========================================
+SUCCESS!
+========================================
+
+Login successful হলে আপনি দেখবেন:
+✅ Dashboard page load হচ্ছে
+✅ Top right corner এ "System Administrator" দেখাচ্ছে
+✅ সব menu items visible
+✅ No errors!
+
+এখন আপনি:
+1. Password change করুন (Settings → Change Password)
+2. Client add করুন
+3. Invoice তৈরি করুন
+4. CRM use করা শুরু করুন!
+
+Good luck! 🎉

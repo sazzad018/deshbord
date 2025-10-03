@@ -65,15 +65,20 @@ COMMON ERRORS & SOLUTIONS:
 → No vite code at all
 → Read: FINAL-FIX-VITE.txt for details
 
-Error 2: ERR_REQUIRE_ESM
+Error 2: Login says "Invalid credentials"
+→ Solution: Run setup-database.js OR reset admin password
+→ Guide: FIX-LOGIN-PROBLEM.txt
+→ Very common after fresh deployment!
+
+Error 3: ERR_REQUIRE_ESM
 → Solution: Use server.cjs as startup file
 → Guide: FIX-ESM-ERROR.txt
 
-Error 3: Cannot find mysql2
+Error 4: Cannot find mysql2
 → Solution: Fresh npm install with Node 18.x
 → Guide: FIX-MYSQL2-ERROR.txt
 
-Error 4: Database connection failed
+Error 5: Database connection failed
 → Solution: Check DATABASE_URL format
 → Example: mysql://user:pass@localhost:3306/dbname
 

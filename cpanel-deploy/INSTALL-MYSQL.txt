@@ -153,7 +153,13 @@ Login: admin / admin123
 TROUBLESHOOTING
 ========================================
 
-❌ "Cannot find package vite" (VERY COMMON!)
+❌ "Login Invalid credentials" (VERY COMMON!)
+→ Read FIX-LOGIN-PROBLEM.txt file
+→ Run setup-database.js script in cPanel
+→ OR manually reset admin password in phpMyAdmin
+→ This happens when database setup was incomplete
+
+❌ "Cannot find package vite"
 → Read FIX-VITE-ERROR.txt file
 → Set NODE_ENV=production in environment variables
 → This is MANDATORY for production!
