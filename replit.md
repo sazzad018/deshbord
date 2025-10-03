@@ -4,9 +4,30 @@
 
 This is a comprehensive client relationship management (CRM) and operations application built for the Bangladeshi market. The system manages client information, financial tracking (deposits and spending), meeting scheduling, project management, completed website credentials storage, and provides AI-powered query capabilities. The application features a Bengali-language interface and is designed to handle client portfolios with wallet-based financial management.
 
-## Recent Changes (October 1, 2025)
+## Recent Changes (October 3, 2025)
 
-### Completed Websites Management Section
+### MySQL Database Migration ✅
+**Converted entire application from PostgreSQL to MySQL:**
+- **Database Layer**: Changed from PostgreSQL to MySQL
+  - Driver: `@neondatabase/serverless` → `mysql2`
+  - ORM Dialect: `drizzle-orm/neon-http` → `drizzle-orm/mysql2`
+  - Connection: Pool-based MySQL connection
+  
+- **Schema Changes**:
+  - `pgTable` → `mysqlTable`
+  - `jsonb` → `json` (MySQL 5.7+ JSON support)
+  - `text` → `text` and `varchar` with lengths
+  - `integer` → `int`
+  - `timestamp` with `datetime` for specific fields
+  - UUID generation moved to application level (`crypto.randomUUID()`)
+  
+- **Session Store**: Using memory store (compatible with MySQL session store)
+- **Production Build**: Successfully compiled for cPanel deployment
+- **Package Size**: 3.0 MB (optimized for shared hosting)
+
+### Previous Features (October 1, 2025)
+
+#### Completed Websites Management Section
 Added a new section in the Project Management page for tracking completed websites with full credential management:
 - **Features**:
   - Store website admin login credentials (username/password)
@@ -30,6 +51,7 @@ Added a new section in the Project Management page for tracking completed websit
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Target Deployment: Shared cPanel hosting with MySQL database only.
 
 ## System Architecture
 
@@ -49,11 +71,11 @@ Preferred communication style: Simple, everyday language.
 - **Development**: Hot module replacement with Vite integration
 
 ### Data Storage Solutions
-- **ORM**: Drizzle ORM with PostgreSQL dialect
-- **Database**: PostgreSQL (configured for Neon Database)
+- **ORM**: Drizzle ORM with **MySQL dialect**
+- **Database**: **MySQL** (shared cPanel compatible)
 - **Schema**: Strongly typed schema definitions with Zod validation
-- **Development Storage**: In-memory storage implementation with sample data
-- **Migrations**: Drizzle Kit for database migrations
+- **UUID Generation**: Application-level using `crypto.randomUUID()`
+- **Migrations**: Drizzle Kit for database migrations (`npm run db:push`)
 
 ### Database Schema Design
 - **Clients Table**: Core client information with wallet balances, scopes, and portal keys
@@ -70,7 +92,7 @@ Preferred communication style: Simple, everyday language.
 - **Relationships**: Foreign key constraints ensuring data integrity
 
 ### Authentication and Authorization
-- **Session Management**: Cookie-based sessions with PostgreSQL session store
+- **Session Management**: Cookie-based sessions with Express Session
 - **Portal Access**: Client-specific portal keys for secure access
 - **CSRF Protection**: Built-in request validation
 
@@ -82,8 +104,8 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 ### Core Framework Dependencies
-- **@neondatabase/serverless**: Serverless PostgreSQL driver for Neon Database
-- **drizzle-orm**: Type-safe ORM with PostgreSQL support
+- **mysql2**: MySQL client for Node.js
+- **drizzle-orm**: Type-safe ORM with MySQL support
 - **express**: Web application framework for Node.js
 - **@tanstack/react-query**: Powerful data synchronization for React
 
@@ -102,5 +124,61 @@ Preferred communication style: Simple, everyday language.
 ### Additional Integrations
 - **recharts**: Chart library for data visualization
 - **date-fns**: Date manipulation and formatting
-- **connect-pg-simple**: PostgreSQL session store for Express
+- **express-session**: Session management
 - **wouter**: Minimalist routing library for React
+
+## Deployment Information
+
+### Target Environment
+- **Hosting**: Shared cPanel hosting
+- **Database**: MySQL only (no PostgreSQL)
+- **Node Version**: 18.x or 20.x recommended
+- **Package Manager**: npm
+- **Production Build**: Ready in `cpanel-deploy/` folder
+
+### Deployment Package Contents
+```
+cpanel-deploy/
+├── index.js (107 KB) - Production server
+├── public/ - Frontend build (2.6 MB)
+├── package.json - Dependencies
+├── setup-database.js - MySQL setup script
+├── INSTALL-MYSQL.txt - Complete deployment guide
+```
+
+### Environment Variables Required
+```
+DATABASE_URL=mysql://username:password@localhost:3306/database_name
+NODE_ENV=production
+PORT=5000
+SESSION_SECRET=random-32-character-string
+```
+
+### Database Connection String Format
+```
+mysql://username:password@host:port/database
+```
+
+Example:
+```
+mysql://myuser:mypass@localhost:3306/socialads_db
+```
+
+## Development Commands
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run db:push` - Push schema changes to database
+- `npm run check` - Type checking
+
+## Production Deployment Steps
+
+1. Create MySQL database in cPanel
+2. Upload and extract `cpanel-deploy` folder
+3. Create Node.js app in cPanel
+4. Set environment variables
+5. Run NPM Install
+6. Run setup-database.js
+7. Start application
+
+Full instructions in: `cpanel-deploy/INSTALL-MYSQL.txt`

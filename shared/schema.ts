@@ -1,91 +1,89 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, jsonb, timestamp, boolean } from "drizzle-orm/pg-core";
+import { mysqlTable, varchar, text, int, json, timestamp, boolean, datetime } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const adminUsers = pgTable("admin_users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const adminUsers = mysqlTable("admin_users", {
+  id: varchar("id", { length: 36 }).primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
   email: text("email"),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const clients = pgTable("clients", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const clients = mysqlTable("clients", {
+  id: varchar("id", { length: 36 }).primaryKey(),
   name: text("name").notNull(),
   phone: text("phone").notNull(),
   fb: text("fb"),
   profilePicture: text("profile_picture"),
   status: text("status").notNull().default("Active"),
   isActive: boolean("is_active").notNull().default(true),
-  walletDeposited: integer("wallet_deposited").notNull().default(0),
-  walletSpent: integer("wallet_spent").notNull().default(0),
-  scopes: jsonb("scopes").$type<string[]>().notNull().default([]),
+  walletDeposited: int("wallet_deposited").notNull().default(0),
+  walletSpent: int("wallet_spent").notNull().default(0),
+  scopes: json("scopes").$type<string[]>().notNull().default([]),
   portalKey: text("portal_key").notNull(),
   adminNotes: text("admin_notes"),
-  category: text("category").notNull().default("general"), // general, regular, premium
+  category: text("category").notNull().default("general"),
   deleted: boolean("deleted").notNull().default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const spendLogs = pgTable("spend_logs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  clientId: varchar("client_id").notNull().references(() => clients.id),
+export const spendLogs = mysqlTable("spend_logs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  clientId: varchar("client_id", { length: 36 }).notNull().references(() => clients.id),
   date: text("date").notNull(),
-  amount: integer("amount").notNull(),
+  amount: int("amount").notNull(),
   note: text("note"),
-  balanceAfter: integer("balance_after").notNull().default(0), // Balance after this transaction
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  balanceAfter: int("balance_after").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const serviceScopes = pgTable("service_scopes", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  clientId: varchar("client_id").notNull().references(() => clients.id),
-  serviceName: text("service_name").notNull(), // e.g., "ওয়েবসাইট", "ল্যান্ডিং পেজ"
-  scope: text("scope").notNull(), // Custom scope description
-  status: text("status").notNull().default("Active"), // "Active", "Completed", "Paused"
-  startDate: timestamp("start_date").defaultNow().notNull(),
+export const serviceScopes = mysqlTable("service_scopes", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  clientId: varchar("client_id", { length: 36 }).notNull().references(() => clients.id),
+  serviceName: text("service_name").notNull(),
+  scope: text("scope").notNull(),
+  status: text("status").notNull().default("Active"),
+  startDate: timestamp("start_date").notNull().defaultNow(),
   endDate: timestamp("end_date"),
   notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const meetings = pgTable("meetings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  clientId: varchar("client_id").notNull().references(() => clients.id),
+export const meetings = mysqlTable("meetings", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  clientId: varchar("client_id", { length: 36 }).notNull().references(() => clients.id),
   title: text("title").notNull(),
-  datetime: timestamp("datetime").notNull(),
+  datetime: datetime("datetime").notNull(),
   location: text("location").notNull(),
-  reminders: jsonb("reminders").$type<string[]>().notNull().default([]),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  reminders: json("reminders").$type<string[]>().notNull().default([]),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-
-
-export const todos = pgTable("todos", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const todos = mysqlTable("todos", {
+  id: varchar("id", { length: 36 }).primaryKey(),
   title: text("title").notNull(),
   description: text("description"),
-  priority: text("priority").notNull().default("Medium"), // "High", "Medium", "Low"
-  status: text("status").notNull().default("Pending"), // "Completed", "Pending"
-  dueDate: timestamp("due_date"),
-  clientId: varchar("client_id").references(() => clients.id), // optional: link to client
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  priority: text("priority").notNull().default("Medium"),
+  status: text("status").notNull().default("Pending"),
+  dueDate: datetime("due_date"),
+  clientId: varchar("client_id", { length: 36 }).references(() => clients.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const whatsappTemplates = pgTable("whatsapp_templates", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const whatsappTemplates = mysqlTable("whatsapp_templates", {
+  id: varchar("id", { length: 36 }).primaryKey(),
   name: text("name").notNull(),
   message: text("message").notNull(),
   isDefault: boolean("is_default").notNull().default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const companySettings = pgTable("company_settings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const companySettings = mysqlTable("company_settings", {
+  id: varchar("id", { length: 36 }).primaryKey(),
   companyName: text("company_name").notNull().default("Social Ads Expert"),
   companyEmail: text("company_email"),
   companyPhone: text("company_phone"),
@@ -93,12 +91,12 @@ export const companySettings = pgTable("company_settings", {
   companyAddress: text("company_address"),
   logoUrl: text("logo_url"),
   brandColor: text("brand_color").notNull().default("#A576FF"),
-  usdExchangeRate: integer("usd_exchange_rate").notNull().default(14500), // USD to BDT rate in paisa (145.00 BDT = 1 USD)
-  baseCurrency: text("base_currency").notNull().default("USD"), // Base currency for calculations
-  displayCurrency: text("display_currency").notNull().default("BDT"), // Display currency for users
+  usdExchangeRate: int("usd_exchange_rate").notNull().default(14500),
+  baseCurrency: text("base_currency").notNull().default("USD"),
+  displayCurrency: text("display_currency").notNull().default("BDT"),
   isDefault: boolean("is_default").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertClientSchema = createInsertSchema(clients).omit({
@@ -117,24 +115,23 @@ export const insertServiceScopeSchema = createInsertSchema(serviceScopes).omit({
   createdAt: true,
 });
 
-// Website Projects Table for Portal Links and Completed Websites
-export const websiteProjects = pgTable("website_projects", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  clientId: varchar("client_id").notNull().references(() => clients.id),
-  projectName: varchar("project_name").notNull(),
-  portalKey: varchar("portal_key").notNull().unique(),
-  projectStatus: varchar("project_status").notNull().default("In Progress"),
-  websiteUrl: varchar("website_url"),
-  websiteUsername: text("website_username"), // Website admin username
-  websitePassword: text("website_password"), // Website admin password
-  cpanelUsername: text("cpanel_username"), // cPanel username
-  cpanelPassword: text("cpanel_password"), // cPanel password
-  nameserver1: text("nameserver1"), // Primary nameserver
-  nameserver2: text("nameserver2"), // Secondary nameserver
-  serviceProvider: text("service_provider"), // Hosting provider name (e.g., Hostinger, GoDaddy)
+export const websiteProjects = mysqlTable("website_projects", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  clientId: varchar("client_id", { length: 36 }).notNull().references(() => clients.id),
+  projectName: varchar("project_name", { length: 255 }).notNull(),
+  portalKey: varchar("portal_key", { length: 255 }).notNull().unique(),
+  projectStatus: varchar("project_status", { length: 50 }).notNull().default("In Progress"),
+  websiteUrl: varchar("website_url", { length: 255 }),
+  websiteUsername: text("website_username"),
+  websitePassword: text("website_password"),
+  cpanelUsername: text("cpanel_username"),
+  cpanelPassword: text("cpanel_password"),
+  nameserver1: text("nameserver1"),
+  nameserver2: text("nameserver2"),
+  serviceProvider: text("service_provider"),
   notes: text("notes"),
-  completedDate: timestamp("completed_date"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedDate: datetime("completed_date"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertWebsiteProjectSchema = createInsertSchema(websiteProjects).omit({
@@ -145,17 +142,16 @@ export const insertWebsiteProjectSchema = createInsertSchema(websiteProjects).om
   completedDate: z.coerce.date().optional().nullable(),
 });
 
-// Custom Control Panel Buttons Table
-export const customButtons = pgTable("custom_buttons", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  title: text("title").notNull(), // Button text/label
-  description: text("description"), // Optional description
-  url: text("url").notNull(), // Link URL
-  icon: text("icon").default("ExternalLink"), // Lucide icon name
-  color: text("color").default("primary"), // Button color theme
+export const customButtons = mysqlTable("custom_buttons", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  url: text("url").notNull(),
+  icon: text("icon").default("ExternalLink"),
+  color: text("color").default("primary"),
   isActive: boolean("is_active").notNull().default(true),
-  sortOrder: integer("sort_order").notNull().default(0), // For ordering buttons
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertCustomButtonSchema = createInsertSchema(customButtons).omit({
@@ -163,37 +159,36 @@ export const insertCustomButtonSchema = createInsertSchema(customButtons).omit({
   createdAt: true,
 });
 
-// Invoice Management Tables
-export const invoices = pgTable("invoices", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const invoices = mysqlTable("invoices", {
+  id: varchar("id", { length: 36 }).primaryKey(),
   invoiceNo: text("invoice_no").notNull().unique(),
-  clientId: varchar("client_id").notNull().references(() => clients.id),
-  companyId: varchar("company_id").references(() => companySettings.id), // Optional: multiple companies
-  issueDate: text("issue_date").notNull(), // YYYY-MM-DD format
-  startDate: text("start_date"), // Service period start
-  endDate: text("end_date"), // Service period end
+  clientId: varchar("client_id", { length: 36 }).notNull().references(() => clients.id),
+  companyId: varchar("company_id", { length: 36 }).references(() => companySettings.id),
+  issueDate: text("issue_date").notNull(),
+  startDate: text("start_date"),
+  endDate: text("end_date"),
   currency: text("currency").notNull().default("BDT"),
-  subTotal: integer("sub_total").notNull().default(0), // In paisa/cents
-  discountPct: integer("discount_pct").notNull().default(0), // Percentage * 100 (e.g., 1500 = 15.00%)
-  discountAmt: integer("discount_amt").notNull().default(0), // In paisa/cents
-  vatPct: integer("vat_pct").notNull().default(0), // Percentage * 100
-  vatAmt: integer("vat_amt").notNull().default(0), // In paisa/cents
-  grandTotal: integer("grand_total").notNull().default(0), // In paisa/cents
+  subTotal: int("sub_total").notNull().default(0),
+  discountPct: int("discount_pct").notNull().default(0),
+  discountAmt: int("discount_amt").notNull().default(0),
+  vatPct: int("vat_pct").notNull().default(0),
+  vatAmt: int("vat_amt").notNull().default(0),
+  grandTotal: int("grand_total").notNull().default(0),
   notes: text("notes"),
-  status: text("status").notNull().default("Draft"), // "Draft", "Sent", "Paid", "Cancelled"
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  status: text("status").notNull().default("Draft"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const invoiceItems = pgTable("invoice_items", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  invoiceId: varchar("invoice_id").notNull().references(() => invoices.id, { onDelete: "cascade" }),
+export const invoiceItems = mysqlTable("invoice_items", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  invoiceId: varchar("invoice_id", { length: 36 }).notNull().references(() => invoices.id, { onDelete: "cascade" }),
   description: text("description").notNull(),
-  quantity: integer("quantity").notNull().default(1),
-  rate: integer("rate").notNull().default(0), // In paisa/cents
-  amount: integer("amount").notNull().default(0), // quantity * rate (in paisa/cents)
-  sortOrder: integer("sort_order").notNull().default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  quantity: int("quantity").notNull().default(1),
+  rate: int("rate").notNull().default(0),
+  amount: int("amount").notNull().default(0),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({
@@ -207,27 +202,25 @@ export const insertInvoiceItemSchema = createInsertSchema(invoiceItems).omit({
   createdAt: true,
 });
 
-// File uploads table for managing uploaded files (images, documents)
-export const uploads = pgTable("uploads", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const uploads = mysqlTable("uploads", {
+  id: varchar("id", { length: 36 }).primaryKey(),
   fileName: text("file_name").notNull(),
   mimeType: text("mime_type").notNull(),
-  size: integer("size").notNull(), // File size in bytes
-  data: text("data").notNull(), // Base64 encoded file data
-  uploadedBy: text("uploaded_by"), // Optional: track who uploaded
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  size: int("size").notNull(),
+  data: text("data").notNull(),
+  uploadedBy: text("uploaded_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Saved Invoice PDFs table for tracking generated invoices
-export const invoicePdfs = pgTable("invoice_pdfs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const invoicePdfs = mysqlTable("invoice_pdfs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
   invoiceNo: text("invoice_no").notNull(),
-  clientId: varchar("client_id").notNull().references(() => clients.id),
+  clientId: varchar("client_id", { length: 36 }).notNull().references(() => clients.id),
   fileName: text("file_name").notNull(),
   mimeType: text("mime_type").notNull().default("application/pdf"),
-  size: integer("size").notNull(), // PDF file size in bytes
-  data: text("data").notNull(), // Base64 encoded PDF data
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  size: int("size").notNull(),
+  data: text("data").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertUploadSchema = createInsertSchema(uploads).omit({
@@ -245,8 +238,6 @@ export const insertMeetingSchema = createInsertSchema(meetings).omit({
   createdAt: true,
 });
 
-
-
 export const insertTodoSchema = createInsertSchema(todos).omit({
   id: true,
   createdAt: true,
@@ -257,33 +248,31 @@ export const insertWhatsappTemplateSchema = createInsertSchema(whatsappTemplates
   createdAt: true,
 });
 
-// Quick Messages Table for Control Panel
-export const quickMessages = pgTable("quick_messages", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  title: text("title").notNull(), // Message title/name
-  message: text("message").notNull(), // The actual message content
-  category: text("category").default("general"), // Optional categorization
+export const quickMessages = mysqlTable("quick_messages", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  category: text("category").default("general"),
   isActive: boolean("is_active").notNull().default(true),
-  sortOrder: integer("sort_order").notNull().default(0), // For ordering messages
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Payment Requests Table - Client portal payment requests
-export const paymentRequests = pgTable("payment_requests", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  clientId: varchar("client_id").notNull().references(() => clients.id),
-  amount: integer("amount").notNull(), // Amount in paisa/cents
-  paymentMethod: text("payment_method").notNull(), // "Bank", "bKash", "Nagad"
-  accountNumber: text("account_number"), // Bank account, bKash/Nagad number
-  transactionId: text("transaction_id"), // Transaction/Reference ID from payment
-  status: text("status").notNull().default("Pending"), // "Pending", "Approved", "Rejected"
-  note: text("note"), // Client's note/message
-  adminNote: text("admin_note"), // Admin's note when approving/rejecting
-  requestDate: timestamp("request_date").defaultNow().notNull(),
-  processedDate: timestamp("processed_date"), // When admin approved/rejected
-  processedBy: text("processed_by"), // Admin who processed the request
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const paymentRequests = mysqlTable("payment_requests", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  clientId: varchar("client_id", { length: 36 }).notNull().references(() => clients.id),
+  amount: int("amount").notNull(),
+  paymentMethod: text("payment_method").notNull(),
+  accountNumber: text("account_number"),
+  transactionId: text("transaction_id"),
+  status: text("status").notNull().default("Pending"),
+  note: text("note"),
+  adminNote: text("admin_note"),
+  requestDate: timestamp("request_date").notNull().defaultNow(),
+  processedDate: datetime("processed_date"),
+  processedBy: text("processed_by"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertQuickMessageSchema = createInsertSchema(quickMessages).omit({
@@ -362,98 +351,94 @@ export interface DashboardMetrics {
   activeClients: number;
 }
 
-// Project Management Tables
-export const projectTypes = pgTable("project_types", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const projectTypes = mysqlTable("project_types", {
+  id: varchar("id", { length: 36 }).primaryKey(),
   name: text("name").notNull().unique(),
   displayName: text("display_name").notNull(),
   description: text("description"),
   isDefault: boolean("is_default").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const projects = pgTable("projects", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const projects = mysqlTable("projects", {
+  id: varchar("id", { length: 36 }).primaryKey(),
   name: text("name").notNull(),
-  type: text("type").notNull(), // "website" or "landing_page"
-  clientId: varchar("client_id").references(() => clients.id),
+  type: text("type").notNull(),
+  clientId: varchar("client_id", { length: 36 }).references(() => clients.id),
   description: text("description"),
-  totalAmount: integer("total_amount").notNull().default(0), // Total project cost
-  advanceReceived: integer("advance_received").notNull().default(0), // Advance from client
-  dueAmount: integer("due_amount").notNull().default(0), // Remaining amount
-  status: text("status").notNull().default("pending"), // "pending", "in_progress", "completed", "cancelled"
-  progress: integer("progress").notNull().default(0), // Progress percentage (0-100)
-  startDate: timestamp("start_date"),
-  endDate: timestamp("end_date"),
-  publicUrl: text("public_url"), // Live project URL
-  features: jsonb("features").$type<string[]>().notNull().default([]), // List of features
-  completedFeatures: jsonb("completed_features").$type<string[]>().notNull().default([]), // Completed features
+  totalAmount: int("total_amount").notNull().default(0),
+  advanceReceived: int("advance_received").notNull().default(0),
+  dueAmount: int("due_amount").notNull().default(0),
+  status: text("status").notNull().default("pending"),
+  progress: int("progress").notNull().default(0),
+  startDate: datetime("start_date"),
+  endDate: datetime("end_date"),
+  publicUrl: text("public_url"),
+  features: json("features").$type<string[]>().notNull().default([]),
+  completedFeatures: json("completed_features").$type<string[]>().notNull().default([]),
   adminNotes: text("admin_notes"),
-  // Payment tracking fields (available after 20% progress)
-  secondPaymentDate: timestamp("second_payment_date"),
-  thirdPaymentDate: timestamp("third_payment_date"),
+  secondPaymentDate: datetime("second_payment_date"),
+  thirdPaymentDate: datetime("third_payment_date"),
   paymentCompleted: boolean("payment_completed").notNull().default(false),
-  // Website credentials (available after 20% progress)
   wpUsername: text("wp_username"),
   wpPassword: text("wp_password"),
   cpanelUsername: text("cpanel_username"),
   cpanelPassword: text("cpanel_password"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const employees = pgTable("employees", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const employees = mysqlTable("employees", {
+  id: varchar("id", { length: 36 }).primaryKey(),
   name: text("name").notNull(),
   email: text("email"),
   phone: text("phone"),
-  role: text("role").notNull().default("developer"), // "developer", "designer", "manager"
-  totalIncome: integer("total_income").notNull().default(0), // Total earned
-  totalAdvance: integer("total_advance").notNull().default(0), // Total advance taken
-  totalDue: integer("total_due").notNull().default(0), // Amount due to them
+  role: text("role").notNull().default("developer"),
+  totalIncome: int("total_income").notNull().default(0),
+  totalAdvance: int("total_advance").notNull().default(0),
+  totalDue: int("total_due").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
-  portalKey: text("portal_key").notNull(), // For employee portal access
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  portalKey: text("portal_key").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const projectAssignments = pgTable("project_assignments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  projectId: varchar("project_id").notNull().references(() => projects.id),
-  employeeId: varchar("employee_id").notNull().references(() => employees.id),
-  assignedFeatures: jsonb("assigned_features").$type<string[]>().notNull().default([]), // Features assigned to this employee
-  completedFeatures: jsonb("completed_features").$type<string[]>().notNull().default([]), // Features completed by this employee
-  hourlyRate: integer("hourly_rate").notNull().default(0), // Payment per hour/feature
-  totalEarned: integer("total_earned").notNull().default(0), // Total earned from this project
-  status: text("status").notNull().default("assigned"), // "assigned", "working", "completed"
-  assignedDate: timestamp("assigned_date").defaultNow().notNull(),
-  completedDate: timestamp("completed_date"),
+export const projectAssignments = mysqlTable("project_assignments", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  projectId: varchar("project_id", { length: 36 }).notNull().references(() => projects.id),
+  employeeId: varchar("employee_id", { length: 36 }).notNull().references(() => employees.id),
+  assignedFeatures: json("assigned_features").$type<string[]>().notNull().default([]),
+  completedFeatures: json("completed_features").$type<string[]>().notNull().default([]),
+  hourlyRate: int("hourly_rate").notNull().default(0),
+  totalEarned: int("total_earned").notNull().default(0),
+  status: text("status").notNull().default("assigned"),
+  assignedDate: timestamp("assigned_date").notNull().defaultNow(),
+  completedDate: datetime("completed_date"),
 });
 
-export const projectPayments = pgTable("project_payments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  projectId: varchar("project_id").notNull().references(() => projects.id),
-  amount: integer("amount").notNull(),
-  paymentMethod: text("payment_method"), // "bKash", "Nagad", "Bank", etc.
-  transactionId: text("transaction_id"),
-  paymentDate: timestamp("payment_date").notNull(),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const salaryPayments = pgTable("salary_payments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  employeeId: varchar("employee_id").notNull().references(() => employees.id),
-  projectId: varchar("project_id").references(() => projects.id), // Optional: for project-specific payments
-  amount: integer("amount").notNull(),
-  type: text("type").notNull(), // "salary", "advance", "bonus", "project_payment"
+export const projectPayments = mysqlTable("project_payments", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  projectId: varchar("project_id", { length: 36 }).notNull().references(() => projects.id),
+  amount: int("amount").notNull(),
   paymentMethod: text("payment_method"),
   transactionId: text("transaction_id"),
-  paymentDate: timestamp("payment_date").notNull(),
+  paymentDate: datetime("payment_date").notNull(),
   notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Types for the new tables
+export const salaryPayments = mysqlTable("salary_payments", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  employeeId: varchar("employee_id", { length: 36 }).notNull().references(() => employees.id),
+  projectId: varchar("project_id", { length: 36 }).references(() => projects.id),
+  amount: int("amount").notNull(),
+  type: text("type").notNull(),
+  paymentMethod: text("payment_method"),
+  transactionId: text("transaction_id"),
+  paymentDate: datetime("payment_date").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export type ProjectType = typeof projectTypes.$inferSelect;
 export type InsertProjectType = typeof projectTypes.$inferInsert;
 
@@ -472,7 +457,6 @@ export type InsertProjectPayment = typeof projectPayments.$inferInsert;
 export type SalaryPayment = typeof salaryPayments.$inferSelect;
 export type InsertSalaryPayment = typeof salaryPayments.$inferInsert;
 
-// Insert schemas for validation
 export const insertProjectTypeSchema = createInsertSchema(projectTypes).omit({ id: true, createdAt: true });
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true }).extend({
   startDate: z.union([z.date(), z.string().datetime(), z.null()]).transform((val) => val ? new Date(val) : null).optional(),
@@ -487,7 +471,6 @@ export const insertSalaryPaymentSchema = createInsertSchema(salaryPayments).omit
   paymentDate: z.union([z.date(), z.string().datetime()]).transform((val) => new Date(val))
 });
 
-// Extended types with relations
 export interface ProjectWithDetails extends Project {
   client?: Client;
   assignments?: (ProjectAssignment & { employee: Employee })[];
@@ -505,7 +488,6 @@ export interface AIQueryResult {
   summary: string;
 }
 
-// Admin User Types and Schemas
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type InsertAdminUser = typeof adminUsers.$inferInsert;
 
@@ -514,7 +496,6 @@ export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({
   createdAt: true,
 });
 
-// Login schema for validation
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),

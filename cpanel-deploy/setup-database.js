@@ -1,51 +1,71 @@
-import pkg from 'pg';
-const { Client } = pkg;
+import mysql from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
-
-const client = new Client({
-  connectionString: process.env.DATABASE_URL
-});
+import { randomUUID } from 'crypto';
 
 async function setupDatabase() {
+  let connection;
+  
   try {
-    await client.connect();
-    console.log('Connected to database');
+    // Connect to MySQL
+    connection = await mysql.createConnection(process.env.DATABASE_URL);
+    console.log('✅ Connected to MySQL database');
 
-    // Create admin user table
-    await client.query(`
+    // Create admin_users table
+    await connection.execute(`
       CREATE TABLE IF NOT EXISTS admin_users (
-        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        id VARCHAR(36) PRIMARY KEY,
         username TEXT NOT NULL UNIQUE,
         password TEXT NOT NULL,
         full_name TEXT NOT NULL,
         email TEXT,
-        is_active BOOLEAN NOT NULL DEFAULT true,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    console.log('✅ admin_users table created/verified');
 
     // Check if admin exists
-    const adminCheck = await client.query('SELECT * FROM admin_users WHERE username = $1', ['admin']);
+    const [rows] = await connection.execute(
+      'SELECT * FROM admin_users WHERE username = ? LIMIT 1',
+      ['admin']
+    );
     
-    if (adminCheck.rows.length === 0) {
+    if (rows.length === 0) {
       const hashedPassword = await bcrypt.hash('admin123', 10);
-      await client.query(
-        'INSERT INTO admin_users (username, password, full_name) VALUES ($1, $2, $3)',
-        ['admin', hashedPassword, 'Administrator']
+      const adminId = randomUUID();
+      
+      await connection.execute(
+        'INSERT INTO admin_users (id, username, password, full_name) VALUES (?, ?, ?, ?)',
+        [adminId, 'admin', hashedPassword, 'Administrator']
       );
-      console.log('✅ Admin user created (username: admin, password: admin123)');
+      console.log('✅ Default admin user created');
+      console.log('   Username: admin');
+      console.log('   Password: admin123');
+      console.log('   ⚠️  CHANGE PASSWORD AFTER FIRST LOGIN!');
     } else {
       console.log('✅ Admin user already exists');
     }
 
-    console.log('✅ Database setup completed successfully!');
-    await client.end();
-    process.exit(0);
+    console.log('\n🎉 Database setup completed successfully!');
+    console.log('\nNext steps:');
+    console.log('1. Restart your Node.js app in cPanel');
+    console.log('2. Visit your website');
+    console.log('3. Login with admin/admin123');
+    console.log('4. Change your password!');
+    
   } catch (error) {
     console.error('❌ Database setup failed:', error);
-    await client.end();
-    process.exit(1);
+    throw error;
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
   }
 }
 
-setupDatabase();
+setupDatabase()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

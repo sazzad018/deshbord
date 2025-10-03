@@ -1,0 +1,191 @@
+========================================
+MYSQL DEPLOYMENT GUIDE - SHARED CPANEL
+========================================
+
+✅ এই version MySQL database এর জন্য তৈরি করা হয়েছে!
+
+STEP 1: CREATE MYSQL DATABASE
+------------------------------
+cPanel → Databases → MySQL Databases
+
+1. Create Database:
+   - Database Name: yourname_socialads (example)
+   - Click "Create Database"
+
+2. Create User:
+   - Username: yourname_admin (example)
+   - Password: Generate strong password
+   - Click "Create User"
+
+3. Add User to Database:
+   - Select your user
+   - Select your database
+   - Click "Add"
+   - Check "ALL PRIVILEGES"
+   - Click "Make Changes"
+
+4. Note your credentials:
+   Database Name: yourname_socialads
+   Username: yourname_admin
+   Password: [your password]
+   Host: localhost
+
+STEP 2: UPLOAD FILES
+--------------------
+1. ZIP this entire 'cpanel-deploy' folder
+2. cPanel → File Manager → Upload ZIP
+3. Extract in a folder (NOT in public_html)
+   Example: ~/crm-app
+
+STEP 3: CREATE NODE.JS APP
+---------------------------
+cPanel → Software → Setup Node.js App → Create Application
+
+Settings:
+- Node.js Version: 20.x (or latest available)
+- Application Mode: Production
+- Application Root: crm-app (your folder name)
+- Application URL: your-domain.com
+- Application Startup File: index.js
+
+Click "Create"
+
+STEP 4: ENVIRONMENT VARIABLES
+------------------------------
+In the same page, add these variables:
+
+DATABASE_URL=mysql://yourname_admin:yourpassword@localhost:3306/yourname_socialads
+NODE_ENV=production
+PORT=5000
+SESSION_SECRET=generate-random-32-character-string
+
+⚠️ IMPORTANT: Replace these values:
+- yourname_admin → Your MySQL username
+- yourpassword → Your MySQL password  
+- yourname_socialads → Your database name
+
+Save/Update
+
+STEP 5: INSTALL DEPENDENCIES
+-----------------------------
+Click "Run NPM Install" button
+Wait 5-15 minutes for installation to complete
+
+✅ All packages including mysql2 will be installed
+
+STEP 6: SETUP DATABASE
+-----------------------
+Method 1 - Using temporary startup (RECOMMENDED):
+
+1. Change Application Startup File to: setup-database.js
+2. Click "Restart"
+3. Wait 30 seconds
+4. Check logs - should see "Database setup completed"
+5. Change back to: index.js
+6. Click "Restart" again
+
+Method 2 - Using phpMyAdmin:
+
+1. cPanel → phpMyAdmin
+2. Select your database
+3. Click "SQL" tab
+4. Copy and paste this query:
+
+CREATE TABLE IF NOT EXISTS admin_users (
+  id VARCHAR(36) PRIMARY KEY,
+  username TEXT NOT NULL,
+  password TEXT NOT NULL,
+  full_name TEXT NOT NULL,
+  email TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO admin_users (id, username, password, full_name)
+VALUES (
+  UUID(),
+  'admin',
+  '$2a$10$YourHashedPasswordHere',
+  'Administrator'
+);
+
+(Use bcrypt to hash 'admin123' password)
+
+STEP 7: START APPLICATION
+--------------------------
+In Setup Node.js App page:
+- Ensure Application Startup File is: index.js
+- Click "Restart" button
+- Wait for status to show "Running"
+
+STEP 8: TEST
+------------
+Visit: https://your-domain.com
+Login: admin / admin123
+⚠️ Change password after first login!
+
+========================================
+TROUBLESHOOTING
+========================================
+
+❌ "Cannot connect to database"
+→ Check DATABASE_URL format
+→ Verify MySQL credentials
+→ Ensure database exists
+
+❌ "Module 'mysql2' not found"
+→ Run NPM Install again
+→ Check Node.js version (use 18.x or 20.x)
+
+❌ App won't start
+→ Check error logs in cPanel Node.js App page
+→ Verify all environment variables set
+→ Run setup-database.js first
+
+❌ NPM Install fails
+→ Try different Node version
+→ Clear browser cache
+→ Contact hosting support
+
+========================================
+MYSQL CONNECTION STRING FORMAT
+========================================
+
+mysql://username:password@host:port/database
+
+Example:
+mysql://myuser:mypass@localhost:3306/mydb
+
+⚠️ Common Mistakes:
+- Missing port :3306
+- Wrong database name
+- Special characters in password not URL-encoded
+- Using @ symbol in password (must encode as %40)
+
+========================================
+NEXT STEPS AFTER DEPLOYMENT
+========================================
+
+1. ✅ Login and change admin password
+2. ✅ Configure company settings
+3. ✅ Add your first client
+4. ✅ Test all features
+5. ✅ Setup regular database backups
+
+========================================
+SUCCESS!
+========================================
+
+Your Social Ads Expert CRM is now running on MySQL! 🎉
+
+Features Available:
+✅ Client Management
+✅ Financial Tracking
+✅ Invoice Generation
+✅ Project Management
+✅ Employee Management
+✅ Website Credentials Storage
+✅ PDF Download
+✅ And much more!
+
+Enjoy! 🚀
