@@ -1,0 +1,91 @@
+========================================
+SHARED CPANEL DEPLOYMENT - QUICK GUIDE
+========================================
+
+STEP 1: UPLOAD FILES
+--------------------
+1. ZIP this entire 'cpanel-deploy' folder
+2. cPanel → File Manager → Upload ZIP
+3. Extract in a folder (NOT in public_html)
+   Example: ~/crm-app
+
+STEP 2: CREATE NODE.JS APP
+---------------------------
+cPanel → Software → Setup Node.js App → Create Application
+
+Settings:
+- Node.js Version: 20.x (or latest available)
+- Application Mode: Production
+- Application Root: crm-app (your folder name)
+- Application URL: your-domain.com
+- Application Startup File: index.js
+
+Click "Create"
+
+STEP 3: ENVIRONMENT VARIABLES
+------------------------------
+In the same page, add these variables:
+
+DATABASE_URL=postgresql://user:pass@localhost:5432/dbname
+PGUSER=your_db_username
+PGPASSWORD=your_db_password
+PGDATABASE=your_db_name
+PGHOST=localhost
+PGPORT=5432
+NODE_ENV=production
+PORT=5000
+SESSION_SECRET=a7f3e9d2c8b6a4f1e5d3c9b7a5f2e8d6c4b2a9f7e5d3c1b9a7f5e3d1c9b7a5f3
+
+(Replace database values with your actual credentials)
+
+Save/Update
+
+STEP 4: INSTALL DEPENDENCIES
+-----------------------------
+Click "Run NPM Install" button
+Wait 5-15 minutes for installation to complete
+
+STEP 5: SETUP DATABASE
+-----------------------
+Option A - Using temporary web endpoint:
+1. In cPanel Node.js App, change:
+   Application Startup File: setup-database.js
+2. Click Restart
+3. Visit your website in browser (runs setup)
+4. Change back to: index.js
+5. Click Restart
+
+Option B - Using phpPgAdmin:
+1. cPanel → phpPgAdmin
+2. Run the SQL commands manually (see setup-database.js)
+
+STEP 6: START APPLICATION
+--------------------------
+In Setup Node.js App page:
+- Click "Restart" button
+- Wait for status to show "Running"
+
+STEP 7: TEST
+------------
+Visit: https://your-domain.com
+Login: admin / admin123
+⚠️ Change password after first login!
+
+========================================
+TROUBLESHOOTING
+========================================
+
+App won't start?
+→ Check error logs in cPanel Node.js App page
+
+NPM Install failed?
+→ Try different Node version (18.x, 16.x)
+→ Or upload node_modules manually
+
+Database error?
+→ Verify DATABASE_URL and credentials
+→ Run setup-database.js again
+
+========================================
+SUPPORT: Check cPanel logs for errors
+========================================
