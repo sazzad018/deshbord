@@ -583,7 +583,7 @@ var init_db = __esm({
   }
 });
 
-// server/index.production.ts
+// server/index.ts
 import express2 from "express";
 import session from "express-session";
 
@@ -2619,7 +2619,7 @@ function serveStatic(app2) {
   });
 }
 
-// server/index.production.ts
+// server/index.ts
 var app = express2();
 app.use(express2.json({ limit: "50mb" }));
 app.use(express2.urlencoded({ extended: false, limit: "50mb" }));
@@ -2674,7 +2674,12 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
     throw err;
   });
-  serveStatic(app);
+  if (false) {
+    const { setupVite } = await null;
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
   const port = parseInt(process.env.PORT || "5000", 10);
   server.listen({
     port,

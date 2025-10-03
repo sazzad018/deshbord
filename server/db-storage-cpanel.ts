@@ -4,16 +4,25 @@ import { db } from "./db-cpanel";
 import { IStorage } from "./storage";
 import { randomUUID } from "crypto";
 
+// Helper function to ensure JSON fields are properly parsed
+function parseClientJsonFields(client: any): Client {
+  return {
+    ...client,
+    scopes: typeof client.scopes === 'string' ? JSON.parse(client.scopes) : client.scopes,
+  };
+}
+
 export class DatabaseStorage implements IStorage {
   async getClients(): Promise<Client[]> {
-    return await db.select().from(clients)
+    const results = await db.select().from(clients)
       .where(eq(clients.deleted, false))
       .orderBy(desc(clients.createdAt));
+    return results.map(parseClientJsonFields);
   }
 
   async getClient(id: string): Promise<Client | undefined> {
     const result = await db.select().from(clients).where(eq(clients.id, id)).limit(1);
-    return result[0];
+    return result[0] ? parseClientJsonFields(result[0]) : undefined;
   }
 
   async getClientWithLogs(id: string): Promise<ClientWithLogs | undefined> {
