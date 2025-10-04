@@ -63,7 +63,7 @@ export class DatabaseStorage implements IStorage {
     };
     
     const [client] = await db.insert(clients).values(insertData).returning();
-    return client;
+    return parseClientJsonFields(client);
   }
 
   async updateClient(id: string, updates: Partial<Client>): Promise<Client | undefined> {
@@ -72,7 +72,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(clients.id, id))
       .returning();
     
-    return updated;
+    return updated ? parseClientJsonFields(updated) : undefined;
   }
 
   async deleteClient(id: string): Promise<boolean> {
@@ -390,9 +390,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDeletedClients(): Promise<Client[]> {
-    return await db.select().from(clients)
+    const results = await db.select().from(clients)
       .where(eq(clients.deleted, true))
       .orderBy(desc(clients.createdAt));
+    return results.map(parseClientJsonFields);
   }
 
   // Custom Button CRUD Operations
